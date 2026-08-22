@@ -33,6 +33,7 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 
 <!-- one line per resolved ticket -->
 
+- [01 — Three visual directions for the canvas](issues/01-visual-directions.md) — **Register** wins: muted paper ground, near-invisible grid so owner artwork is the only colour, Anton + Archivo, and the auction docked as a magenta card instead of living in the top bar.
 - [04 — Vercel project with working preview deploys](issues/04-vercel-preview.md) — `rob-vb/200-squares` is live on Vercel; a push to a branch gives a public URL at `200-squares-git-<branch>-robs-projects-52973834.vercel.app`. Commit as `hi@robvb.com` or the deploy is blocked.
 
 ## Not yet specified
