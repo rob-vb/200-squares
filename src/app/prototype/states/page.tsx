@@ -13,27 +13,27 @@ const TOKENS = [
   ["page", "#DCDDD5", "the sheet the canvas lies on"],
   ["square", "#EEEFE9", "an available square"],
   ["seam", "#E4E5DE", "the 1px gap — the whole grid"],
-  ["ink", "#23261F", "text, dark buttons, tooltip, hard shadow"],
-  ["faint", "#A8ACA0", "square numbers, small labels"],
-  ["hairline", "#C3C7BB", "panel borders, rules, block edges"],
+  ["ink", "#23261F", "text, dark buttons, tooltip"],
+  ["faint", "#5B5D56", "square numbers, secondary text — 4.88:1 on the page"],
+  ["hairline", "#B6B9AD", "panel borders, rules, block edges"],
   ["accent", "#D6265E", "auction, selection, pending. Nothing else."],
 ];
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <section className="border-hairline border-t pt-6">
-      <h2 className="font-display text-[22px] leading-none">{title}</h2>
-      {note ? <p className="text-faint mt-1 max-w-[62ch] text-[13px]">{note}</p> : null}
-      <div className="mt-5">{children}</div>
+    <section className="border-hairline border-t pt-9">
+      <h2 className="font-display text-[24px] leading-none">{title}</h2>
+      {note ? (
+        <p className="text-faint mt-3 max-w-[68ch] text-[14px] leading-relaxed">{note}</p>
+      ) : null}
+      <div className="mt-7">{children}</div>
     </section>
   );
 }
 
 function Caption({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-faint mt-2 text-[10px] font-semibold tracking-[0.16em] uppercase">
-      {children}
-    </div>
+    <div className="text-faint mt-2 text-[12px] leading-snug">{children}</div>
   );
 }
 
@@ -139,11 +139,8 @@ export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-10">
       <header>
-        <div className="text-faint text-[10px] font-semibold tracking-[0.18em] uppercase">
-          Ticket 05 · state sheet
-        </div>
-        <h1 className="font-display mt-1 text-[40px] leading-none">200 SQUARES — REGISTER</h1>
-        <p className="text-faint mt-2 max-w-[62ch] text-[13px]">
+        <h1 className="font-display text-[40px] leading-none">200 SQUARES — REGISTER</h1>
+        <p className="text-faint mt-3 max-w-[68ch] text-[14px] leading-relaxed">
           The tokens the build reads, and every square state at the three sizes that decide whether
           it works: a phone at 1x, a desktop at 1x, and anything zoomed to 4x.
         </p>
@@ -153,23 +150,24 @@ export default function Page() {
         title="Colour"
         note="Seven tokens. The ground is muted so owner artwork is the only colour on the canvas. Accent is spent on the auction, the selection and pending — nowhere else."
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <dl className="border-hairline border-t">
           {TOKENS.map(([name, hex, use]) => (
-            <div key={name} className="border-hairline flex items-center gap-3 border p-2">
-              <div
-                className="h-12 w-12 shrink-0"
-                style={{ background: hex, ...hairlineEdge }}
-              />
-              <div className="min-w-0">
-                <div className="text-[13px] font-semibold">
-                  --color-{name}{" "}
-                  <span className="text-faint font-mono text-[11px] font-normal">{hex}</span>
-                </div>
-                <div className="text-faint text-[11px] leading-tight">{use}</div>
-              </div>
+            <div
+              key={name}
+              className="border-hairline flex items-center gap-5 border-b py-3"
+            >
+              <div className="h-11 w-20 shrink-0" style={{ background: hex, ...hairlineEdge }} />
+              <dt className="w-[9.5rem] shrink-0 text-[14px] font-semibold">--color-{name}</dt>
+              <dd
+                className="text-faint w-[6.5rem] shrink-0 font-mono text-[13px]"
+                data-numeric
+              >
+                {hex}
+              </dd>
+              <dd className="text-[14px]">{use}</dd>
             </div>
           ))}
-        </div>
+        </dl>
       </Section>
 
       <Section
@@ -186,20 +184,20 @@ export default function Page() {
             <Caption>Anton 30 · countdown, boxed digits</Caption>
           </div>
           <div>
-            <div className="font-display text-[38px] leading-none">$600</div>
+            <div className="font-display text-[38px] leading-none" data-numeric>$600</div>
             <Caption>Anton 38 · price in the panel</Caption>
           </div>
           <div>
-            <div className="text-[10px] font-semibold tracking-[0.16em] uppercase">Company name</div>
-            <Caption>Archivo 10 / 600 · field label, 0.16em tracking</Caption>
+            <div className="text-faint text-[13px] font-medium">Company name</div>
+            <Caption>Archivo 13 · field label</Caption>
           </div>
           <div>
             <div className="text-[12px]">6 squares · $100 each · 113 of 199 still free</div>
             <Caption>Archivo 12 · meta copy</Caption>
           </div>
           <div>
-            <div className="font-mono text-[8px]">142</div>
-            <Caption>Roboto Mono 8 · square number at desktop 1x</Caption>
+            <div className="font-mono text-[13px]" data-numeric>142</div>
+            <Caption>Roboto Mono · square number, tabular</Caption>
           </div>
         </div>
       </Section>
@@ -299,7 +297,7 @@ export default function Page() {
                 ...hairlineEdge,
               }}
             >
-              <span className="text-[8px] font-semibold tracking-[0.2em] uppercase opacity-60">
+              <span className="text-[12px]" style={{ color: "#B9A06B" }}>
                 Lot 00 · today
               </span>
               <span className="font-display text-[26px] leading-none">HELIOGRAPH</span>
@@ -311,18 +309,19 @@ export default function Page() {
               className="bg-accent flex flex-col items-center justify-center gap-2 px-4 text-center text-white"
               style={{ width: 5 * DESKTOP_1X + 4, height: 5 * DESKTOP_1X + 4, ...hairlineEdge }}
             >
-              <span className="text-[9px] font-semibold tracking-[0.18em] uppercase opacity-80">
-                Nobody has bid
-              </span>
+              <span className="text-[13px] font-medium">Nobody has bid</span>
               <span className="font-display text-[26px] leading-[0.95]">
                 THIS SPOT
                 <br />
                 TOMORROW
               </span>
               <span className="text-[11px] font-semibold">Bid from $100</span>
-              <span className="text-accent font-display bg-white px-3 py-1 text-[15px] tracking-[0.06em]">
+              <button
+                type="button"
+                className="text-accent font-display bg-white px-3 py-1 text-[15px] transition-colors duration-150 hover:bg-[#FFE7EE]"
+              >
                 BID
-              </span>
+              </button>
             </div>
             <Caption>House ad · no winner</Caption>
           </div>
@@ -350,6 +349,42 @@ export default function Page() {
       </Section>
 
       <Section
+        title="Controls"
+        note="The dark button is the commit action and appears once per surface. The accent button belongs to the auction only. Every control shows its focus ring: 2px accent, offset 2px, drawn on keyboard focus and never on a mouse click."
+      >
+        <div className="flex flex-wrap items-end gap-10">
+          <div>
+            <button
+              type="button"
+              className="bg-ink text-page font-display px-6 py-3 text-[15px] transition-colors duration-150 hover:bg-[#34382E]"
+            >
+              BUY 6 SQUARES
+            </button>
+            <Caption>Commit · rest, hover, focus</Caption>
+          </div>
+          <div>
+            <button
+              type="button"
+              className="bg-accent font-display px-6 py-3 text-[15px] text-white transition-colors duration-150 hover:bg-[#BF1F53]"
+            >
+              PLACE BID
+            </button>
+            <Caption>Auction · the accent is only ever a control</Caption>
+          </div>
+          <div>
+            <button
+              type="button"
+              disabled
+              className="bg-ink/25 text-ink/45 font-display cursor-not-allowed px-6 py-3 text-[15px]"
+            >
+              BUY 6 SQUARES
+            </button>
+            <Caption>Disabled · nothing selected yet</Caption>
+          </div>
+        </div>
+      </Section>
+
+      <Section
         title="The countdown, and why it needed fixing"
         note="Anton ships no tabular figures. Its 1 measures 33.06 against 49.42 for every other digit at 100px, and font-variant-numeric does nothing. Each digit therefore sits in a 0.52em box. Watch both counters: the left one shifts, the right one does not."
       >
@@ -360,28 +395,29 @@ export default function Page() {
             style={{ boxShadow: "var(--shadow-dock)" }}
           >
             <div>
-              <div className="text-[9px] font-semibold tracking-[0.18em] uppercase opacity-80">
-                Lot 00 closes
-              </div>
+              <div className="text-[13px] font-medium">Lot 00 closes</div>
               <TickerFixed className="font-display text-[30px] leading-none" />
             </div>
-            <div className="text-[10px] leading-tight font-semibold tracking-[0.1em] uppercase opacity-80">
+            <div className="text-[13px] leading-tight font-medium">
               Top bid
               <br />
-              <span className="font-display text-[22px] leading-none tracking-normal opacity-100">
+              <span className="font-display text-[22px] leading-none" data-numeric>
                 $1,240
               </span>
             </div>
-            <span className="text-accent font-display bg-white px-4 py-2 text-[15px] tracking-[0.06em]">
+            <button
+              type="button"
+              className="text-accent font-display bg-white px-4 py-2 text-[15px] transition-colors duration-150 hover:bg-[#FFE7EE]"
+            >
               BID
-            </span>
+            </button>
           </div>
-          <Caption>The auction dock · 6px 6px 0 hard shadow, no blur, no radius</Caption>
+          <Caption>The auction dock, lifted off the sheet by the depth scale</Caption>
         </div>
       </Section>
 
       <Section title="Spacing and edges" note="There is no border radius anywhere in this design.">
-        <ul className="text-[13px] leading-relaxed">
+        <ul className="max-w-[72ch] space-y-2 text-[14px] leading-relaxed">
           <li>
             <span className="font-semibold">Seam</span> — 1px, scales with the canvas transform, so
             it is 4px at 4x. The grid is a plate at 1x and a market when you zoom in.
@@ -397,7 +433,9 @@ export default function Page() {
             32px from lg up.
           </li>
           <li>
-            <span className="font-semibold">Dock shadow</span> — 6px 6px 0 ink. Hard, never blurred.
+            <span className="font-semibold">Depth</span> — two layers, both with an
+            offset and a soft blur, tinted from the ink so nothing drops neutral black
+            on paper.
           </li>
           <li>
             <span className="font-semibold">Radius</span> — 0 everywhere.

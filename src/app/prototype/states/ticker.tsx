@@ -55,15 +55,13 @@ export function SecondsPair() {
   return (
     <div className="flex items-end gap-8">
       <div>
-        <div className="text-faint text-[10px] font-semibold tracking-[0.16em] uppercase">
-          Raw Anton — jitters
+        <div className="text-faint text-[13px]">Raw Anton — jitters</div>
+        <div className="font-display text-[52px] leading-none" data-numeric>
+          {text}
         </div>
-        <div className="font-display text-[52px] leading-none">{text}</div>
       </div>
       <div>
-        <div className="text-faint text-[10px] font-semibold tracking-[0.16em] uppercase">
-          Boxed digits — steady
-        </div>
+        <div className="text-faint text-[13px]">Boxed digits — steady</div>
         <div className="font-display text-[52px] leading-none">
           {text.split("").map((ch, i) => (
             <span key={i} className="tick-digit">
