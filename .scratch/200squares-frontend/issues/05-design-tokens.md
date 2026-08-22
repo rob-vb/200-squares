@@ -1,7 +1,7 @@
 # 05 — Design tokens and the square states
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 01
 Parent: ../map.md
 
