@@ -5,6 +5,20 @@ import { useEffect } from "react";
 import { VARIANTS, type VariantKey } from "./variants";
 
 
+function Chevron({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d={direction === "left" ? "M10 3 L5 8 L10 13" : "M6 3 L11 8 L6 13"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
 /**
  * Floating switcher for the prototype. Not gated on NODE_ENV: the whole point is to
  * flip directions on the Vercel preview, which is a production build. The route lives
@@ -35,25 +49,28 @@ export function Switcher({ current }: { current: VariantKey }) {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center">
-      <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-black/90 p-1 text-white shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/25 backdrop-blur">
+      <div
+        className="pointer-events-auto flex items-center gap-1 bg-[#23261F] p-1 text-[#EEEFE9]"
+        style={{ boxShadow: "var(--shadow-dock)" }}
+      >
         <button
           type="button"
           onClick={() => go(-1)}
           aria-label="Previous direction"
-          className="grid h-8 w-8 place-items-center rounded-full text-lg leading-none hover:bg-white/15"
+          className="grid h-8 w-8 place-items-center transition-colors duration-150 hover:bg-[#3A3E34]"
         >
-          ‹
+          <Chevron direction="left" />
         </button>
-        <span className="px-2 font-mono text-[11px] tracking-wide whitespace-nowrap uppercase">
-          {index + 1}/{VARIANTS.length} · {VARIANTS[index].name}
+        <span className="px-2 text-[13px] whitespace-nowrap" data-numeric>
+          {index + 1} of {VARIANTS.length} · {VARIANTS[index].name}
         </span>
         <button
           type="button"
           onClick={() => go(1)}
           aria-label="Next direction"
-          className="grid h-8 w-8 place-items-center rounded-full text-lg leading-none hover:bg-white/15"
+          className="grid h-8 w-8 place-items-center transition-colors duration-150 hover:bg-[#3A3E34]"
         >
-          ›
+          <Chevron direction="right" />
         </button>
       </div>
     </div>

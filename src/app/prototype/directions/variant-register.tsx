@@ -20,8 +20,8 @@ const PAGE = "#DCDDD5";
 const SQUARE = "#EEEFE9";
 const SEAM = "#E4E5DE";
 const GRAPHITE = "#23261F";
-const HAIRLINE = "#C3C7BB";
-const FAINT = "#A8ACA0";
+const HAIRLINE = "#B6B9AD";
+const FAINT = "#5B5D56";
 const MAGENTA = "#D6265E";
 
 const display = { fontFamily: "var(--f-anton)" };
@@ -31,7 +31,7 @@ const mono = { fontFamily: "var(--f-roboto-mono)" };
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-2 py-1" style={{ borderRight: `1px solid ${HAIRLINE}` }}>
-      <div className="text-[8px] font-semibold tracking-[0.16em] uppercase" style={{ color: FAINT }}>
+      <div className="text-[11px]" style={{ color: FAINT }}>
         {label}
       </div>
       <div className="text-[15px] leading-tight" style={display}>
@@ -53,7 +53,7 @@ export function VariantRegister() {
         <span className="text-[22px] leading-none tracking-[0.01em]" style={display}>
           200 SQUARES
         </span>
-        <button type="button" className="text-[12px] font-semibold tracking-[0.1em] uppercase">
+        <button type="button" className="text-[14px] font-medium">
           Sign in
         </button>
       </header>
@@ -74,7 +74,7 @@ export function VariantRegister() {
                 className="flex flex-col items-center justify-center"
                 style={{ ...area(BANNER), background: BANNER_OWNER.bg, color: BANNER_OWNER.fg }}
               >
-                <span className="text-[8px] font-semibold tracking-[0.2em] uppercase opacity-60">
+                <span className="text-[12px]" style={{ color: "#B9A06B" }}>
                   Lot 00 · today
                 </span>
                 <span className="text-[clamp(12px,2.4vw,26px)] leading-none" style={display}>
@@ -156,7 +156,7 @@ export function VariantRegister() {
           className="shrink-0 p-5 pb-40 lg:w-[300px] lg:pb-5"
           style={{ borderLeft: `1px solid ${HAIRLINE}` }}
         >
-          <div className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: FAINT }}>
+          <div className="text-[13px]" style={{ color: FAINT }}>
             Selection
           </div>
           <div className="mt-1 text-[38px] leading-none" style={display}>
@@ -170,7 +170,7 @@ export function VariantRegister() {
             {["Company name", "Website URL"].map((label) => (
               <label key={label} className="block">
                 <span
-                  className="text-[10px] font-semibold tracking-[0.14em] uppercase"
+                  className="text-[13px] font-medium"
                   style={{ color: FAINT }}
                 >
                   {label}
@@ -191,7 +191,7 @@ export function VariantRegister() {
 
           <button
             type="button"
-            className="mt-6 w-full py-3 text-[15px] tracking-[0.06em]"
+            className="mt-6 w-full py-3 text-[15px] transition-colors duration-150 hover:bg-[#34382E]"
             style={{ ...display, background: GRAPHITE, color: PAGE }}
           >
             BUY {selectionSquares} SQUARES
@@ -203,24 +203,22 @@ export function VariantRegister() {
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 lg:inset-x-auto lg:bottom-6 lg:left-4">
         <div
           className="pointer-events-auto flex items-center gap-4 px-4 pt-3 pb-14 lg:pb-3"
-          style={{ background: MAGENTA, color: "#FFFFFF", boxShadow: `6px 6px 0 ${GRAPHITE}` }}
+          style={{ background: MAGENTA, color: "#FFFFFF", boxShadow: "var(--shadow-dock)" }}
         >
           <div>
-            <div className="text-[9px] font-semibold tracking-[0.18em] uppercase opacity-80">
-              Lot 00 closes
-            </div>
+            <div className="text-[13px] font-medium">Lot 00 closes</div>
             <Countdown className="text-[30px] leading-none" style={display} />
           </div>
-          <div className="text-[10px] leading-tight font-semibold tracking-[0.1em] uppercase opacity-80">
+          <div className="text-[13px] leading-tight font-medium">
             Top bid
             <br />
-            <span className="text-[22px] leading-none tracking-normal opacity-100" style={display}>
+            <span className="text-[22px] leading-none" style={display} data-numeric>
               ${AUCTION.topBid.toLocaleString("en-US")}
             </span>
           </div>
           <button
             type="button"
-            className="px-4 py-2 text-[15px] tracking-[0.06em]"
+            className="px-4 py-2 text-[15px] transition-colors duration-150 hover:bg-[#FFE7EE]"
             style={{ ...display, background: "#FFFFFF", color: MAGENTA }}
           >
             BID
