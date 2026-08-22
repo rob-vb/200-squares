@@ -1,7 +1,7 @@
 # 03 — Data shapes and the two mock datasets
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: —
 Parent: ../map.md
 
