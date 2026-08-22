@@ -4,6 +4,7 @@ import { Switcher } from "./switcher";
 import { VARIANTS, type VariantKey } from "./variants";
 import { VariantExchange } from "./variant-exchange";
 import { VariantPlot } from "./variant-plot";
+import { VariantRegister } from "./variant-register";
 import { VariantStage } from "./variant-stage";
 
 export const metadata = {
@@ -18,10 +19,11 @@ export default async function Page({
   const { variant } = await searchParams;
   const key: VariantKey = VARIANTS.some((v) => v.key === variant)
     ? (variant as VariantKey)
-    : "exchange";
+    : "register";
 
   return (
     <>
+      {key === "register" && <VariantRegister />}
       {key === "exchange" && <VariantExchange />}
       {key === "plot" && <VariantPlot />}
       {key === "stage" && <VariantStage />}
