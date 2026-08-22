@@ -32,3 +32,16 @@ Code: throwaway route `src/app/prototype/directions/` on branch `proto-01`. Same
 Not covered here (belongs to ticket 02): zoom, pan, drag-select. The selection shown is static.
 
 Open: which direction wins, why, and which parts of the losers to graft on.
+
+**2026-08-22 — the graft, on the user's pick**
+
+The dev picked: colours of Plot, auction placement of Plot (docked card, not the top bar), typography of Stage, grid of Stage (near-invisible).
+
+Built as a fourth variant, `?variant=register`, now the default.
+
+One thing had to move. Plot's paper works because hairlines carve it up; take the hairlines away and the plate reads as one blank sheet. So the page ground drops a step, from `#E9EBE4` to `#DCDDD5`, and the squares stay light at `#EEEFE9` with a `#E4E5DE` seam. The squares now read as tiles lying on a darker ground, which is how Stage's grid earned its silence — Stage did the same thing with concrete.
+
+Kept from Plot: paper palette, magenta accent, hairline panel and title block, docked auction card with the hard graphite offset shadow, right-hand panel.
+Kept from Stage: Anton for the wordmark, countdown, prices and buttons; Archivo for labels; near-invisible grid; faint parcel numbers.
+Dropped from Stage: the orange banner frame and its auction tab — the docked card replaces it.
+Dropped from Exchange: everything. Nothing was grafted on.
