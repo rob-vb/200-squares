@@ -1,7 +1,7 @@
 # 02 — Canvas feel: zoom, pan, selection
 
 Type: prototype
-Status: open
+Status: claimed
 Blocked by: —
 Parent: ../map.md
 
