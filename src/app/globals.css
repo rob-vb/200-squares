@@ -1,26 +1,45 @@
 @import "tailwindcss";
 
+/* 200 Squares design tokens.
+   Locked by ticket 05. Direction: Register — see .scratch/200squares-frontend/issues/01-visual-directions.md */
+
+@theme {
+  /* The ground is muted so owner artwork is the only colour on the canvas. */
+  --color-page: #dcddd5; /* the sheet the canvas lies on */
+  --color-square: #eeefe9; /* an available square */
+  --color-seam: #e4e5de; /* the 1px gap between squares — the whole grid */
+  --color-ink: #23261f; /* text, dark buttons, the dock's hard shadow, tooltip */
+  --color-faint: #a8aca0; /* square numbers, small labels */
+  --color-hairline: #c3c7bb; /* panel borders, title block rules, block edges */
+  --color-accent: #d6265e; /* auction, selection, pending. Nothing else. */
+
+  --font-display: var(--f-display), "Arial Black", sans-serif;
+  --font-ui: var(--f-ui), system-ui, sans-serif;
+  --font-mono: var(--f-mono), ui-monospace, monospace;
+
+  --radius-none: 0px;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --seam: 1px;
+  /* Show a square's number only from this rendered square size up. Below it the
+     glyph is unreadable — a square is ~24px at 1x on a 390px phone. */
+  --square-number-min: 34px;
+  /* Anton ships no tabular figures: its "1" is 33% narrower than its other
+     digits, and font-variant-numeric does nothing. Box each digit instead. */
+  --tick-digit: 0.52em;
+  --shadow-dock: 6px 6px 0 var(--color-ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+}
+
+/* One digit of a ticking number set in the display face. */
+.tick-digit {
+  display: inline-block;
+  width: var(--tick-digit);
+  text-align: center;
 }
