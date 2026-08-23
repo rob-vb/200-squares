@@ -37,11 +37,12 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - [05 — Design tokens and the square states](issues/05-design-tokens.md) — the seven colour tokens, Anton/Archivo/Roboto Mono, a soft two-layer depth scale, themed browser surfaces and every square state, live in `src/app/globals.css`. Secondary text is mixed from the ink and passes contrast; there is no hard offset shadow, no eyebrow and no tracked uppercase micro-label anywhere.
 - [04 — Vercel project with working preview deploys](issues/04-vercel-preview.md) — `rob-vb/200-squares` is live on Vercel; a push to a branch gives a public URL at `200-squares-git-<branch>-robs-projects-52973834.vercel.app`. Commit as `hi@robvb.com` or the deploy is blocked.
 - [02 — Canvas feel: zoom, pan, selection](issues/02-canvas-feel.md) — **Direct** wins: selection owns the primary drag at every input, panning is asked for (space or middle drag, two fingers). Hand-rolled single transform, not a library; scale and pan in one state; wheel listener registered by hand. Fit is contain, so a phone is width-bound at a 24px square and a desktop is height-bound at 60px.
+- [03 — Data shapes and the two mock datasets](issues/03-data-shapes.md) — blocks are the only record and every square state is derived from them; the banner is its own type, owners exist once and are referenced by id, artwork is one union of mock-colour and uploaded image. No absolute dates: a `dayOffset` and `minutesBeforeClose` resolve against the next 00:00 UTC. The dataset is only a seed for a reducer, so buying and bidding really change the board. `early` and `full` switch on `?data=`, default `full`, and the model lives in `src/lib/board/`.
 
 ## Not yet specified
 
 - Auth provider once a backend exists (Clerk, Supabase, something else) — the prototype fakes the session.
-- Anti-snipe rules for the auction (last-second bids, extension window, minimum increment beyond the $100 floor).
+- Anti-snipe rules for the auction (last-second bids, extension window, minimum increment beyond the $100 floor). Ticket 03 uses top bid + $10 as a prototype placeholder only.
 - Requirements for supplied artwork: file size, aspect ratio per block size, formats, animation.
 - Archive page for past banner winners — the prototype only shows a strip.
 - SEO, share images, and what a square owner gets in terms of visible traffic proof.
