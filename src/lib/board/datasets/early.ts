@@ -1,6 +1,9 @@
 // Day one: ten squares gone, nobody has bid on the banner. This dataset exists
 // to check that a nearly empty board still reads as a thing worth buying into,
 // and that the house ad carries the banner on its own.
+//
+// Click counts are day-one small, and the viewer's own square sits at zero: on a
+// board this young, a count of nothing is the normal case, not the edge one.
 
 import type { Dataset } from "../types";
 import { brandOwner, makeBlock, type Brand } from "./brands";
@@ -16,10 +19,10 @@ export const early: Dataset = {
   name: "early",
   owners: Object.values(brands).map(brandOwner),
   blocks: [
-    makeBlock("blk_01", { r: 0, c: 6, w: 2, h: 2 }, brands.northwind),
-    makeBlock("blk_02", { r: 2, c: 9, w: 1, h: 1 }, brands.vb),
+    makeBlock("blk_01", { r: 0, c: 6, w: 2, h: 2 }, brands.northwind, { clicks: 31 }),
+    makeBlock("blk_02", { r: 2, c: 9, w: 1, h: 1 }, brands.vb, { clicks: 0 }),
     makeBlock("blk_03", { r: 6, c: 3, w: 2, h: 1 }, brands.halcyon, { pending: true }),
-    makeBlock("blk_04", { r: 8, c: 11, w: 1, h: 3 }, brands.orbit),
+    makeBlock("blk_04", { r: 8, c: 11, w: 1, h: 3 }, brands.orbit, { clicks: 7 }),
   ],
   // No entry for dayOffset 0, so nobody won yesterday and the banner is a house ad.
   bannerDays: [],

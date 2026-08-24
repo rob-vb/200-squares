@@ -12,7 +12,7 @@ import { useBoard } from "@/lib/board/state";
 import { SQUARE_COUNT } from "@/lib/board/geometry";
 
 export function Counter() {
-  const { board } = useBoard();
+  const { board, siteClicks } = useBoard();
   const { available } = board.stats;
   const soldOut = available === 0;
 
@@ -38,6 +38,17 @@ export function Counter() {
           {soldOut
             ? "Owners sell theirs on, and the banner is auctioned every day."
             : "$100 each, paid once. Some owners sell theirs on."}
+        </p>
+        {/*
+          The one public number, and the only place any count is public. It is
+          every block and every banner day added up, so it names no owner and
+          exposes no square — which is what makes it safe to print at all. It
+          sits small and under the pitch, because it answers a question the
+          pitch does not: does this board send anybody anywhere?
+        */}
+        <p className="text-faint pt-2 text-[13px]" data-numeric>
+          {siteClicks.toLocaleString("en-US")}{" "}
+          {siteClicks === 1 ? "click" : "clicks"} to owners&rsquo; websites
         </p>
       </div>
     </section>

@@ -24,12 +24,19 @@ export const brandArtwork = (brand: Brand): Artwork => ({
  * `sell` puts the block up for sale at a price per square. Without a `part` the
  * whole block is offered; with one, only that rectangle of it. The block stays
  * whole on the board either way: a listing splits nothing until it sells.
+ *
+ * `clicks` is the seeded count. A pending block is forced to zero whatever the
+ * dataset says: a click on it opens nothing, so it can never have earned one.
  */
 export function makeBlock(
   id: string,
   rect: Rect,
   brand: Brand,
-  opts: { pending?: boolean; sell?: { pricePerSquare: number; part?: Rect } } = {},
+  opts: {
+    pending?: boolean;
+    sell?: { pricePerSquare: number; part?: Rect };
+    clicks?: number;
+  } = {},
 ): Block {
   return {
     id,
@@ -40,5 +47,6 @@ export function makeBlock(
     listing: opts.sell
       ? { rect: opts.sell.part ?? rect, pricePerSquare: opts.sell.pricePerSquare }
       : null,
+    clicks: opts.pending ? 0 : (opts.clicks ?? 0),
   };
 }

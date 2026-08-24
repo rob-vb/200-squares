@@ -35,6 +35,9 @@ export type BoardAction =
   | { type: "editLink"; blockId: string; url: string }
   | { type: "placeBid"; amount: number }
   | { type: "rivalBid"; amount: number; bidderId: string }
+  /** Somebody followed a block, or a banner day, off the board. Ticket 14. */
+  | { type: "clickThrough"; blockId: string }
+  | { type: "clickBanner"; dayOffset: number }
   | { type: "list"; blockId: string; rect: Rect; pricePerSquare: number }
   | { type: "unlist"; blockId: string }
   | {
@@ -85,6 +88,7 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         url: action.url,
         artwork: action.artwork,
         listing: null,
+        clicks: 0,
       };
       return {
         ...state,
@@ -122,6 +126,25 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
     case "rivalBid":
       return { ...addBid(state, action.amount, action.bidderId), rivalUsed: true };
 
+    // A click adds one to a number and the visitor is forgotten in the same
+    // instant. Nothing is stored about them — no identifier, no session, no time —
+    // which is exactly why the site can say it counts clicks and not people.
+    case "clickThrough":
+      return {
+        ...state,
+        blocks: state.blocks.map((b) =>
+          b.id === action.blockId ? { ...b, clicks: b.clicks + 1 } : b,
+        ),
+      };
+
+    case "clickBanner":
+      return {
+        ...state,
+        bannerDays: state.bannerDays.map((d) =>
+          d.dayOffset === action.dayOffset ? { ...d, clicks: d.clicks + 1 } : d,
+        ),
+      };
+
     // Listing changes nothing on the board: the block is whole, the squares under
     // it are still `taken`, and the artwork is still the seller's. Setting a new
     // price is the same action, which is why there is no separate reprice.
@@ -156,7 +179,15 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
     //
     // Nothing of the seller's travels to the buyer. The buyer's own website goes
     // on, and their artwork if they brought any — `pending` until they do,
-    // exactly like a fresh purchase.
+    // exactly like a fresh purchase. The click count is the third thing that
+    // stays behind: it measures what the seller's image and link earned, and the
+    // buyer is not buying either of those.
+    //
+    // The seller keeps their whole total, undivided. Splitting it over the pieces
+    // a cut leaves behind would be invention — the site never knew which square
+    // was clicked, only which block — so the count lands on the largest piece the
+    // seller keeps and the others start at nothing. The board's total is
+    // unchanged by a part sale, which is what makes the public number honest.
     case "buyListing": {
       const sold = state.blocks.find((b) => b.id === action.blockId);
       if (!sold?.listing) return state;
@@ -170,8 +201,14 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         url: action.url,
         artwork: action.artwork,
         listing: null,
+        clicks: 0,
       };
-      const kept: Block[] = remainderOf(sold.rect, part).map((rect, i) => {
+      const remainder = remainderOf(sold.rect, part);
+      const biggest = remainder.reduce(
+        (best, rect, i) => (rect.w * rect.h > remainder[best].w * remainder[best].h ? i : best),
+        0,
+      );
+      const kept: Block[] = remainder.map((rect, i) => {
         const stillOffered = intersect(rect, offered);
         return {
           ...sold,
@@ -181,6 +218,7 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
           listing: stillOffered
             ? { rect: stillOffered, pricePerSquare: sold.listing!.pricePerSquare }
             : null,
+          clicks: i === biggest ? sold.clicks : 0,
         };
       });
 
@@ -212,6 +250,14 @@ type BoardContextValue = {
   /** The viewer bid and somebody went over them. */
   viewerOutbid: boolean;
   viewerBlocks: Block[];
+  /** Past banner days the viewer won, newest first. Each carries its own count. */
+  viewerBannerDays: BannerDay[];
+  /**
+   * Every click on every block and every banner day, added up. The one public
+   * number: it names no owner and no block, so it answers "does this board get
+   * any traffic?" without turning the canvas into a leaderboard.
+   */
+  siteClicks: number;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
@@ -251,6 +297,12 @@ export function BoardProvider({
         !viewerIsTopBidder &&
         live.some((b) => b.bidderId === state.viewerId),
       viewerBlocks: state.blocks.filter((b) => b.ownerId === state.viewerId),
+      viewerBannerDays: state.bannerDays
+        .filter((d) => d.ownerId === state.viewerId)
+        .sort((a, b) => b.dayOffset - a.dayOffset),
+      siteClicks:
+        state.blocks.reduce((n, b) => n + b.clicks, 0) +
+        state.bannerDays.reduce((n, d) => n + d.clicks, 0),
     };
   }, [state]);
 

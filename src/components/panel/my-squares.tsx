@@ -10,19 +10,30 @@
 // can hold several blocks and send each one to a different page — a campaign
 // block and a jobs block are not the same address — so the link is a property of
 // the block, not of the party that bought it.
+//
+// The click count sits there too, for the same reason and beside the two things
+// that earned it. This panel is the only place it appears: ticket 14 keeps every
+// per-block number private to its owner, so nothing here has a public twin.
 
 import { useRef, useState } from "react";
 import { Money, PanelHeader, SecondaryButton, cleanUrl, inputClass } from "./controls";
 import { useScreen } from "./flow";
 import { useBoard } from "@/lib/board/state";
 import { askingFor, cellCount, priceOf, sellerGets, squareRange } from "@/lib/board/geometry";
-import { agoLabel } from "@/lib/board/time";
+import { agoLabel, dayLabel } from "@/lib/board/time";
+import { useClientDate } from "../use-client-date";
 import type { Block } from "@/lib/board/types";
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
+/** A bare count. A number and a noun, nothing around it. */
+export const clicksLabel = (clicks: number) =>
+  `${clicks.toLocaleString("en-US")} ${clicks === 1 ? "click" : "clicks"}`;
+
 export function MySquares() {
-  const { state, viewer, viewerBlocks, liveBids } = useBoard();
+  const { state, viewer, viewerBlocks, viewerBannerDays, liveBids } = useBoard();
+  // Null until the client has one: the day labels are the visitor's days.
+  const now = useClientDate();
   const { close, setHighlight, highlight, openBid, openSell } = useScreen();
 
   // Pending first: an unfinished block is the only thing here that needs doing.
@@ -55,6 +66,30 @@ export function MySquares() {
           <p className="text-faint px-4 py-4 text-[14px] leading-snug">
             You hold no squares yet. Drag a rectangle on the board to take some.
           </p>
+        ) : null}
+
+        {/*
+          A banner day the viewer won, and what it earned. It belongs beside the
+          bids because it is the other half of the same thing: a bid is a banner
+          day not yet won, and this is one that was. A day is over and its count
+          is final, which is why it needs no artwork row and no link row.
+        */}
+        {viewerBannerDays.length > 0 ? (
+          <div className="border-hairline border-t px-4 py-3">
+            <div className="text-faint pb-2 text-[13px]">Banner days you won</div>
+            {viewerBannerDays.map((day) => (
+              <div
+                key={day.dayOffset}
+                className="flex items-baseline justify-between gap-3 py-1 text-[13px]"
+              >
+                <span className="font-mono text-[12px]" data-numeric>
+                  {now ? dayLabel(day.dayOffset, now) : " "}
+                </span>
+                <span className="text-faint">{clicksLabel(day.clicks)}</span>
+                <Money amount={day.wonWith} className="text-[15px]" />
+              </div>
+            ))}
+          </div>
         ) : null}
 
         <div className="border-hairline border-t px-4 py-3">
@@ -161,10 +196,16 @@ function BlockRow({
       </div>
 
       <div className="flex items-center justify-between gap-3 pt-2">
+        {/*
+          A live block always states its count, nought included: a square that
+          has sent nobody anywhere is the fact its owner most needs. A pending
+          block says nothing rather than `0`, because it has never been able to
+          be clicked and a zero would read as a verdict on it.
+        */}
         <span
           className={`text-[13px] ${block.artwork ? "text-faint" : "text-accent font-semibold"}`}
         >
-          {block.artwork ? "Live" : "Waiting for artwork"}
+          {block.artwork ? `Live · ${clicksLabel(block.clicks)}` : "Waiting for artwork"}
         </span>
         <input
           ref={fileRef}

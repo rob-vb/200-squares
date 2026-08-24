@@ -92,7 +92,7 @@ function cursorFor(board: BoardModel, at: CellRef | null, forSale: boolean): str
 }
 
 export function Canvas() {
-  const { board, bannerToday, ownerOfBannerToday } = useBoardCanvasData();
+  const { board, bannerToday, dispatch, ownerOfBannerToday } = useBoardCanvasData();
   // The selection is the panel's business as much as the canvas's: it is what
   // opens the buy flow, so it lives in the screen state, not in here.
   const {
@@ -141,6 +141,10 @@ export function Canvas() {
     };
   }, []);
 
+  // The one place a click leaves the board, which makes it the one place the
+  // count moves (ticket 14). A pending block returns without a url and so counts
+  // nothing: there is nowhere to send anybody yet. Nothing about the visitor is
+  // recorded — one number goes up and that is the whole of it.
   const follow = useCallback(
     (at: CellRef) => {
       const cell = board.cells[at.r][at.c];
@@ -158,9 +162,14 @@ export function Canvas() {
         return;
       }
       if (!url) return;
+      if (cell.state === "banner") {
+        dispatch({ type: "clickBanner", dayOffset: bannerToday!.dayOffset });
+      } else if (cell.block) {
+        dispatch({ type: "clickThrough", blockId: cell.block.id });
+      }
       window.open(`https://${url}`, "_blank", "noopener,noreferrer");
     },
-    [board, bannerToday, openBid],
+    [board, bannerToday, openBid, dispatch],
   );
 
   const twoFinger = () => {
@@ -455,10 +464,11 @@ function ZoomControls({
 
 /** Everything the canvas needs out of the board state, in one place. */
 function useBoardCanvasData() {
-  const { board, bannerToday } = useBoard();
+  const { board, bannerToday, dispatch } = useBoard();
   return {
     board,
     bannerToday,
+    dispatch,
     ownerOfBannerToday: bannerToday ? board.ownerById.get(bannerToday.ownerId) ?? null : null,
   };
 }

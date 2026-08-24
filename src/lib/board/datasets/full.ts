@@ -5,6 +5,12 @@
 // Written by hand. A generator gives an even scatter, and an even scatter is the
 // one thing a real board never looks like: buyers cluster, and the holes they
 // leave are the shape of the thing.
+//
+// Click counts (ticket 14) are seeded the same way and for the same reason. They
+// run from 0 to a few thousand and do not track block size: a 1 x 1 can be the
+// busiest thing on the board and a 2 x 2 can sit at nothing. The viewer holds one
+// of each — blk_38 near the top, blk_10 at zero — so My squares has to render a
+// quiet block and a busy one side by side.
 
 import type { Bid, BannerDay, Dataset } from "../types";
 import { brandArtwork, brandOwner, makeBlock, type Brand } from "./brands";
@@ -62,70 +68,82 @@ const brands = B({
 
 const blocks = [
   // Beside the banner. Busy, because this is the spot everyone wants.
-  makeBlock("blk_01", { r: 0, c: 5, w: 3, h: 2 }, brands.northwind),
-  makeBlock("blk_02", { r: 0, c: 9, w: 2, h: 2 }, brands.orbit),
-  makeBlock("blk_03", { r: 0, c: 12, w: 1, h: 1 }, brands.kilo),
-  makeBlock("blk_04", { r: 0, c: 14, w: 2, h: 2 }, brands.meridian),
+  makeBlock("blk_01", { r: 0, c: 5, w: 3, h: 2 }, brands.northwind, { clicks: 1840 }),
+  makeBlock("blk_02", { r: 0, c: 9, w: 2, h: 2 }, brands.orbit, { clicks: 962 }),
+  makeBlock("blk_03", { r: 0, c: 12, w: 1, h: 1 }, brands.kilo, { clicks: 88 }),
+  makeBlock("blk_04", { r: 0, c: 14, w: 2, h: 2 }, brands.meridian, { clicks: 431 }),
   makeBlock("blk_05", { r: 1, c: 12, w: 2, h: 1 }, brands.vb, { pending: true }),
-  makeBlock("blk_06", { r: 2, c: 5, w: 2, h: 2 }, brands.slate),
-  makeBlock("blk_07", { r: 2, c: 8, w: 1, h: 3 }, brands.tallboy),
+  makeBlock("blk_06", { r: 2, c: 5, w: 2, h: 2 }, brands.slate, { clicks: 274 }),
+  makeBlock("blk_07", { r: 2, c: 8, w: 1, h: 3 }, brands.tallboy, { clicks: 1205 }),
   // Three listings, so the For sale switch does something before anyone signs
   // in. Every price is per square, against the site's own $100: one whole block
   // over it, one part of a big block well over it, and one whole block under it.
   makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand, {
     sell: { pricePerSquare: 140 },
+    clicks: 617,
   }),
-  makeBlock("blk_09", { r: 2, c: 14, w: 1, h: 1 }, brands.dot),
-  makeBlock("blk_10", { r: 3, c: 14, w: 2, h: 2 }, brands.vb),
-  makeBlock("blk_11", { r: 4, c: 5, w: 1, h: 1 }, brands.ess),
-  makeBlock("blk_12", { r: 4, c: 9, w: 2, h: 1 }, brands.daybreak),
-  makeBlock("blk_13", { r: 4, c: 12, w: 1, h: 1 }, brands.pin),
+  makeBlock("blk_09", { r: 2, c: 14, w: 1, h: 1 }, brands.dot, { clicks: 2470 }),
+  // The viewer's quiet block: live, linked, and nobody has ever clicked it.
+  makeBlock("blk_10", { r: 3, c: 14, w: 2, h: 2 }, brands.vb, { clicks: 0 }),
+  makeBlock("blk_11", { r: 4, c: 5, w: 1, h: 1 }, brands.ess, { clicks: 12 }),
+  makeBlock("blk_12", { r: 4, c: 9, w: 2, h: 1 }, brands.daybreak, { clicks: 389 }),
+  makeBlock("blk_13", { r: 4, c: 12, w: 1, h: 1 }, brands.pin, { clicks: 145 }),
 
   // The open field under the banner.
-  makeBlock("blk_14", { r: 5, c: 0, w: 2, h: 2 }, brands.ferro),
-  makeBlock("blk_15", { r: 5, c: 2, w: 1, h: 2 }, brands.spur),
-  makeBlock("blk_16", { r: 5, c: 4, w: 3, h: 2 }, brands.bluespruce),
-  makeBlock("blk_17", { r: 5, c: 8, w: 2, h: 2 }, brands.halcyon),
-  makeBlock("blk_18", { r: 5, c: 11, w: 1, h: 1 }, brands.tick),
+  makeBlock("blk_14", { r: 5, c: 0, w: 2, h: 2 }, brands.ferro, { clicks: 508 }),
+  makeBlock("blk_15", { r: 5, c: 2, w: 1, h: 2 }, brands.spur, { clicks: 96 }),
+  makeBlock("blk_16", { r: 5, c: 4, w: 3, h: 2 }, brands.bluespruce, { clicks: 733 }),
+  makeBlock("blk_17", { r: 5, c: 8, w: 2, h: 2 }, brands.halcyon, { clicks: 1120 }),
+  makeBlock("blk_18", { r: 5, c: 11, w: 1, h: 1 }, brands.tick, { clicks: 4 }),
   makeBlock("blk_19", { r: 5, c: 12, w: 4, h: 3 }, brands.atlas, {
     // The right-hand column only. The block stays whole and keeps its artwork
     // until somebody buys into the strip.
     sell: { pricePerSquare: 260, part: { r: 5, c: 15, w: 1, h: 3 } },
+    clicks: 2015,
   }),
-  makeBlock("blk_20", { r: 6, c: 10, w: 2, h: 1 }, brands.verge),
-  makeBlock("blk_21", { r: 7, c: 0, w: 3, h: 2 }, brands.redcap),
-  makeBlock("blk_22", { r: 7, c: 3, w: 1, h: 1 }, brands.nib),
-  makeBlock("blk_23", { r: 7, c: 4, w: 2, h: 2 }, brands.pixeldrop),
-  makeBlock("blk_24", { r: 7, c: 7, w: 4, h: 3 }, brands.citadel),
-  makeBlock("blk_25", { r: 8, c: 12, w: 2, h: 2 }, brands.nomad),
-  makeBlock("blk_26", { r: 9, c: 0, w: 2, h: 1 }, brands.hollow),
-  makeBlock("blk_27", { r: 9, c: 3, w: 3, h: 2 }, brands.longshore),
-  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, { sell: { pricePerSquare: 40 } }),
+  makeBlock("blk_20", { r: 6, c: 10, w: 2, h: 1 }, brands.verge, { clicks: 260 }),
+  makeBlock("blk_21", { r: 7, c: 0, w: 3, h: 2 }, brands.redcap, { clicks: 1487 }),
+  makeBlock("blk_22", { r: 7, c: 3, w: 1, h: 1 }, brands.nib, { clicks: 33 }),
+  makeBlock("blk_23", { r: 7, c: 4, w: 2, h: 2 }, brands.pixeldrop, { clicks: 3260 }),
+  makeBlock("blk_24", { r: 7, c: 7, w: 4, h: 3 }, brands.citadel, { clicks: 1042 }),
+  makeBlock("blk_25", { r: 8, c: 12, w: 2, h: 2 }, brands.nomad, { clicks: 655 }),
+  makeBlock("blk_26", { r: 9, c: 0, w: 2, h: 1 }, brands.hollow, { clicks: 71 }),
+  makeBlock("blk_27", { r: 9, c: 3, w: 3, h: 2 }, brands.longshore, { clicks: 402 }),
+  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, {
+    sell: { pricePerSquare: 40 },
+    clicks: 214,
+  }),
   makeBlock("blk_29", { r: 10, c: 7, w: 2, h: 2 }, brands.beacon, { pending: true }),
-  makeBlock("blk_30", { r: 10, c: 14, w: 2, h: 2 }, brands.quarry),
+  makeBlock("blk_30", { r: 10, c: 14, w: 2, h: 2 }, brands.quarry, { clicks: 187 }),
   // The viewer's big block. Without one, My squares can only ever offer a cut of
   // depth 1: the seller side of the market is unreachable in the demo unless the
   // visitor first buys something 4 wide. It is 4 x 2, which is the largest thing
   // the board still has room for.
-  makeBlock("blk_38", { r: 10, c: 9, w: 4, h: 2 }, brands.vb),
-  makeBlock("blk_31", { r: 11, c: 3, w: 3, h: 2 }, brands.sable),
-  makeBlock("blk_32", { r: 12, c: 0, w: 2, h: 2 }, brands.harbor),
-  makeBlock("blk_33", { r: 12, c: 6, w: 1, h: 2 }, brands.reed),
-  makeBlock("blk_34", { r: 12, c: 10, w: 2, h: 2 }, brands.spark),
-  makeBlock("blk_35", { r: 12, c: 13, w: 3, h: 1 }, brands.baseline),
-  makeBlock("blk_36", { r: 13, c: 3, w: 2, h: 1 }, brands.crest),
-  makeBlock("blk_37", { r: 13, c: 13, w: 2, h: 1 }, brands.linnet),
+  makeBlock("blk_38", { r: 10, c: 9, w: 4, h: 2 }, brands.vb, { clicks: 2140 }),
+  makeBlock("blk_31", { r: 11, c: 3, w: 3, h: 2 }, brands.sable, { clicks: 921 }),
+  makeBlock("blk_32", { r: 12, c: 0, w: 2, h: 2 }, brands.harbor, { clicks: 58 }),
+  makeBlock("blk_33", { r: 12, c: 6, w: 1, h: 2 }, brands.reed, { clicks: 129 }),
+  makeBlock("blk_34", { r: 12, c: 10, w: 2, h: 2 }, brands.spark, { clicks: 476 }),
+  makeBlock("blk_35", { r: 12, c: 13, w: 3, h: 1 }, brands.baseline, { clicks: 318 }),
+  makeBlock("blk_36", { r: 13, c: 3, w: 2, h: 1 }, brands.crest, { clicks: 240 }),
+  makeBlock("blk_37", { r: 13, c: 13, w: 2, h: 1 }, brands.linnet, { clicks: 19 }),
 ];
 
 // Today's banner, then six days back. Offset 0 is on the canvas right now.
+//
+// Today's count is the low one because today is not over. A banner day is one
+// day of clicks and this one is still being spent.
 const bannerDays: BannerDay[] = [
-  { dayOffset: 0, ownerId: "heliograph", url: brands.heliograph.url, artwork: brandArtwork(brands.heliograph), wonWith: 1180 },
-  { dayOffset: -1, ownerId: "lumen", url: brands.lumen.url, artwork: brandArtwork(brands.lumen), wonWith: 940 },
-  { dayOffset: -2, ownerId: "vantage", url: brands.vantage.url, artwork: brandArtwork(brands.vantage), wonWith: 1620 },
-  { dayOffset: -3, ownerId: "foxglove", url: brands.foxglove.url, artwork: brandArtwork(brands.foxglove), wonWith: 700 },
-  { dayOffset: -4, ownerId: "ironline", url: brands.ironline.url, artwork: brandArtwork(brands.ironline), wonWith: 1050 },
-  { dayOffset: -5, ownerId: "cobalt", url: brands.cobalt.url, artwork: brandArtwork(brands.cobalt), wonWith: 480 },
-  { dayOffset: -6, ownerId: "marlow", url: brands.marlow.url, artwork: brandArtwork(brands.marlow), wonWith: 330 },
+  { dayOffset: 0, ownerId: "heliograph", url: brands.heliograph.url, artwork: brandArtwork(brands.heliograph), wonWith: 1180, clicks: 1290 },
+  { dayOffset: -1, ownerId: "lumen", url: brands.lumen.url, artwork: brandArtwork(brands.lumen), wonWith: 940, clicks: 3480 },
+  { dayOffset: -2, ownerId: "vantage", url: brands.vantage.url, artwork: brandArtwork(brands.vantage), wonWith: 1620, clicks: 5120 },
+  // The viewer won this one. Without it the banner half of My squares — a won
+  // day and what it earned — is unreachable in the demo, because the visitor
+  // cannot win an auction that closes at 00:00 UTC while they watch.
+  { dayOffset: -3, ownerId: "vb", url: brands.vb.url, artwork: brandArtwork(brands.vb), wonWith: 700, clicks: 2260 },
+  { dayOffset: -4, ownerId: "ironline", url: brands.ironline.url, artwork: brandArtwork(brands.ironline), wonWith: 1050, clicks: 3905 },
+  { dayOffset: -5, ownerId: "cobalt", url: brands.cobalt.url, artwork: brandArtwork(brands.cobalt), wonWith: 480, clicks: 1740 },
+  { dayOffset: -6, ownerId: "marlow", url: brands.marlow.url, artwork: brandArtwork(brands.marlow), wonWith: 330, clicks: 1108 },
 ];
 
 // The auction running now: fourteen bids climbing from the $100 floor. The

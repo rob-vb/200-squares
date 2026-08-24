@@ -54,6 +54,15 @@ export type Block = {
   artwork: Artwork | null;
   /** null means not for sale, which is every block until its owner says so. */
   listing: Listing | null;
+  /**
+   * How often somebody followed this block to where it points. Ticket 14.
+   *
+   * A total, not a series: the model holds no dates and gains none for this. The
+   * count belongs to the block under one owner, so artwork and link may change
+   * as often as the owner likes and it runs on. It returns to zero on one event
+   * only — the block changing hands.
+   */
+  clicks: number;
 };
 
 /**
@@ -71,6 +80,8 @@ export type BannerDay = {
   artwork: Artwork;
   /** The winning bid, USD. */
   wonWith: number;
+  /** Clicks on the banner on this day. A banner day is what was won, so it counts. */
+  clicks: number;
 };
 
 export type Bid = {
