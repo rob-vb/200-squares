@@ -3,6 +3,9 @@
 // My squares: what the viewer holds, what is still waiting for artwork, and what
 // they have bid.
 //
+// Selling sits on the row too, for the same reason: a listing is a property of
+// one block, and an owner can hold five and want out of one.
+//
 // Artwork and link both sit on the row of the block they belong to. One owner
 // can hold several blocks and send each one to a different page — a campaign
 // block and a jobs block are not the same address — so the link is a property of
@@ -12,7 +15,7 @@ import { useRef, useState } from "react";
 import { Money, PanelHeader, SecondaryButton, cleanUrl, inputClass } from "./controls";
 import { useScreen } from "./flow";
 import { useBoard } from "@/lib/board/state";
-import { cellCount, priceOf, squareRange } from "@/lib/board/geometry";
+import { cellCount, priceOf, sellerGets, squareRange } from "@/lib/board/geometry";
 import { agoLabel } from "@/lib/board/time";
 import type { Block } from "@/lib/board/types";
 
@@ -20,7 +23,7 @@ const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 export function MySquares() {
   const { state, viewer, viewerBlocks, liveBids } = useBoard();
-  const { close, setHighlight, highlight, openBid } = useScreen();
+  const { close, setHighlight, highlight, openBid, openSell } = useScreen();
 
   // Pending first: an unfinished block is the only thing here that needs doing.
   const blocks = [...viewerBlocks].sort((a, b) => Number(!!a.artwork) - Number(!!b.artwork));
@@ -44,6 +47,7 @@ export function MySquares() {
             block={block}
             lit={highlight === block.rect}
             onPoint={() => setHighlight(block.rect)}
+            onSell={() => openSell(block.id)}
           />
         ))}
 
@@ -77,7 +81,17 @@ export function MySquares() {
   );
 }
 
-function BlockRow({ block, lit, onPoint }: { block: Block; lit: boolean; onPoint: () => void }) {
+function BlockRow({
+  block,
+  lit,
+  onPoint,
+  onSell,
+}: {
+  block: Block;
+  lit: boolean;
+  onPoint: () => void;
+  onSell: () => void;
+}) {
   const { dispatch } = useBoard();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -172,6 +186,25 @@ function BlockRow({ block, lit, onPoint }: { block: Block; lit: boolean; onPoint
         )}
       </div>
       {error ? <div className="text-accent pt-1 text-[12px]">{error}</div> : null}
+
+      <div className="flex items-center justify-between gap-3 pt-2">
+        {block.listing ? (
+          <span className="text-[13px]">
+            <span className="text-accent font-semibold">For sale</span>
+            <span className="text-faint">
+              {" · "}
+              {block.listing.rect.w} × {block.listing.rect.h} at $
+              {block.listing.price.toLocaleString("en-US")} · you get $
+              {sellerGets(block.listing.price).toLocaleString("en-US")}
+            </span>
+          </span>
+        ) : (
+          <span className="text-faint text-[13px]">Not for sale</span>
+        )}
+        <SecondaryButton onClick={onSell}>
+          {block.listing ? "Change price" : "Sell"}
+        </SecondaryButton>
+      </div>
     </div>
   );
 }

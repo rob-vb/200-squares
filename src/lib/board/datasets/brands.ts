@@ -18,12 +18,18 @@ export const brandArtwork = (brand: Brand): Artwork => ({
   label: brand.name,
 });
 
-/** Build a block. `pending` blocks are paid for and simply have no artwork yet. */
+/**
+ * Build a block. `pending` blocks are paid for and simply have no artwork yet.
+ *
+ * `sell` puts the block up for sale. Without a `part` the whole block is
+ * offered; with one, only that straight cut off it — the block stays whole on
+ * the board either way, because a listing does not split anything until it sells.
+ */
 export function makeBlock(
   id: string,
   rect: Rect,
   brand: Brand,
-  opts: { pending?: boolean } = {},
+  opts: { pending?: boolean; sell?: { price: number; part?: Rect } } = {},
 ): Block {
   return {
     id,
@@ -31,5 +37,6 @@ export function makeBlock(
     ownerId: brand.id,
     url: brand.url,
     artwork: opts.pending ? null : brandArtwork(brand),
+    listing: opts.sell ? { rect: opts.sell.part ?? rect, price: opts.sell.price } : null,
   };
 }

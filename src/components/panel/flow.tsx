@@ -21,7 +21,11 @@ export type Flow =
   | { kind: "buy" }
   | { kind: "bought"; rect: Rect; hasArtwork: boolean }
   | { kind: "bid" }
-  | { kind: "mine" };
+  | { kind: "mine" }
+  /** The owner putting one of their blocks up for sale, or changing the price. */
+  | { kind: "sell"; blockId: string }
+  /** A visitor buying somebody else's listing. No sign-in, like a fresh buy. */
+  | { kind: "resale"; blockId: string };
 
 type ScreenValue = {
   flow: Flow;
@@ -35,11 +39,21 @@ type ScreenValue = {
   setDragging: (on: boolean) => void;
   /** A flow is on screen. Not the same as "a flow is chosen": see `dragging`. */
   panelOpen: boolean;
+  /**
+   * The market view. Off by default, and off is the board exactly as it is
+   * without resale: nothing is painted over anybody's artwork. On, everything
+   * that is not for sale dims and stops answering the pointer — a dimmed square
+   * that still selected would be lying about what the view is for.
+   */
+  forSale: boolean;
+  setForSale: (on: boolean) => void;
   selectRect: (rect: Rect | null) => void;
   setPreview: (src: string | null) => void;
   setHighlight: (rect: Rect | null) => void;
   openBid: () => void;
   openMine: () => void;
+  openSell: (blockId: string) => void;
+  openResale: (blockId: string) => void;
   showBought: (rect: Rect, hasArtwork: boolean) => void;
   close: () => void;
 };
@@ -53,6 +67,7 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
   const [highlight, setHighlight] = useState<Rect | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [forSale, setForSaleState] = useState(false);
 
   const selectRect = useCallback(
     (rect: Rect | null) => {
@@ -90,8 +105,20 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       selectRect,
       setPreview,
       setHighlight,
+      forSale,
+      // Leaving the market view drops the flow that only exists inside it, so the
+      // panel never keeps a listing open on a board that has stopped showing it.
+      setForSale: (on: boolean) => {
+        setForSaleState(on);
+        setSelection(null);
+        setPreview(null);
+        setHighlight(null);
+        setFlow((f) => (f.kind === "resale" || f.kind === "sell" ? { kind: "none" } : f));
+      },
       openBid: replace({ kind: "bid" }),
       openMine: replace({ kind: "mine" }),
+      openSell: (blockId: string) => replace({ kind: "sell", blockId })(),
+      openResale: (blockId: string) => replace({ kind: "resale", blockId })(),
       showBought: (rect: Rect, hasArtwork: boolean) => {
         setSelection(null);
         setPreview(null);
@@ -99,7 +126,7 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       },
       close: replace({ kind: "none" }),
     };
-  }, [flow, selection, highlight, preview, dragging, selectRect]);
+  }, [flow, selection, highlight, preview, dragging, forSale, selectRect]);
 
   return <ScreenContext.Provider value={value}>{children}</ScreenContext.Provider>;
 }

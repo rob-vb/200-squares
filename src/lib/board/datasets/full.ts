@@ -69,7 +69,10 @@ const blocks = [
   makeBlock("blk_05", { r: 1, c: 12, w: 2, h: 1 }, brands.vb, { pending: true }),
   makeBlock("blk_06", { r: 2, c: 5, w: 2, h: 2 }, brands.slate),
   makeBlock("blk_07", { r: 2, c: 8, w: 1, h: 3 }, brands.tallboy),
-  makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand),
+  // Three listings, so the For sale switch does something before anyone signs
+  // in: one whole block over what it cost, one strip cut off a big block, and
+  // one whole block barely over the floor.
+  makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand, { sell: { price: 850 } }),
   makeBlock("blk_09", { r: 2, c: 14, w: 1, h: 1 }, brands.dot),
   makeBlock("blk_10", { r: 3, c: 14, w: 2, h: 2 }, brands.vb),
   makeBlock("blk_11", { r: 4, c: 5, w: 1, h: 1 }, brands.ess),
@@ -82,7 +85,11 @@ const blocks = [
   makeBlock("blk_16", { r: 5, c: 4, w: 3, h: 2 }, brands.bluespruce),
   makeBlock("blk_17", { r: 5, c: 8, w: 2, h: 2 }, brands.halcyon),
   makeBlock("blk_18", { r: 5, c: 11, w: 1, h: 1 }, brands.tick),
-  makeBlock("blk_19", { r: 5, c: 12, w: 4, h: 3 }, brands.atlas),
+  makeBlock("blk_19", { r: 5, c: 12, w: 4, h: 3 }, brands.atlas, {
+    // The right-hand column only. The block stays whole and keeps its artwork
+    // until somebody buys the strip.
+    sell: { price: 400, part: { r: 5, c: 15, w: 1, h: 3 } },
+  }),
   makeBlock("blk_20", { r: 6, c: 10, w: 2, h: 1 }, brands.verge),
   makeBlock("blk_21", { r: 7, c: 0, w: 3, h: 2 }, brands.redcap),
   makeBlock("blk_22", { r: 7, c: 3, w: 1, h: 1 }, brands.nib),
@@ -91,7 +98,7 @@ const blocks = [
   makeBlock("blk_25", { r: 8, c: 12, w: 2, h: 2 }, brands.nomad),
   makeBlock("blk_26", { r: 9, c: 0, w: 2, h: 1 }, brands.hollow),
   makeBlock("blk_27", { r: 9, c: 3, w: 3, h: 2 }, brands.longshore),
-  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide),
+  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, { sell: { price: 150 } }),
   makeBlock("blk_29", { r: 10, c: 7, w: 2, h: 2 }, brands.beacon, { pending: true }),
   makeBlock("blk_30", { r: 10, c: 14, w: 2, h: 2 }, brands.quarry),
   makeBlock("blk_31", { r: 11, c: 3, w: 3, h: 2 }, brands.sable),

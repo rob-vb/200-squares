@@ -2,6 +2,7 @@
 
 Type: task
 Status: open
+Assignee: rob-vb (claimed by agent session)
 Blocked by: —
 Parent: ../map.md
 

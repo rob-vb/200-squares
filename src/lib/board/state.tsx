@@ -5,7 +5,7 @@
 // puts every visitor back on the same board, which is what a demo wants.
 
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
-import { buildBoard, type BoardModel } from "./geometry";
+import { buildBoard, cropArtwork, remainderOf, type BoardModel } from "./geometry";
 import type { Artwork, Bid, Block, Dataset, DatasetName, Owner, BannerDay, Rect } from "./types";
 
 /** The floor bid, and the step above the top bid. Ticket 06 keeps both as placeholders. */
@@ -34,7 +34,10 @@ export type BoardAction =
   | { type: "uploadArtwork"; blockId: string; artwork: Artwork }
   | { type: "editLink"; blockId: string; url: string }
   | { type: "placeBid"; amount: number }
-  | { type: "rivalBid"; amount: number; bidderId: string };
+  | { type: "rivalBid"; amount: number; bidderId: string }
+  | { type: "list"; blockId: string; rect: Rect; price: number }
+  | { type: "unlist"; blockId: string }
+  | { type: "buyListing"; blockId: string; company: string; url: string; artwork: Artwork | null };
 
 export const seed = (dataset: Dataset): BoardState => ({
   name: dataset.name,
@@ -73,6 +76,7 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         ownerId: state.viewerId,
         url: action.url,
         artwork: action.artwork,
+        listing: null,
       };
       return {
         ...state,
@@ -109,6 +113,67 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
 
     case "rivalBid":
       return { ...addBid(state, action.amount, action.bidderId), rivalUsed: true };
+
+    // Listing changes nothing on the board: the block is whole, the squares under
+    // it are still `taken`, and the artwork is still the seller's. Setting a new
+    // price is the same action, which is why there is no separate reprice.
+    case "list":
+      return {
+        ...state,
+        blocks: state.blocks.map((b) =>
+          b.id === action.blockId
+            ? { ...b, listing: { rect: action.rect, price: action.price } }
+            : b,
+        ),
+      };
+
+    case "unlist":
+      return {
+        ...state,
+        blocks: state.blocks.map((b) => (b.id === action.blockId ? { ...b, listing: null } : b)),
+      };
+
+    // The sale is the moment the block splits. Until here a part-listing was only
+    // a window on a whole block; now the sold part becomes a block of its own and
+    // the seller keeps the rest, with the artwork cropped to it.
+    //
+    // Nothing of the seller's travels. The buyer's own website goes on, and their
+    // artwork if they brought any — the block is `pending` until it does, exactly
+    // like a fresh purchase.
+    case "buyListing": {
+      const sold = state.blocks.find((b) => b.id === action.blockId);
+      if (!sold?.listing) return state;
+      const part = sold.listing.rect;
+      const kept = remainderOf(sold.rect, part);
+
+      const bought: Block = {
+        id: `blk_u${state.blocks.length + 1}`,
+        rect: part,
+        ownerId: state.viewerId,
+        url: action.url,
+        artwork: action.artwork,
+        listing: null,
+      };
+      const seller: Block[] = kept
+        ? [
+            {
+              ...sold,
+              rect: kept,
+              artwork: cropArtwork(sold.artwork, sold.rect, kept),
+              listing: null,
+            },
+          ]
+        : [];
+
+      return {
+        ...state,
+        signedIn: true,
+        owners: state.owners.map((o) =>
+          o.id === state.viewerId ? { ...o, name: action.company } : o,
+        ),
+        blocks: [...state.blocks.filter((b) => b.id !== sold.id), ...seller, bought],
+      };
+    }
   }
 }
 
