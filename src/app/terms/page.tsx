@@ -46,13 +46,15 @@ export default async function Page(props: PageProps<"/terms">) {
             price.
           </P>
           <P>
-            What is sold arrives empty. Your image and your link were yours and stay with you, so
-            the block reaches its new owner with nothing on it until they supply their own.
+            What is sold arrives empty. Your image, your link and your click count were yours and
+            stay with you. The block reaches its new owner with nothing on it, and its count starts
+            again at zero.
           </P>
           <P>
             A part sale splits the block. What you keep becomes as many blocks as the shape needs —
-            at most four — each holding the same image cropped to it. Blocks never merge, so a buyer
-            who already owns the square next door ends up with two blocks and two images.
+            at most four — each holding the same image cropped to it. Your count is not divided: it
+            stays whole on the largest piece you keep. Blocks never merge, so a buyer who already
+            owns the square next door ends up with two blocks and two images.
           </P>
           <P>
             There is no way to hand a square back to the site. Selling it on is the only exit.
@@ -105,8 +107,8 @@ export default async function Page(props: PageProps<"/terms">) {
             priced into the $100.
           </P>
           <P>
-            There are no visitor statistics here, and no traffic is promised, implied or reported.
-            Measure the link yourself.
+            The site counts clicks and shows you your own count. That is a record of what happened,
+            not a promise of what will. No amount of traffic is promised or implied.
           </P>
         </Section>
 

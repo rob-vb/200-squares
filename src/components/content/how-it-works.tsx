@@ -39,7 +39,7 @@ const FAQ: [string, string][] = [
   ],
   [
     "Do I get traffic numbers?",
-    "Not yet. There are no visitor statistics here, and invented numbers are worse than none. Put your own tracking parameters on your link and measure it.",
+    "Yes. Every click on your block is counted, and the number sits on your row in My squares. It counts clicks, not people, so read it as rough. Your own tracking parameters tell you what happens after the click.",
   ],
   [
     "Why 4 × 4 at most?",
@@ -47,11 +47,11 @@ const FAQ: [string, string][] = [
   ],
   [
     "Can I sell my square to somebody else?",
-    `Yes. Put a price on it from My squares — per square, the way the site prices its own — and it appears on the board under the For sale switch. The buyer pays here and the site keeps ${RESALE_FEE * 100}%. Your image and your link do not go with it. Sell part of a block and you keep the rest as up to four blocks, with your image cropped to each and a grid line back through it.`,
+    `Yes. Put a price on it from My squares — per square, the way the site prices its own — and it appears on the board under the For sale switch. The buyer pays here and the site keeps ${RESALE_FEE * 100}%. Your image, your link and your click count do not go with it. Sell part of a block and you keep the rest as up to four blocks, with your image cropped to each and a grid line back through it.`,
   ],
   [
     "Can I buy a square somebody already owns?",
-    `Sometimes. The For sale switch at the top of the board dims the grid and lights up whatever is on offer, each with its owner's price per square. Read that against the site's $${PRICE_PER_SQUARE} and judge. Drag out any rectangle you want, down to a single square. It arrives empty: the seller's image and link stay with them.`,
+    `Sometimes. The For sale switch at the top of the board dims the grid and lights up whatever is on offer, each with its owner's price per square. Read that against the site's $${PRICE_PER_SQUARE} and judge. Drag out any rectangle you want, down to a single square. It arrives empty and at zero clicks: the seller's image, link and count stay with them.`,
   ],
   [
     "What if every square sells?",
@@ -83,8 +83,8 @@ export function HowItWorks() {
             {MAX_BLOCK} high. A block shows one image: the grid lines inside it disappear.
           </P>
           <P>
-            A click on your block opens your website in a new tab. You can replace your image and
-            your link whenever you want.
+            A click on your block opens your website in a new tab, and every one of those clicks
+            is counted for you. You can replace your image and your link whenever you want.
           </P>
 
           <Subhead>What you may put there</Subhead>
@@ -95,7 +95,7 @@ export function HowItWorks() {
           </P>
           <P>
             No link shorteners: use your own domain. Tracking parameters on your own URL are fine —
-            they are how you measure this yourself.
+            they are how you measure what happens after the click.
           </P>
         </Section>
 

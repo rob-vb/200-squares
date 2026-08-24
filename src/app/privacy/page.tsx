@@ -7,7 +7,7 @@ import { P, Section } from "@/components/content/section";
 
 export const metadata: Metadata = {
   title: "Privacy · 200 SQUARES",
-  description: "What this site stores, what it shows, and what it does not measure.",
+  description: "What this site stores, what it counts, and what it keeps about you.",
 };
 
 export default async function Page(props: PageProps<"/privacy">) {
@@ -37,15 +37,27 @@ export default async function Page(props: PageProps<"/privacy">) {
           </P>
         </Section>
 
+        <Section title="What it counts">
+          <P>
+            One number for each block, and one for each banner day: how often somebody clicked it
+            and left for the address it points at. Nothing else is counted.
+          </P>
+          <P>
+            Nothing about you is kept when you click. No name, no identifier, no address, no time.
+            The number goes up by one and you are forgotten in the same instant. That is why the
+            site counts clicks and not people, and why one person clicking twice counts twice.
+          </P>
+          <P>
+            An owner sees the count of what they hold, and nobody else does. There is no history
+            and no graph, because no time is written down to build one from. One public number adds
+            every click on the site together; it names no owner and no square.
+          </P>
+        </Section>
+
         <Section title="What it does not do">
           <P>
             No analytics, no advertising network, no third-party tracking scripts, no profile of you
             across other sites.
-          </P>
-          <P>
-            There are no visitor statistics here at all. That is also why the FAQ tells owners to put
-            their own tracking parameters on their link: this site cannot count clicks for you,
-            because it does not count them for itself.
           </P>
           <P>
             Cookies are used to keep you signed in, and for nothing else. There is no tracking cookie
