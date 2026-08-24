@@ -1,11 +1,12 @@
 "use client";
 
-// The first thing under the fold, and the only pitch the page makes.
+// The head of How it works, and the only pitch the site makes.
 //
-// Ticket 07: scarcity sells this, so the number that shrinks is the headline. It
-// is live from the same board the canvas draws, so buying a block above changes
-// the figure here — which is also why `Available` left the legend: two counters
-// within one screen of each other is one too many.
+// Ticket 07: scarcity sells this, so the number that shrinks is the headline —
+// which is why it is the page's h1 and not a figure under a title. It is live
+// from the same board the canvas draws, and the board outlives navigation, so a
+// block bought on the board has already changed this number by the time the
+// page opens.
 
 import { useBoard } from "@/lib/board/state";
 import { SQUARE_COUNT } from "@/lib/board/geometry";
@@ -18,7 +19,7 @@ export function Counter() {
   return (
     <section className="border-hairline border-t">
       <div className="mx-auto w-full max-w-[1180px] px-4 py-12 lg:px-8 lg:py-16">
-        <h2
+        <h1
           className="font-display text-[clamp(44px,11vw,132px)] leading-[0.86]"
           data-numeric
         >
@@ -32,7 +33,7 @@ export function Counter() {
               {available} SQUARES LEFT
             </>
           )}
-        </h2>
+        </h1>
         <p className="pt-4 text-[17px] leading-snug">
           {soldOut
             ? "The banner is still auctioned every day."

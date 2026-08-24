@@ -7,10 +7,8 @@
 // input, and panning has to be asked for. Buying is what the canvas is for, so
 // the gesture the hand reaches for first is the gesture that buys.
 //
-//   mouse  — drag selects · pinch or ctrl-wheel zooms at the cursor · space-drag
-//            or middle-drag pans · double-click steps the zoom · shift-click
-//            extends. A plain wheel scrolls the page: the content under the
-//            canvas has to be reachable with a mouse.
+//   mouse  — drag selects · wheel zooms at the cursor · space-drag or middle-drag
+//            pans · double-click steps the zoom · shift-click extends
 //   touch  — one finger selects · two fingers pan and pinch, and the second
 //            finger cancels the selection the first one started
 //
