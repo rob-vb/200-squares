@@ -166,8 +166,16 @@ export function squareRange(rect: Rect): string {
 // Resale. Ticket 11: an owner may sell a block on, at a price they set, and the
 // site keeps a share of the sale.
 
-/** The asking price may never go under this — it is what the site charges. */
-export const MIN_ASKING = PRICE_PER_SQUARE;
+/**
+ * The floor on an asking price, which is only there to stop a price of nothing.
+ *
+ * Ticket 11 put this at $100, to keep second-hand blocks from undercutting the
+ * $100 the site charges. Building it showed the number does not do that job: a
+ * 4 x 4 at $100 is $6.25 a square, which undercuts the primary price as hard as
+ * the $40 ticket 11 was refusing. Corrected on 2026-08-24, the other way — the
+ * price is the seller's, all of it, and what they may ask is not the site's call.
+ */
+export const MIN_ASKING = 1;
 /** The site's share of a completed sale, from the seller. Listing is free. */
 export const RESALE_FEE = 0.1;
 

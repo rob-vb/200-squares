@@ -118,8 +118,8 @@ export function SellFlow({ blockId }: { blockId: string }) {
 
         <Field
           label="Asking price"
-          error={touched && !valid ? `The floor is $${MIN_ASKING} — what the site charges.` : null}
-          hint={valid ? undefined : `From $${MIN_ASKING}. No ceiling.`}
+          error={touched && !valid ? `A price is needed. The floor is $${MIN_ASKING}.` : null}
+          hint={valid ? undefined : "Yours to set. No floor worth the name, no ceiling."}
         >
           <div className="flex items-center gap-2">
             <span className="font-display text-[19px] leading-none">$</span>

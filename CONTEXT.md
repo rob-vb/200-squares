@@ -42,7 +42,7 @@ The word is for the model. What a viewer reads is **For sale**.
 
 ## Asking price
 
-What the owner of a Listing wants for the block. It is theirs to set and it can never be under $100, the price the site itself charges for a square. On a sale the site keeps 10% and the rest is the seller's.
+What the owner of a Listing wants for the block. It is theirs to set, whatever they set it to: the only floor is $1, which exists to stop a price of nothing and not to defend the site's own $100. What a block is worth second-hand is the seller's business. On a sale the site keeps 10% and the rest is the seller's.
 
 ## Resale
 
