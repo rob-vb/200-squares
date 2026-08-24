@@ -97,10 +97,6 @@ export function HowItWorks() {
             No link shorteners: use your own domain. Tracking parameters on your own URL are fine —
             they are how you measure this yourself.
           </P>
-          <P>
-            This is a small independent project. Nobody can promise a website runs forever, and this
-            page will not pretend otherwise.
-          </P>
         </Section>
 
         <Section title="How it works">

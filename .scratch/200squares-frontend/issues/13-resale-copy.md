@@ -172,3 +172,65 @@ and the content rules are untouched by the market.
   being written, against the `Do I get traffic numbers?` FAQ. It is a product
   decision, not copy, and it invalidates copy on three pages if it goes the
   other way — see the ticket.
+
+## Amended by the dev (2026-08-24, same session)
+
+Three changes after the resolution above, on the same branch. Two of them
+reverse a choice ticket 07 made deliberately, so they are recorded here rather
+than folded into the text above.
+
+### The doubt comes out of the sales pages
+
+The dev struck the FAQ entry **`What happens if the site goes down?`** — *"it
+only raises suspicion."* Ticket 07 put it there on purpose, as the honesty that
+earns a $100 sale. The judgement now is that it does not earn it: the answer
+raises a doubt it cannot settle, on the page whose job is to sell.
+
+Two things travelled with it, because leaving them would have made the site
+either untrue or half-hearted:
+
+- **`/about` pointed at it.** *"…so it is on this page **and in the FAQ** rather
+  than in the small print."* The clause was false the moment the entry went.
+- **`/how-it-works` said it louder, higher up.** The closing paragraph of
+  *What you get* — *"This is a small independent project. Nobody can promise a
+  website runs forever, and this page will not pretend otherwise."* — is the
+  same doubt above the FAQ, and it sat under the *What you may put there*
+  subhead, which was never what it was about. Removing it also ends that section
+  on the content rules, which is a normal place to end.
+
+**`/terms` keeps it, whole.** *"If it stops, the squares stop with it, and that
+is priced into the $100"* stands in *What is not promised*. That page exists to
+say what is not promised; the line does not read as doubt there, and taking it
+out would make the site quiet about something it has to say. A reader who
+reaches `/terms` is already convinced.
+
+**`/about` keeps the fact and loses the warning.** *"One person, not a company"*
+is character, not risk. *"That is worth knowing before you spend $100 here"* was
+the frame that made it a warning, and it is now *"That is the whole of it."*
+
+So the honesty did not leave the site — it left the two pages that sell, and
+stayed on the page that governs.
+
+### Sold out is a door, not a dead end
+
+The dev caught a hole in the resolution above. **`What if every square sells?`**
+answered *"Then that is it — there are no more,"* which has been true only of
+the **site** since ticket 12. Sell-out is the moment resale matters most, and
+the answer closed the door instead of opening it. It now names the For sale
+switch.
+
+The **counter had the same hole in a worse place.** Its `SOLD OUT` line is the
+only line a visitor reads on a full board, and it mentioned the banner alone —
+so the market disappeared from the copy at exactly the point where it became the
+only way in. It now reads *"Owners sell theirs on, and the banner is auctioned
+every day."*
+
+Both were written in this ticket and both were wrong on the same axis: the copy
+kept treating the site as the only seller.
+
+### The FAQ, final
+
+Seven questions: buy more next to mine · change image or link · traffic numbers ·
+why 4 × 4 · can I sell · can I buy from an owner · what if every square sells.
+It now opens on a question that assumes the purchase instead of one that
+questions it.
