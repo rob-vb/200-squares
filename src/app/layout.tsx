@@ -17,6 +17,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${ui.variable} ${mono.variable} h-full antialiased`}
     >
+      {/* The board page is exactly one screen — its main takes the space the top
+          bar leaves. The other pages are as long as their text. */}
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

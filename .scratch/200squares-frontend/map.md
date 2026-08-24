@@ -4,7 +4,7 @@ Label: wayfinder:map
 
 ## Destination
 
-A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the content below the fold. No backend, no real payment, no resale market.
+A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend and no real payment. Selling a square on is a live question on this map (ticket 11); whether the prototype shows it is decided there.
 
 ## Notes
 
@@ -26,7 +26,7 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - Auction: bid today for tomorrow's banner, closes 00:00 UTC. Auction control lives in the top bar and never covers the banner image. With no winner, the banner shows a house ad ("You could have this spot").
 - Top bar: wordmark "200 SQUARES", auction block (countdown + top bid + Bid), sign-in / My squares.
 - Detail panel: right-hand panel on desktop, bottom sheet on mobile. Fake checkout with company name, website URL, real client-side image preview.
-- Below the fold: How it works, The daily banner, price & terms, FAQ + contact, plus a strip of past banner winners.
+- Below the fold: How it works, The daily banner, price & terms, FAQ + contact, plus a strip of past banner winners. (Ticket 10 moved all of it off the board page and onto `/how-it-works`, linked from the top bar.)
 - Three rough visual directions first, then pick one. Quiet canvas, loud auction.
 
 ## Decisions so far
@@ -42,19 +42,21 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - [06 — Detail panel and the flows](issues/06-panel-and-flows.md) — one surface, one flow at a time, and the canvas never resizes. (The reserved desktop column was corrected by ticket 09: the panel slides in and the board re-centres. 1280px survives as the side-panel / bottom-sheet breakpoint.) Buying needs no sign-in, is one screen, and artwork is optional so the flow can really produce `pending`; choosing a file previews it on the canvas before confirming. Bidding keeps top bid + $10 and a single fake rival outbids the visitor once, ~20s later. Sign-in stays a one-click toggle.
 - [07 — Content and copy below the canvas](issues/07-below-the-fold.md) — compact, no pitch line: a live `142 SQUARES LEFT` counter opens the page and takes `Available` out of the legend, then what-you-get, how-it-works, the daily banner with the past-winners strip (winning bids public), a six-question FAQ and one name. Squares are permanent and pay-once; artwork and link stay editable; link shorteners are out but tracking parameters are in, because there are no visitor statistics and the copy says so.
 - [09 — Build: flows and fake sign-in](issues/09-build-flows.md) — the flows are on `main`: buy, bid, sign in and My squares all run in one panel, and the reducer really changes the board. Two earlier decisions were corrected by building: the reserved panel column is gone (the panel slides in, the board re-centres instead of shrinking), and the link belongs to the block, not to the owner.
+- [10 — Build: the pages beside the board](issues/10-build-content.md) — ticket 07's page is `/how-it-works`, and `/about`, `/terms` and `/privacy` are built beside it; the links live in the top bar and in every page's footer. The board page carries nothing under it and does not scroll, so ticket 02's wheel zoom is restored whole. The dataset is a server-side read per page, and every link carries `?data=` on. Contact is @the_robvb on X, not an address.
 
 ## Not yet specified
 
 - Auth provider once a backend exists (Clerk, Supabase, something else) — the prototype fakes the session.
 - Anti-snipe rules for the auction (last-second bids, extension window, minimum increment beyond the $100 floor). Ticket 03 uses top bid + $10 as a prototype placeholder only.
 - Requirements for supplied artwork: file size, aspect ratio per block size, formats, animation.
-- Archive page for past banner winners — the prototype only shows a strip.
+- Archive page for past banner winners — `/how-it-works` shows the record the dataset holds, and nothing older.
 - SEO and share images. (Visible traffic proof is answered for now: ticket 07 says there are none and points owners at their own tracking parameters.)
 - Pricing model if squares get scarce, and what happens to the last squares.
 
 ## Out of scope
 
-- Resale market for squares — its own effort (listing, transfer, pricing).
+<!-- Resale left this list on 2026-08-24: it is now ticket 11. -->
+
 - Real payment (Stripe or otherwise) and invoicing.
 - Real authentication and accounts.
 - Backend, database, image storage, cron for the 00:00 UTC rollover.

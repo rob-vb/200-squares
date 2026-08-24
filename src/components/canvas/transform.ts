@@ -154,9 +154,12 @@ export function useWheelZoom(
     const el = boxRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
+      // The board page is one screen and does not scroll, so the wheel is the
+      // canvas's: ticket 02 gave it to zoom. The pages beside the board carry no
+      // canvas, so nothing there has to give the wheel back.
       e.preventDefault();
       const box = el.getBoundingClientRect();
-      // ctrlKey means a trackpad pinch, which arrives with much larger deltas.
+      // A real pinch arrives with much larger deltas than a held-modifier wheel.
       const stepSize = e.ctrlKey ? 0.012 : 0.0022;
       cb.current(Math.exp(-e.deltaY * stepSize), { x: e.clientX - box.left, y: e.clientY - box.top });
     };

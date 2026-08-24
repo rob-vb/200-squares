@@ -1,13 +1,11 @@
 "use client";
 
-// The first screen: top bar, canvas, legend, auction dock, and the panel that
+// The board page: the canvas, the legend, the auction dock, and the panel that
 // arrives over the canvas area when a flow opens.
 //
-// The board is the whole point, so nothing stands beside it while nothing is
-// happening. The panel slides in from the right on a wide screen and rises from
-// the bottom on a phone, and the board re-centres beside it instead of shrinking
-// for it. The one permanent explanation of how to buy sits under the canvas,
-// next to the legend, where it costs the board nothing.
+// It is one screen and it does not scroll. Everything that used to sit under it
+// moved to its own page, so the board is the whole of what this page is — which
+// is also why the wheel belongs to the canvas here.
 //
 // The canvas box is not 100dvh on a phone. Fit is contain, and a phone is
 // width-bound, so the grid is 8:7 whatever the viewport height — a full-height
@@ -16,29 +14,13 @@
 
 import { AuctionDock } from "./auction-dock";
 import { Canvas } from "./canvas/canvas";
-import { ScreenProvider } from "./panel/flow";
 import { PanelSheet, PanelSide } from "./panel/panel";
 import { TitleBlock } from "./title-block";
-import { TopBar } from "./top-bar";
 import { MAX_BLOCK, PRICE_PER_SQUARE } from "@/lib/board/geometry";
-import { BoardProvider } from "@/lib/board/state";
-import type { Dataset } from "@/lib/board/types";
 
-export function BoardScreen({ dataset }: { dataset: Dataset }) {
+export function BoardScreen() {
   return (
-    <BoardProvider dataset={dataset}>
-      <ScreenProvider>
-        <Screen />
-      </ScreenProvider>
-    </BoardProvider>
-  );
-}
-
-function Screen() {
-  return (
-    <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
-      <TopBar />
-
+    <>
       <main className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-4 lg:px-8 lg:pb-8">
         <div className="relative flex aspect-[8/7] w-full lg:aspect-auto lg:min-h-0 lg:flex-1">
           <Canvas />
@@ -58,6 +40,6 @@ function Screen() {
 
       <AuctionDock />
       <PanelSheet />
-    </div>
+    </>
   );
 }
