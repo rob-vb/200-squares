@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Contact } from "@/components/content/contact";
 import { ContentPage } from "@/components/content/content-page";
 import { Site } from "@/components/site";
 import { getDataset } from "@/lib/board/datasets";
@@ -45,7 +46,7 @@ export default async function Page(props: PageProps<"/about">) {
             One person, not a company. That is worth knowing before you spend $100 here, so it is on
             this page and in the FAQ rather than in the small print.
           </P>
-          <P>Rob — hi@robvb.com</P>
+          <Contact />
         </Section>
       </ContentPage>
     </Site>

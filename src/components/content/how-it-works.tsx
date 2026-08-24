@@ -10,6 +10,7 @@
 // Nobody speaks here. The product states facts, and one name appears at the end.
 
 import { BannerRecord } from "./banner-record";
+import { Contact } from "./contact";
 import { Counter } from "./counter";
 import { Footer } from "./footer";
 import { P, Section, Subhead } from "./section";
@@ -147,7 +148,7 @@ export function HowItWorks() {
         <Section title="Questions?">
           {/* Plain text on purpose. A form that silently discarded a message would
               be the one place this prototype lies to a real visitor. */}
-          <P>Rob — hi@robvb.com</P>
+          <Contact />
         </Section>
       </main>
       <Footer />

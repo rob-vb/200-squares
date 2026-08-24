@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Contact } from "@/components/content/contact";
 import { ContentPage } from "@/components/content/content-page";
 import { Site } from "@/components/site";
 import { getDataset } from "@/lib/board/datasets";
@@ -94,7 +95,7 @@ export default async function Page(props: PageProps<"/terms">) {
             These terms can change — for the rules about content, most likely. A change never takes a
             square away from somebody who already bought one.
           </P>
-          <P>Questions about any of this: Rob — hi@robvb.com</P>
+          <Contact lead="Questions about any of this:" />
         </Section>
       </ContentPage>
     </Site>

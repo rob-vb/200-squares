@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Contact } from "@/components/content/contact";
 import { ContentPage } from "@/components/content/content-page";
 import { Site } from "@/components/site";
 import { getDataset } from "@/lib/board/datasets";
@@ -63,7 +64,7 @@ export default async function Page(props: PageProps<"/privacy">) {
             address to be deleted. A square that is live stays live: what is on the grid is public by
             purchase, not by consent.
           </P>
-          <P>Rob — hi@robvb.com</P>
+          <Contact />
         </Section>
       </ContentPage>
     </Site>

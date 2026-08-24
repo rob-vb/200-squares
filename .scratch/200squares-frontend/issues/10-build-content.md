@@ -125,3 +125,14 @@ The dev asked for the texts of the three new pages to follow
 check and answers 403 to anything without a browser, so the drafts on the branch
 are written from ticket 07's decided facts instead. **They are drafts.** The
 outbid.lol pass still has to happen.
+
+### Contact is a handle, not an address (2026-08-24)
+
+The dev does not want the email address on the site. Contact is
+**@the_robvb on X**, on all four pages.
+
+It is a link, and the only outward link on these pages. Ticket 07 ruled out a
+form and a `mailto:` because a form that silently discarded a message would be
+the one place this prototype lies to a visitor. A handle is neither: it goes to a
+real profile and it is answered there. Ticket 07's other rule holds — one name,
+at contact, and nowhere else.
