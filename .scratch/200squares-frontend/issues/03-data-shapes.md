@@ -204,3 +204,14 @@ Default is `full`, because a stranger opening the preview has to feel a board th
 ### Vocabulary
 
 `CONTEXT.md` gains Artwork, Banner day, Dataset and Viewer, and Owner and Bid are sharpened.
+
+## Correction — 2026-08-24, from building ticket 08
+
+`Bid.minutesBeforeClose` is wrong and is now `minutesAgo`.
+
+A bid stored as minutes before the 00:00 UTC close sits in the **future** whenever
+the real clock is earlier in the day than the stored offset. A dataset written with
+a bid at "95 minutes before close" has not happened yet at 04:00 UTC.
+
+Measured from now, a bid is always in the past, whatever the clock says. The
+no-absolute-dates rule is unchanged — `minutesAgo` is still a pure offset.
