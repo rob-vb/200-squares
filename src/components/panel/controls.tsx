@@ -47,6 +47,55 @@ export function Field({
 }) {
   return (
     <label className="block">
+      <FieldBody label={label} hint={hint} error={error}>
+        {children}
+      </FieldBody>
+    </label>
+  );
+}
+
+/**
+ * A field that is not a `<label>`.
+ *
+ * A label with no `htmlFor` binds to the first labelable descendant, and a
+ * `<button>` is labelable. So a field holding both a control of its own and a
+ * button sends every click in it to that button — which is how the sell flow's
+ * picker kept springing back to the whole block. Anything with more than one
+ * thing to click belongs here instead.
+ */
+export function FieldBox({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <FieldBody label={label} hint={hint} error={error}>
+        {children}
+      </FieldBody>
+    </div>
+  );
+}
+
+function FieldBody({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
       <span className="text-faint block pb-1 text-[13px]">{label}</span>
       {children}
       {error ? (
@@ -54,7 +103,7 @@ export function Field({
       ) : hint ? (
         <span className="text-faint block pt-1 text-[12px]">{hint}</span>
       ) : null}
-    </label>
+    </>
   );
 }
 

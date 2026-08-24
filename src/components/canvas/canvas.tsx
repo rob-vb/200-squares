@@ -25,17 +25,47 @@ import { useBoard } from "@/lib/board/state";
 import {
   MAX_SCALE,
   PRICE_PER_SQUARE,
+  askingFor,
+  covers,
   priceOf,
   rectFrom,
+  rectWithin,
   selectionBlocked,
   type BoardModel,
 } from "@/lib/board/geometry";
+import type { Block } from "@/lib/board/types";
 
 type CellRef = { r: number; c: number };
 
+/**
+ * The listing under this cell, if the cell is part of one.
+ *
+ * A listing can be a strip of a block that is still whole, so covering the block
+ * is not enough: the other half of that block is not for sale and must not
+ * answer as though it were.
+ */
+function listingAt(board: BoardModel, at: CellRef): Block | null {
+  const block = board.cells[at.r][at.c].block;
+  return block?.listing && covers(block.listing.rect, at.r, at.c) ? block : null;
+}
+
 /** What the tooltip says about one cell. Mouse only — a tap selects instead. */
-function tooltipFor(board: BoardModel, bannerName: string | null, at: CellRef): string | null {
+function tooltipFor(
+  board: BoardModel,
+  bannerName: string | null,
+  at: CellRef,
+  forSale: boolean,
+): string | null {
   const cell = board.cells[at.r][at.c];
+  // In the market view the board answers for one thing only. Everything else is
+  // dimmed, and a dimmed square that still spoke would undo the dimming.
+  if (forSale) {
+    const listed = listingAt(board, at);
+    if (!listed) return null;
+    const owner = board.ownerById.get(listed.ownerId);
+    const { rect, pricePerSquare } = listed.listing!;
+    return `${owner?.name ?? "For sale"} · ${rect.w} × ${rect.h} for sale · $${pricePerSquare} a square`;
+  }
   if (cell.state === "banner") {
     return bannerName ? `${bannerName} · today's banner` : "Banner · nobody has bid";
   }
@@ -50,8 +80,11 @@ function tooltipFor(board: BoardModel, bannerName: string | null, at: CellRef): 
  * draw on, a block and the banner are links, and a pending block is neither: it
  * is paid for but has nowhere to send anybody yet.
  */
-function cursorFor(board: BoardModel, at: CellRef | null): string {
+function cursorFor(board: BoardModel, at: CellRef | null, forSale: boolean): string {
   if (!at) return "default";
+  // Drawing, not following: inside a listing the drag buys, so the cursor is the
+  // same crosshair an empty square gets.
+  if (forSale) return listingAt(board, at) ? "crosshair" : "default";
   const state = board.cells[at.r][at.c].state;
   if (state === "available") return "crosshair";
   if (state === "pending") return "default";
@@ -70,6 +103,9 @@ export function Canvas() {
     setDragging,
     panelOpen,
     openBid,
+    forSale,
+    selectInListing,
+    flow,
   } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
   // The side panel lies over the right of this box. The board re-centres into
@@ -84,6 +120,8 @@ export function Canvas() {
   const pointers = useRef(new Map<number, Pt>());
   const mode = useRef<"idle" | "select" | "pan" | "pinch" | "press">("idle");
   const anchor = useRef<CellRef | null>(null);
+  /** The listing a market drag is drawing inside. It bounds the rectangle. */
+  const offer = useRef<Block | null>(null);
   const pressed = useRef<CellRef | null>(null);
   const lastPan = useRef<Pt>({ x: 0, y: 0 });
   const pinchStart = useRef({ dist: 0, mid: { x: 0, y: 0 }, scale: 1, t: { x: 0, y: 0 } });
@@ -162,6 +200,21 @@ export function Canvas() {
     const at = cv.toCell(p);
     if (!at) return;
 
+    // In the market view the board answers for listings and nothing else — but
+    // it answers with the same gesture as everywhere else. A buyer draws the
+    // rectangle they want, from one square to the whole offer, and the drag is
+    // held inside the part that is actually for sale.
+    if (forSale) {
+      const listed = listingAt(board, at);
+      if (!listed) return;
+      offer.current = listed;
+      anchor.current = at;
+      mode.current = "select";
+      setDragging(true);
+      selectInListing(listed.id, rectWithin(at, at, listed.listing!.rect));
+      return;
+    }
+
     // Pressing on something already sold is not the start of a selection: it is a
     // click on somebody's block, which is what they paid for.
     if (board.cells[at.r][at.c].state !== "available") {
@@ -185,9 +238,9 @@ export function Canvas() {
 
     if (e.pointerType === "mouse" && mode.current === "idle") {
       const at = cv.toCell(p);
-      setHovered(at && board.cells[at.r][at.c].state === "available" ? at : null);
-      setCursor(cursorFor(board, at));
-      const text = at ? tooltipFor(board, ownerOfBannerToday?.name ?? null, at) : null;
+      setHovered(!forSale && at && board.cells[at.r][at.c].state === "available" ? at : null);
+      setCursor(cursorFor(board, at, forSale));
+      const text = at ? tooltipFor(board, ownerOfBannerToday?.name ?? null, at, forSale) : null;
       setTip(text ? { x: p.x, y: p.y, text } : null);
     }
 
@@ -213,7 +266,13 @@ export function Canvas() {
     }
     if (mode.current === "select" && anchor.current) {
       const at = cv.toCell(p);
-      if (at) onSelectionChange(rectFrom(anchor.current, at));
+      if (!at) return;
+      const listed = offer.current;
+      if (listed) {
+        selectInListing(listed.id, rectWithin(anchor.current, at, listed.listing!.rect));
+      } else {
+        onSelectionChange(rectFrom(anchor.current, at));
+      }
       return;
     }
     if (mode.current === "press" && pressed.current) {
@@ -228,6 +287,7 @@ export function Canvas() {
     setDragging(false);
     if (mode.current === "press" && pressed.current) follow(pressed.current);
     pressed.current = null;
+    if (pointers.current.size === 0) offer.current = null;
     if (pointers.current.size < 2 && mode.current === "pinch") mode.current = "idle";
     if (pointers.current.size === 0) mode.current = "idle";
   };
@@ -237,7 +297,12 @@ export function Canvas() {
     cv.zoomAbs(cv.scale >= MAX_SCALE ? 1 : cv.scale < 2 ? 2 : MAX_SCALE, p);
   };
 
-  const blocked = selection ? selectionBlocked(board, selection) : false;
+  // A market drag is never blocked: it can only be drawn inside an offer. The
+  // offer comes from the flow and not from the drag's ref, which is cleared the
+  // moment the pointer lifts — the chip has to survive that.
+  const marketOffer =
+    flow.kind === "resale" ? (board.blocks.find((b) => b.id === flow.blockId) ?? null) : null;
+  const blocked = !forSale && selection ? selectionBlocked(board, selection) : false;
   const chip = selection
     ? {
         x: cv.t.x + selection.c * cv.step * cv.scale,
@@ -278,6 +343,7 @@ export function Canvas() {
           hovered={hovered}
           preview={preview}
           highlight={highlight}
+          forSale={forSale}
         />
       </div>
 
@@ -294,9 +360,33 @@ export function Canvas() {
         >
           {blocked
             ? "Not available"
-            : `${selection.w}×${selection.h} $${priceOf(selection).toLocaleString("en-US")}`}
+            : `${selection.w}×${selection.h} $${(marketOffer
+                ? askingFor(marketOffer.listing!.pricePerSquare, selection)
+                : priceOf(selection)
+              ).toLocaleString("en-US")}`}
         </span>
       )}
+
+      {forSale &&
+        board.listed.map((block) => {
+          const { rect, pricePerSquare } = block.listing!;
+          const x = cv.t.x + rect.c * cv.step * cv.scale;
+          const y = cv.t.y + rect.r * cv.step * cv.scale;
+          const below = y < 22;
+          return (
+            <span
+              key={block.id}
+              className="font-display bg-accent pointer-events-none absolute px-1.5 text-[13px] leading-[1.35] whitespace-nowrap text-white"
+              style={{
+                left: x,
+                top: below ? y + rect.h * cv.step * cv.scale : y,
+                transform: below ? undefined : "translateY(-100%)",
+              }}
+            >
+              {rect.w}×{rect.h} · ${pricePerSquare}/sq
+            </span>
+          );
+        })}
 
       {tip && (
         <span

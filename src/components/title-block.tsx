@@ -11,6 +11,7 @@
 // rules land between fields at both breakpoints — a phone shows the two counts
 // that move, a desktop shows all five, beside the line that says how to buy.
 
+
 import { useBoard } from "@/lib/board/state";
 import { PRICE_PER_SQUARE, SQUARE_COUNT } from "@/lib/board/geometry";
 

@@ -178,3 +178,32 @@ in the FAQ.
   three listings in `full`.
 - **13 — The copy for resale**, blocked by 12, so the words describe what was
   actually built. Same shape as 07 → 10.
+
+## Corrected by ticket 12 (2026-08-24)
+
+Building the market reversed two of the answers above. Everything else in it
+stands — the 10% share, listing free, the split on sale, the switch, the empty
+arrival, no release, no merge.
+
+**One straight cut is out. The buyer drags, and the price is per square.** This
+answer let the owner choose one cut off one edge, which means the owner of a
+2 × 2 can sell 2 × 2, 2 × 1 or 1 × 2 and never one square. The dev caught it on
+the preview, and it contradicts the product: the site sells squares at $100
+each, and the counter says SQUARES LEFT.
+
+The rule was guarding the wrong side. What is **sold** has to be a rectangle,
+because a block renders one image — but what is **left** does not have to be one
+block. A 2 × 2 minus a corner is a 1 × 2 plus a 1 × 1: two blocks, no L, and the
+model holds. So the owner offers a rectangle of their block at a price per
+square, and the buyer drags out any rectangle inside it, down to one square. The
+seller keeps everything they did not sell, as up to four blocks with the artwork
+cropped to each.
+
+**The floor is $1, not $100.** This answer gave the $100 floor the job of
+stopping second-hand blocks undercutting the $100 the site charges for a square.
+It never did that: a 4 × 4 at $100 is $6.25 a square, which undercuts the
+primary price exactly as hard as the $40 this answer refused. A price per square
+does the job properly — the buyer reads "$40 a square" against "$100 a square"
+and judges — so the floor has no work left beyond refusing zero.
+
+See [ticket 12's Resolution](12-build-resale.md).

@@ -13,9 +13,15 @@
 //
 // Sign in stays a one-click toggle. A fake form would add nothing to the idea
 // being sold, and buying needs no sign-in at all.
+//
+// The For sale switch stands here too, on the board page only. It first sat
+// under the canvas, where a phone has no room: the height between the board and
+// the auction dock is spoken for, and the dock covered it. The bar is the one
+// strip of this screen that is never covered by anything.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ForSaleSwitch } from "./for-sale-switch";
 import { PAGES, useHref } from "./nav";
 import { useScreen } from "./panel/flow";
 import { useBoard } from "@/lib/board/state";
@@ -60,43 +66,47 @@ export function TopBar() {
         </nav>
       </div>
 
-      {state.signedIn && viewer ? (
-        <div className="flex shrink-0 items-center gap-4">
-          {onBoard ? (
+      <div className="flex shrink-0 items-center gap-3 lg:gap-4">
+        {onBoard ? <ForSaleSwitch /> : null}
+
+        {state.signedIn && viewer ? (
+          <div className="flex items-center gap-3 lg:gap-4">
+            {onBoard ? (
+              <button
+                type="button"
+                onClick={openMine}
+                className="hover:text-accent text-[13px] transition-colors duration-150"
+              >
+                {viewer.name}
+                <span className="text-faint"> · {owned} squares</span>
+              </button>
+            ) : (
+              <Link
+                href={href("/")}
+                className="hover:text-accent text-[13px] transition-colors duration-150"
+              >
+                {viewer.name}
+                <span className="text-faint"> · {owned} squares</span>
+              </Link>
+            )}
             <button
               type="button"
-              onClick={openMine}
-              className="hover:text-accent text-[13px] transition-colors duration-150"
+              className="text-faint hover:text-ink hidden text-[13px] transition-colors duration-150 sm:inline"
+              onClick={() => dispatch({ type: "signOut" })}
             >
-              {viewer.name}
-              <span className="text-faint"> · {owned} squares</span>
+              Sign out
             </button>
-          ) : (
-            <Link
-              href={href("/")}
-              className="hover:text-accent text-[13px] transition-colors duration-150"
-            >
-              {viewer.name}
-              <span className="text-faint"> · {owned} squares</span>
-            </Link>
-          )}
+          </div>
+        ) : (
           <button
             type="button"
-            className="text-faint hover:text-ink hidden text-[13px] transition-colors duration-150 sm:inline"
-            onClick={() => dispatch({ type: "signOut" })}
+            className="shrink-0 text-[14px] font-medium"
+            onClick={() => dispatch({ type: "signIn" })}
           >
-            Sign out
+            Sign in
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="shrink-0 text-[14px] font-medium"
-          onClick={() => dispatch({ type: "signIn" })}
-        >
-          Sign in
-        </button>
-      )}
+        )}
+      </div>
     </header>
   );
 }
