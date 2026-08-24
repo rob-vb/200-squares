@@ -4,7 +4,7 @@ Label: wayfinder:map
 
 ## Destination
 
-A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the content below the fold. No backend, no real payment, no resale market.
+A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend, no real payment, no resale market.
 
 ## Notes
 
@@ -26,7 +26,7 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - Auction: bid today for tomorrow's banner, closes 00:00 UTC. Auction control lives in the top bar and never covers the banner image. With no winner, the banner shows a house ad ("You could have this spot").
 - Top bar: wordmark "200 SQUARES", auction block (countdown + top bid + Bid), sign-in / My squares.
 - Detail panel: right-hand panel on desktop, bottom sheet on mobile. Fake checkout with company name, website URL, real client-side image preview.
-- Below the fold: How it works, The daily banner, price & terms, FAQ + contact, plus a strip of past banner winners.
+- Below the fold: How it works, The daily banner, price & terms, FAQ + contact, plus a strip of past banner winners. (Ticket 10 moved all of it off the board page and onto `/how-it-works`, linked from the top bar.)
 - Three rough visual directions first, then pick one. Quiet canvas, loud auction.
 
 ## Decisions so far

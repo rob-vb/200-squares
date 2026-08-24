@@ -96,3 +96,32 @@ a double-click. Touch is untouched: one finger selects, two fingers pan and pinc
    cursor?
 3. Does the counter fall to 136 after buying a 3 × 2 block on the canvas above?
 4. `?data=early`: the record shows its empty line.
+
+## Scope change (2026-08-24) — the content leaves the board page
+
+Checked on the preview. Two things came back:
+
+1. **The plain wheel did not scroll.** The canvas box carries
+   `overscroll-behavior: none`, which stops the wheel reaching the document even
+   when the canvas hands it on. ⌘/ctrl + wheel worked.
+2. **The content does not belong under the board.** The dev does not want a
+   document under the canvas at all. It becomes its own page, linked from the top
+   bar, and **About, Terms and Privacy** are built beside it.
+
+So this ticket now builds four pages, not a scroll:
+
+- `/how-it-works` — the whole of ticket 07's page, in ticket 07's order. The
+  counter is its `h1`.
+- `/about`, `/terms`, `/privacy` — new, and not decided by any earlier ticket.
+- The board page goes back to being exactly one screen.
+
+**Ticket 02's wheel is restored, not corrected.** The plain wheel zooms again,
+because the board page has nothing under it to scroll to. The earlier correction
+in this ticket's comment is withdrawn — it only ever existed to serve a page that
+no longer exists.
+
+The dev asked for the texts of the three new pages to follow
+**https://outbid.lol** — adapted, not copied. That site sits behind Vercel's bot
+check and answers 403 to anything without a browser, so the drafts on the branch
+are written from ticket 07's decided facts instead. **They are drafts.** The
+outbid.lol pass still has to happen.
