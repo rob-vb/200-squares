@@ -101,6 +101,10 @@ export function Canvas({
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
+    // The zoom controls sit inside the canvas box. Without this, the box captures
+    // the pointer on the way down and the button never sees a click at all.
+    if ((e.target as HTMLElement).closest("button")) return;
+
     const p = cv.localPoint(e);
     pointers.current.set(e.pointerId, p);
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -292,8 +296,9 @@ function ZoomControls({
   const btn =
     "bg-square text-ink hover:bg-white disabled:text-ink/30 grid h-9 w-9 place-items-center text-[17px] leading-none transition-colors duration-150";
   return (
+    // Touch has pinch and double-tap, so on a phone these would only cover squares.
     <div
-      className="border-hairline absolute right-4 bottom-4 flex border"
+      className="border-hairline absolute right-4 bottom-4 hidden border lg:flex"
       style={{ boxShadow: "var(--shadow-lift)" }}
     >
       <button type="button" className={btn} onClick={onOut} disabled={scale <= 1} aria-label="Zoom out">
