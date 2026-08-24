@@ -104,3 +104,21 @@ ground in RGB: under 70, the artwork needs a line of its own.
 The gap between the two groups is wide, so the threshold is not delicate.
 
 Rule in `src/lib/board/artwork.ts`.
+
+**Superseded the same day — see below.**
+
+## Correction — 2026-08-24, the dev's call on the real board
+
+The block edge is gone. Not narrowed: **removed, at every artwork colour.**
+
+The rule above survived one look at the real canvas. The seam already draws a
+1px line around every block — that is what the seam is — so a hairline inside the
+block sits directly beside it and reads as one doubled rule. Narrowing it to light
+artwork only moved the problem to three blocks instead of all of them.
+
+The state sheet's before/after pair was judged on white, with the two light blocks
+touching and no seam between them. On the board there is always a seam, so the
+case the edge was invented for does not occur.
+
+One seam, 1px, scaling with the transform. Nothing else separates blocks.
+`src/lib/board/artwork.ts` is deleted.
