@@ -8,7 +8,6 @@
 // a bought rectangle disappear on their own.
 
 import type { BannerDay, Rect } from "@/lib/board/types";
-import { meltsIntoPage } from "@/lib/board/artwork";
 import {
   BANNER,
   COLS,
@@ -18,12 +17,6 @@ import {
   gridArea,
   type BoardModel,
 } from "@/lib/board/geometry";
-
-const hairlineEdge = { boxShadow: "inset 0 0 0 1px var(--color-hairline)" };
-
-/** Only artwork that would melt into the paper gets a line of its own. */
-const edgeFor = (artwork: Parameters<typeof meltsIntoPage>[0]) =>
-  meltsIntoPage(artwork) ? hairlineEdge : {};
 
 /** Fit a wordmark inside its block without measuring text. */
 function labelSize(label: string, wpx: number, hpx: number) {
@@ -64,7 +57,6 @@ function BannerCell({ day, cell }: { day: BannerDay | null; cell: number }) {
       className="flex flex-col items-center justify-center overflow-hidden text-center"
       style={{
         ...gridArea(BANNER),
-        ...edgeFor(art),
         ...(art.kind === "mock"
           ? { background: art.bg, color: art.fg }
           : { backgroundImage: `url(${art.src})`, backgroundSize: "cover" }),
@@ -127,7 +119,6 @@ export function Board({
               key={block.id}
               style={{
                 ...gridArea(block.rect),
-                ...hairlineEdge,
                 background:
                   "repeating-linear-gradient(-45deg, var(--color-square) 0 3px, color-mix(in srgb, var(--color-accent) 35%, transparent) 3px 5px)",
               }}
@@ -141,8 +132,7 @@ export function Board({
             className="flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight"
             style={{
               ...gridArea(block.rect),
-              ...edgeFor(art),
-              ...(art.kind === "mock"
+                    ...(art.kind === "mock"
                 ? { background: art.bg, color: art.fg, fontSize: labelSize(art.label, wpx, hpx) }
                 : { backgroundImage: `url(${art.src})`, backgroundSize: "cover" }),
             }}
