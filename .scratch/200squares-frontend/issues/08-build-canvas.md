@@ -1,7 +1,7 @@
 # 08 — Build: app skeleton and canvas
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 02, 03, 04, 05
 Parent: ../map.md
 
