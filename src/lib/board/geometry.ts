@@ -138,3 +138,23 @@ export function selectionBlocked(board: BoardModel, rect: Rect): boolean {
   }
   return false;
 }
+
+/**
+ * "84" for one square, "84–89" for a block. Numbering runs along a row, so a
+ * block two rows tall covers a span with other people's squares inside it. This
+ * is the span, not a list: the confirmation needs a name, not an inventory.
+ */
+export function squareRange(rect: Rect): string {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let r = rect.r; r < rect.r + rect.h; r++) {
+    for (let c = rect.c; c < rect.c + rect.w; c++) {
+      const n = squareNumber(r, c);
+      if (n === null) continue;
+      lo = Math.min(lo, n);
+      hi = Math.max(hi, n);
+    }
+  }
+  if (lo === Infinity) return "";
+  return lo === hi ? String(lo) : `${lo}–${hi}`;
+}

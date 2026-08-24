@@ -3,16 +3,19 @@
 // Wordmark left, session right. Nothing else: ticket 01 took the auction out of
 // the top bar on purpose and gave it a card of its own, so the top of the screen
 // never competes with the canvas.
+//
+// Sign in stays a one-click toggle. A fake form would add nothing to the idea
+// being sold, and buying needs no sign-in at all.
 
+import { useScreen } from "./panel/flow";
 import { useBoard } from "@/lib/board/state";
 import { cellCount } from "@/lib/board/geometry";
 
 export function TopBar() {
-  const { state, dispatch, viewer, board } = useBoard();
+  const { state, dispatch, viewer, viewerBlocks } = useBoard();
+  const { openMine } = useScreen();
 
-  const owned = viewer
-    ? board.blocks.filter((b) => b.ownerId === viewer.id).reduce((n, b) => n + cellCount(b.rect), 0)
-    : 0;
+  const owned = viewerBlocks.reduce((n, b) => n + cellCount(b.rect), 0);
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between px-4 lg:px-8">
@@ -20,10 +23,14 @@ export function TopBar() {
 
       {state.signedIn && viewer ? (
         <div className="flex items-center gap-4">
-          <span className="text-[13px]">
+          <button
+            type="button"
+            onClick={openMine}
+            className="hover:text-accent text-[13px] transition-colors duration-150"
+          >
             {viewer.name}
             <span className="text-faint"> · {owned} squares</span>
-          </span>
+          </button>
           <button
             type="button"
             className="text-faint hover:text-ink text-[13px] transition-colors duration-150"

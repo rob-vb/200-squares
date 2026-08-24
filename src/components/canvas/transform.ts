@@ -18,7 +18,16 @@ export type Pt = { x: number; y: number };
 
 const clampScale = (s: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
 
-export function useCanvasTransform(boxRef: React.RefObject<HTMLDivElement | null>) {
+/**
+ * `insetRight` is the width the sliding panel takes off the right of the box.
+ * It changes where the board sits, never how big a square is: the fit size is
+ * measured against the whole box, so opening the panel moves the board and does
+ * not shrink it.
+ */
+export function useCanvasTransform(
+  boxRef: React.RefObject<HTMLDivElement | null>,
+  insetRight = 0,
+) {
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const [view, setView] = useState({ s: 1, x: 0, y: 0 });
 
@@ -49,16 +58,19 @@ export function useCanvasTransform(boxRef: React.RefObject<HTMLDivElement | null
   const contentW = COLS * step - SEAM;
   const contentH = ROWS * step - SEAM;
 
+  /** The width the board actually has to live in. */
+  const free = Math.max(0, viewport.w - insetRight);
+
   const clamp = useCallback(
     (x: number, y: number, s: number): Pt => {
       const w = contentW * s;
       const h = contentH * s;
       return {
-        x: w <= viewport.w ? (viewport.w - w) / 2 : Math.min(0, Math.max(viewport.w - w, x)),
+        x: w <= free ? (free - w) / 2 : Math.min(0, Math.max(free - w, x)),
         y: h <= viewport.h ? (viewport.h - h) / 2 : Math.min(0, Math.max(viewport.h - h, y)),
       };
     },
-    [contentW, contentH, viewport.w, viewport.h],
+    [contentW, contentH, free, viewport.h],
   );
 
   const t = clamp(view.x, view.y, view.s);
@@ -69,13 +81,13 @@ export function useCanvasTransform(boxRef: React.RefObject<HTMLDivElement | null
     (next: (current: number) => number, p?: Pt) =>
       setView((v) => {
         const s = clampScale(next(v.s));
-        const a = p ?? { x: viewport.w / 2, y: viewport.h / 2 };
+        const a = p ?? { x: free / 2, y: viewport.h / 2 };
         const base = clamp(v.x, v.y, v.s);
         const cx = (a.x - base.x) / v.s;
         const cy = (a.y - base.y) / v.s;
         return { s, ...clamp(a.x - cx * s, a.y - cy * s, s) };
       }),
-    [clamp, viewport.w, viewport.h],
+    [clamp, free, viewport.h],
   );
 
   const zoomAbs = useCallback((s: number, p?: Pt) => zoomTo(() => s, p), [zoomTo]);

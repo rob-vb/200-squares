@@ -9,7 +9,7 @@ import type { Artwork, Block, Owner, Rect } from "../types";
 
 export type Brand = { id: string; name: string; url: string; bg: string; fg: string };
 
-export const brandOwner = ({ id, name, url }: Brand): Owner => ({ id, name, url });
+export const brandOwner = ({ id, name }: Brand): Owner => ({ id, name });
 
 export const brandArtwork = (brand: Brand): Artwork => ({
   kind: "mock",
@@ -29,6 +29,7 @@ export function makeBlock(
     id,
     rect,
     ownerId: brand.id,
+    url: brand.url,
     artwork: opts.pending ? null : brandArtwork(brand),
   };
 }

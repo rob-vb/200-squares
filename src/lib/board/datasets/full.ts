@@ -105,13 +105,13 @@ const blocks = [
 
 // Today's banner, then six days back. Offset 0 is on the canvas right now.
 const bannerDays: BannerDay[] = [
-  { dayOffset: 0, ownerId: "heliograph", artwork: brandArtwork(brands.heliograph), wonWith: 1180 },
-  { dayOffset: -1, ownerId: "lumen", artwork: brandArtwork(brands.lumen), wonWith: 940 },
-  { dayOffset: -2, ownerId: "vantage", artwork: brandArtwork(brands.vantage), wonWith: 1620 },
-  { dayOffset: -3, ownerId: "foxglove", artwork: brandArtwork(brands.foxglove), wonWith: 700 },
-  { dayOffset: -4, ownerId: "ironline", artwork: brandArtwork(brands.ironline), wonWith: 1050 },
-  { dayOffset: -5, ownerId: "cobalt", artwork: brandArtwork(brands.cobalt), wonWith: 480 },
-  { dayOffset: -6, ownerId: "marlow", artwork: brandArtwork(brands.marlow), wonWith: 330 },
+  { dayOffset: 0, ownerId: "heliograph", url: brands.heliograph.url, artwork: brandArtwork(brands.heliograph), wonWith: 1180 },
+  { dayOffset: -1, ownerId: "lumen", url: brands.lumen.url, artwork: brandArtwork(brands.lumen), wonWith: 940 },
+  { dayOffset: -2, ownerId: "vantage", url: brands.vantage.url, artwork: brandArtwork(brands.vantage), wonWith: 1620 },
+  { dayOffset: -3, ownerId: "foxglove", url: brands.foxglove.url, artwork: brandArtwork(brands.foxglove), wonWith: 700 },
+  { dayOffset: -4, ownerId: "ironline", url: brands.ironline.url, artwork: brandArtwork(brands.ironline), wonWith: 1050 },
+  { dayOffset: -5, ownerId: "cobalt", url: brands.cobalt.url, artwork: brandArtwork(brands.cobalt), wonWith: 480 },
+  { dayOffset: -6, ownerId: "marlow", url: brands.marlow.url, artwork: brandArtwork(brands.marlow), wonWith: 330 },
 ];
 
 // The auction running now: fourteen bids climbing from the $100 floor. The

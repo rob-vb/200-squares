@@ -14,6 +14,7 @@ import {
   NUMBER_MIN_PX,
   ROWS,
   SEAM,
+  boxOf,
   gridArea,
   type BoardModel,
 } from "@/lib/board/geometry";
@@ -79,6 +80,8 @@ export function Board({
   selection,
   blocked,
   hovered,
+  preview,
+  highlight,
 }: {
   board: BoardModel;
   bannerToday: BannerDay | null;
@@ -88,6 +91,10 @@ export function Board({
   selection: Rect | null;
   blocked: boolean;
   hovered: { r: number; c: number } | null;
+  /** Artwork chosen in the buy flow, painted before the purchase is confirmed. */
+  preview: string | null;
+  /** A block My squares is pointing at. */
+  highlight: Rect | null;
 }) {
   const step = cell + SEAM;
   // A number below 34px rendered is unreadable, so below that a square is a tile.
@@ -166,6 +173,31 @@ export function Board({
           </div>
         );
       })}
+
+      {selection && preview && (
+        // The image lands on the board before anything is confirmed. This is the
+        // moment the idea lands, so it happens on the canvas, not in the panel.
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            ...boxOf(selection, cell),
+            backgroundImage: `url(${preview})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      )}
+
+      {highlight && (
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            ...boxOf(highlight, cell),
+            outline: `${2 / scale}px dashed var(--color-ink)`,
+            outlineOffset: 1 / scale,
+          }}
+        />
+      )}
 
       {selection && (
         <div

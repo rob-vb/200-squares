@@ -11,10 +11,16 @@
 //            pans · double-click steps the zoom · shift-click extends
 //   touch  — one finger selects · two fingers pan and pinch, and the second
 //            finger cancels the selection the first one started
+//
+// The box takes `select-none`. A drag across the board is a selection of
+// squares, never a selection of the numbers printed on them. The panel is a
+// sibling of this box, not a child, so its fields stay selectable.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Board } from "./board";
 import { useCanvasTransform, useWheelZoom, type Pt } from "./transform";
+import { PANEL_MEDIA, PANEL_WIDTH, useScreen } from "../panel/flow";
+import { useMediaQuery } from "../use-media-query";
 import { useBoard } from "@/lib/board/state";
 import {
   MAX_SCALE,
@@ -24,7 +30,6 @@ import {
   selectionBlocked,
   type BoardModel,
 } from "@/lib/board/geometry";
-import type { Rect } from "@/lib/board/types";
 
 type CellRef = { r: number; c: number };
 
@@ -37,21 +42,43 @@ function tooltipFor(board: BoardModel, bannerName: string | null, at: CellRef): 
   if (cell.state === "available") return `${cell.n} · Available · $${PRICE_PER_SQUARE}`;
   if (cell.state === "pending") return "Sold · artwork coming";
   const owner = cell.block ? board.ownerById.get(cell.block.ownerId) : null;
-  return owner ? `${owner.name} · Opens ${owner.url}` : null;
+  return owner && cell.block ? `${owner.name} · Opens ${cell.block.url}` : null;
 }
 
-export function Canvas({
-  selection,
-  onSelectionChange,
-}: {
-  selection: Rect | null;
-  onSelectionChange: (rect: Rect | null) => void;
-}) {
+/**
+ * What the pointer says this cell will do. An available square is something to
+ * draw on, a block and the banner are links, and a pending block is neither: it
+ * is paid for but has nowhere to send anybody yet.
+ */
+function cursorFor(board: BoardModel, at: CellRef | null): string {
+  if (!at) return "default";
+  const state = board.cells[at.r][at.c].state;
+  if (state === "available") return "crosshair";
+  if (state === "pending") return "default";
+  return "pointer";
+}
+
+export function Canvas() {
   const { board, bannerToday, ownerOfBannerToday } = useBoardCanvasData();
+  // The selection is the panel's business as much as the canvas's: it is what
+  // opens the buy flow, so it lives in the screen state, not in here.
+  const {
+    selection,
+    selectRect: onSelectionChange,
+    preview,
+    highlight,
+    setDragging,
+    panelOpen,
+    openBid,
+  } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const cv = useCanvasTransform(boxRef);
+  // The side panel lies over the right of this box. The board re-centres into
+  // what is left, so the panel arrives beside the board and not on top of it.
+  const sidePanel = useMediaQuery(PANEL_MEDIA);
+  const cv = useCanvasTransform(boxRef, sidePanel && panelOpen ? PANEL_WIDTH : 0);
 
   const [hovered, setHovered] = useState<CellRef | null>(null);
+  const [cursor, setCursor] = useState("default");
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const pointers = useRef(new Map<number, Pt>());
@@ -76,20 +103,26 @@ export function Canvas({
     };
   }, []);
 
-  const openOwnerSite = useCallback(
+  const follow = useCallback(
     (at: CellRef) => {
       const cell = board.cells[at.r][at.c];
-      const owner =
+      const url =
         cell.state === "banner"
-          ? ownerOfBannerToday
-          : cell.block
-            ? board.ownerById.get(cell.block.ownerId)
-            : null;
-      // A pending block is paid for but has nothing to show yet, so it leads nowhere.
-      if (!owner || cell.state === "pending") return;
-      window.open(`https://${owner.url}`, "_blank", "noopener,noreferrer");
+          ? bannerToday?.url
+          : cell.state === "pending"
+            ? // A pending block is paid for but has nothing to show yet.
+              undefined
+            : cell.block?.url;
+      // An unsold banner is the house ad. It asks for a bid, so it opens the
+      // bid flow rather than sitting there as the one dead end on the board.
+      if (cell.state === "banner" && !bannerToday) {
+        openBid();
+        return;
+      }
+      if (!url) return;
+      window.open(`https://${url}`, "_blank", "noopener,noreferrer");
     },
-    [board, ownerOfBannerToday],
+    [board, bannerToday, openBid],
   );
 
   const twoFinger = () => {
@@ -138,6 +171,7 @@ export function Canvas({
     }
 
     mode.current = "select";
+    setDragging(true);
     if (e.shiftKey && anchor.current) {
       onSelectionChange(rectFrom(anchor.current, at));
     } else {
@@ -152,6 +186,7 @@ export function Canvas({
     if (e.pointerType === "mouse" && mode.current === "idle") {
       const at = cv.toCell(p);
       setHovered(at && board.cells[at.r][at.c].state === "available" ? at : null);
+      setCursor(cursorFor(board, at));
       const text = at ? tooltipFor(board, ownerOfBannerToday?.name ?? null, at) : null;
       setTip(text ? { x: p.x, y: p.y, text } : null);
     }
@@ -190,7 +225,8 @@ export function Canvas({
 
   const endPointer = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
-    if (mode.current === "press" && pressed.current) openOwnerSite(pressed.current);
+    setDragging(false);
+    if (mode.current === "press" && pressed.current) follow(pressed.current);
     pressed.current = null;
     if (pointers.current.size < 2 && mode.current === "pinch") mode.current = "idle";
     if (pointers.current.size === 0) mode.current = "idle";
@@ -219,10 +255,11 @@ export function Canvas({
       onPointerLeave={() => {
         setHovered(null);
         setTip(null);
+        setCursor("default");
       }}
       onDoubleClick={onDoubleClick}
-      className="relative flex-1 cursor-crosshair overflow-hidden"
-      style={{ touchAction: "none", overscrollBehavior: "none" }}
+      className="relative flex-1 overflow-hidden select-none"
+      style={{ touchAction: "none", overscrollBehavior: "none", cursor }}
     >
       <div
         className="absolute"
@@ -239,6 +276,8 @@ export function Canvas({
           selection={selection}
           blocked={blocked}
           hovered={hovered}
+          preview={preview}
+          highlight={highlight}
         />
       </div>
 
@@ -273,6 +312,7 @@ export function Canvas({
       )}
 
       <ZoomControls
+        inset={sidePanel && panelOpen ? PANEL_WIDTH : 0}
         scale={cv.scale}
         onIn={() => cv.zoomBy(1.6)}
         onOut={() => cv.zoomBy(1 / 1.6)}
@@ -283,11 +323,14 @@ export function Canvas({
 }
 
 function ZoomControls({
+  inset,
   scale,
   onIn,
   onOut,
   onFit,
 }: {
+  /** The panel's width, so the controls stay beside the board and not under it. */
+  inset: number;
   scale: number;
   onIn: () => void;
   onOut: () => void;
@@ -298,8 +341,8 @@ function ZoomControls({
   return (
     // Touch has pinch and double-tap, so on a phone these would only cover squares.
     <div
-      className="border-hairline absolute right-4 bottom-4 hidden border lg:flex"
-      style={{ boxShadow: "var(--shadow-lift)" }}
+      className="border-hairline absolute bottom-4 hidden border lg:flex"
+      style={{ right: inset + 16, boxShadow: "var(--shadow-lift)" }}
     >
       <button type="button" className={btn} onClick={onOut} disabled={scale <= 1} aria-label="Zoom out">
         −

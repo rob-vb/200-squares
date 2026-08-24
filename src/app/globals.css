@@ -96,3 +96,34 @@ a {
   width: var(--tick-digit);
   text-align: center;
 }
+
+/* The panel arrives. It slides in from the side it is docked to, and leaves at
+   once — a box sliding out after its content is gone reads as a glitch. */
+@keyframes panel-slide {
+  from {
+    transform: translateX(12%);
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-rise {
+  from {
+    transform: translateY(24%);
+    opacity: 0;
+  }
+}
+
+.panel-slide {
+  animation: panel-slide 220ms var(--ease-out);
+}
+
+.sheet-rise {
+  animation: sheet-rise 220ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-slide,
+  .sheet-rise {
+    animation: none;
+  }
+}
