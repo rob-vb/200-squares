@@ -53,6 +53,8 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 
 - [15 — Build: click counters](issues/15-build-clicks.md) — the counters are on `build-15-clicks`: `clicks` on `Block` and `BannerDay`, seeded wide in both datasets and really incremented by `follow()`, with the owner's number on the block's row in My squares and one public total under the pitch on `/how-it-works`. Two things ticket 14 left open were settled by building: the viewer had to be given a past banner day, or the banner half of My squares is unreachable in a demo where the auction closes at 00:00 UTC; and a part sale does not divide the seller's count — it lands whole on the largest piece they keep, because the site never knew which square was clicked and any split would be invention that also multiplies the public total.
 
+- [16 — The copy for click counters](issues/16-clicks-copy.md) — the copy is true. The FAQ turns `Do I get traffic numbers?` from no to yes in four sentences and **gains no question**: the dev's rule is that it answers only what a buyer really asks, so the two facts that no longer fit — only the owner sees it, and there is no graph — moved to `/privacy` and turned out to belong there, as promises to the visitor rather than product detail. `/privacy` loses *"There are no visitor statistics here at all"* and the sentence leaning on it, and gains a **What it counts** section placed *before* **What it does not do**, because admitting a count under a "does not" heading is the softening this ticket forbids; the three real promises are untouched. `/terms` keeps the promise half and drops "reported": a count is a record of what happened, not a promise of what will. `What you get` names the counter as part of what $100 buys, and the tracking-parameters advice survives reworded — the site owns the click, the owner owns what happens after it. Five more untrue or silent lines were found by reading the rest, including `/terms`' part-sale paragraph, which said nothing about the count landing whole on the largest piece the seller keeps. The two live numbers stay bare on purpose; `/about` never lied and was left alone.
+
 ## Not yet specified
 
 - Auth provider once a backend exists (Clerk, Supabase, something else) — the prototype fakes the session.
@@ -66,7 +68,11 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - Whether a block shows what it last sold for, and whether the market has a price record the way the banner has one.
 - Whether an owner's count should survive a cut they made themselves. Ticket 15 puts it whole on the largest piece a part sale leaves, which is right for a sale; an owner who splits their own block for their own reasons has no such event to hang it on, and today there is no way for them to do that at all.
 - Filtering a click count once a backend exists: the same visitor clicking ten times, and bots. Ticket 14 accepted a rough number on purpose — no trace per visitor — so this is a question for the day the site keeps anything at all, and it lands next to **Real payment** below.
-- A click count over time — per day, a window, a graph. It needs dates in the model, and ticket 14 refused to add them for a prototype counter.
+- A click count over time — per day, a window, a graph. It needs dates in the model, and
+  ticket 14 refused to add them for a prototype counter. Ticket 16 raised the cost of
+  changing that: `/privacy` now states the absence of a timestamp as a promise to the
+  visitor — *no time is written down* — so a graph is no longer only a modelling change,
+  it is a promise withdrawn.
 
 ## Out of scope
 
