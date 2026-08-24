@@ -13,7 +13,6 @@
 // so there the canvas takes the height it is given.
 
 import { AuctionDock } from "./auction-dock";
-import { ForSaleSwitch } from "./for-sale-switch";
 import { Canvas } from "./canvas/canvas";
 import { PanelSheet, PanelSide } from "./panel/panel";
 import { TitleBlock } from "./title-block";
@@ -28,19 +27,10 @@ export function BoardScreen() {
           <PanelSide />
         </div>
 
-        {/* The switch belongs to the board, not to the counter it was charted
-            beside: ticket 10 moved that counter to /how-it-works, and a control
-            that changes the canvas has to stand where the canvas is.
-            It shares the legend's row rather than taking one of its own — a
-            phone has exactly the height between the board and the auction dock,
-            and a second row spends more of it than there is. */}
-        <div className="flex shrink-0 items-end justify-between gap-3 lg:gap-6">
-          <div className="flex items-center gap-4">
-            <p className="text-faint hidden text-[13px] lg:block">
-              Drag to select up to {MAX_BLOCK} × {MAX_BLOCK} · ${PRICE_PER_SQUARE} per square
-            </p>
-            <ForSaleSwitch />
-          </div>
+        <div className="flex shrink-0 items-end justify-between gap-6">
+          <p className="text-faint hidden text-[13px] lg:block">
+            Drag to select up to {MAX_BLOCK} × {MAX_BLOCK} · ${PRICE_PER_SQUARE} per square
+          </p>
           <TitleBlock />
         </div>
       </main>

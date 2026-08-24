@@ -14,7 +14,15 @@
 // and it stays whole, with its artwork, until somebody buys part of it.
 
 import { useEffect, useRef, useState } from "react";
-import { Field, Money, PanelHeader, PrimaryButton, SecondaryButton, inputClass } from "./controls";
+import {
+  Field,
+  FieldBox,
+  Money,
+  PanelHeader,
+  PrimaryButton,
+  SecondaryButton,
+  inputClass,
+} from "./controls";
 import { useScreen } from "./flow";
 import { useBoard } from "@/lib/board/state";
 import {
@@ -68,7 +76,7 @@ export function SellFlow({ blockId }: { blockId: string }) {
       />
 
       <div className="flex flex-col gap-4 px-4 py-4">
-        <Field
+        <FieldBox
           label="What you offer"
           hint="Drag inside your block. One square, or all of it."
         >
@@ -88,7 +96,7 @@ export function SellFlow({ blockId }: { blockId: string }) {
               )}
             </div>
           </div>
-        </Field>
+        </FieldBox>
 
         <Field
           label="Your price, per square"
@@ -145,7 +153,13 @@ export function SellFlow({ blockId }: { blockId: string }) {
   );
 }
 
-/** The block at thumbnail size. Drag on it the way you drag on the board. */
+/**
+ * The block at thumbnail size. Drag on it the way you drag on the board.
+ *
+ * The whole grid takes the pointer and works out the cell from where it is, the
+ * way the canvas does. Per-cell handlers cannot: touch captures the pointer to
+ * the cell it went down on, so no other cell ever hears about the drag.
+ */
 function BlockPicker({
   rect,
   part,
@@ -156,26 +170,41 @@ function BlockPicker({
   onPick: (next: Rect) => void;
 }) {
   const px = 20;
+  const gap = 1;
+  const boxRef = useRef<HTMLDivElement | null>(null);
   const anchor = useRef<{ r: number; c: number } | null>(null);
 
-  const cellAt = (r: number, c: number) => ({ r, c });
-  const start = (r: number, c: number) => {
-    anchor.current = cellAt(r, c);
-    onPick(rectWithin(anchor.current, anchor.current, rect));
-  };
-  const extend = (r: number, c: number) => {
-    if (anchor.current) onPick(rectWithin(anchor.current, cellAt(r, c), rect));
+  const cellAt = (e: React.PointerEvent) => {
+    const box = boxRef.current?.getBoundingClientRect();
+    if (!box) return null;
+    const clamp = (v: number, hi: number) => Math.max(0, Math.min(v, hi - 1));
+    return {
+      r: rect.r + clamp(Math.floor((e.clientY - box.top - gap) / (px + gap)), rect.h),
+      c: rect.c + clamp(Math.floor((e.clientX - box.left - gap) / (px + gap)), rect.w),
+    };
   };
 
   return (
     <div
+      ref={boxRef}
       className="bg-hairline grid shrink-0 cursor-crosshair touch-none gap-px p-px select-none"
       style={{
         gridTemplateColumns: `repeat(${rect.w}, ${px}px)`,
         gridTemplateRows: `repeat(${rect.h}, ${px}px)`,
       }}
+      onPointerDown={(e) => {
+        const at = cellAt(e);
+        if (!at) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        anchor.current = at;
+        onPick(rectWithin(at, at, rect));
+      }}
+      onPointerMove={(e) => {
+        const at = anchor.current && cellAt(e);
+        if (at) onPick(rectWithin(anchor.current!, at, rect));
+      }}
       onPointerUp={() => (anchor.current = null)}
-      onPointerLeave={() => (anchor.current = null)}
+      onPointerCancel={() => (anchor.current = null)}
     >
       {Array.from({ length: rect.w * rect.h }, (_, i) => {
         const r = rect.r + Math.floor(i / rect.w);
@@ -184,13 +213,6 @@ function BlockPicker({
         return (
           <div
             key={i}
-            onPointerDown={(e) => {
-              e.currentTarget.releasePointerCapture(e.pointerId);
-              start(r, c);
-            }}
-            onPointerEnter={(e) => {
-              if (e.buttons > 0) extend(r, c);
-            }}
             style={{ background: on ? "var(--color-accent)" : "var(--color-square)" }}
           />
         );

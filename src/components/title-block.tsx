@@ -10,9 +10,7 @@
 // Every field draws its own left rule and the box closes on the right, so the
 // rules land between fields at both breakpoints — a phone shows the two counts
 // that move, a desktop shows all five, beside the line that says how to buy.
-//
-// It shares its row with the For sale switch, so it takes the width that is left
-// rather than all of it.
+
 
 import { useBoard } from "@/lib/board/state";
 import { PRICE_PER_SQUARE, SQUARE_COUNT } from "@/lib/board/geometry";
@@ -43,7 +41,7 @@ export function TitleBlock() {
   const { taken, pending } = board.stats;
 
   return (
-    <div className="border-hairline bg-square grid min-w-0 flex-1 grid-cols-2 border-y border-r lg:w-auto lg:flex-none lg:grid-cols-5">
+    <div className="border-hairline bg-square grid w-full shrink-0 grid-cols-2 border-y border-r lg:w-auto lg:grid-cols-5">
       <Field label="Sheet" value="01 / 01" desktopOnly />
       <Field label="Squares" value={String(SQUARE_COUNT)} desktopOnly />
       <Field label="Taken" value={String(taken)} />

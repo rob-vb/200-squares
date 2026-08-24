@@ -26,7 +26,7 @@ export function ForSaleSwitch() {
       aria-checked={forSale}
       disabled={off}
       onClick={() => setForSale(!forSale)}
-      className={`border-hairline flex shrink-0 items-center gap-2 border px-2 py-1 text-[13px] font-medium transition-colors duration-150 ${
+      className={`border-hairline flex shrink-0 items-center gap-1.5 border px-2 py-1 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ${
         off ? "text-faint/50" : forSale ? "bg-white" : "hover:bg-white"
       }`}
     >
