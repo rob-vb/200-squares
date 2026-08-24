@@ -27,8 +27,14 @@ export default async function Page(props: PageProps<"/terms">) {
             carries one image and one link.
           </P>
           <P>
-            Squares are not resold, rented out or taken back to sell again. You cannot transfer a
-            square to somebody else through this site.
+            Your square is not taken back, rented out or sold again while it is yours. That is a
+            promise about what this site does, not a rule about what you may do with what you
+            bought.
+          </P>
+          <P>
+            Selling your square on to somebody else is not supported yet. There is no listing, no
+            transfer and no price for it here, so a square changes hands only if this site learns
+            how to do it.
           </P>
         </Section>
 

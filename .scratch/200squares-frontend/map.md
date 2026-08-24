@@ -4,7 +4,7 @@ Label: wayfinder:map
 
 ## Destination
 
-A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend, no real payment, no resale market.
+A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend and no real payment. Selling a square on is a live question on this map (ticket 11); whether the prototype shows it is decided there.
 
 ## Notes
 
@@ -54,7 +54,8 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 
 ## Out of scope
 
-- Resale market for squares — its own effort (listing, transfer, pricing).
+<!-- Resale left this list on 2026-08-24: it is now ticket 11. -->
+
 - Real payment (Stripe or otherwise) and invoicing.
 - Real authentication and accounts.
 - Backend, database, image storage, cron for the 00:00 UTC rollover.

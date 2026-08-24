@@ -49,6 +49,10 @@ const FAQ: [string, string][] = [
     "So no single buyer can take over the grid. 199 squares held by many owners is what makes the picture worth looking at.",
   ],
   [
+    "Can I sell my square to somebody else?",
+    "Not through this site, not yet. There is no listing and no transfer here, so a square stays with the buyer who took it.",
+  ],
+  [
     "What if every square sells?",
     "Then that is it — there are no more. The banner is still auctioned every day.",
   ],
@@ -66,8 +70,8 @@ export function HowItWorks() {
             renewal.
           </P>
           <P>
-            Your square is permanent. It does not expire, and it is never resold, rented out or
-            taken back.
+            Your square is permanent. It does not expire, and nobody takes it back, rents it out
+            or sells it out from under you.
           </P>
           <P>
             Buy up to {MAX_BLOCK * MAX_BLOCK} squares as one block, at most {MAX_BLOCK} wide and{" "}
