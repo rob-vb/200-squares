@@ -1,7 +1,10 @@
-# 10 — Build: content below the canvas
+# 10 — Build: the pages beside the board
+
+<!-- Charted as "Build: content below the canvas". The content left the board
+     page on 2026-08-24 — see Scope change. -->
 
 Type: task
-Status: open
+Status: resolved
 Assignee: rob-vb (claimed by agent session)
 Blocked by: 07, 08
 Parent: ../map.md
@@ -136,3 +139,89 @@ form and a `mailto:` because a form that silently discarded a message would be
 the one place this prototype lies to a visitor. A handle is neither: it goes to a
 real profile and it is answered there. Ticket 07's other rule holds — one name,
 at contact, and nowhere else.
+
+## Answer
+
+**2026-08-24 — the pages beside the board are on `main`.**
+
+Checked on the preview and signed off. Four pages, not a scroll: the board page is
+one screen and carries nothing under it.
+
+Preview: https://200-squares-git-ticket-10-content-robs-projects-52973834.vercel.app
+`/how-it-works` · `/about` · `/terms` · `/privacy`, and `?data=early` on any of them.
+
+### What landed
+
+```
+src/app/
+  page.tsx            the board, seeded from ?data= on the server
+  how-it-works/       ticket 07's page, whole and in its order
+  about/  terms/  privacy/
+src/components/
+  site.tsx            the shell: one board, one top bar, per page
+  nav.ts              the four pages, and the rule that links carry ?data= on
+  content/
+    how-it-works.tsx  counter → what you get → how it works → banner → FAQ → contact
+    counter.tsx       the live SQUARES LEFT figure, the page's h1
+    banner-record.tsx the record of past banner days, winning bids public
+    content-page.tsx  the shell the three prose pages share
+    section.tsx  footer.tsx  contact.tsx
+  use-client-date.ts  the visitor's date, null until there is one
+```
+
+### The board page keeps the board
+
+Ticket 07's page was built under the canvas first, and it was wrong there. The
+board is the product; a board with a document under it is two products. The whole
+page moved out and took the fold with it — the board page is exactly one screen
+again, and it does not scroll.
+
+**So ticket 02's wheel is restored, not corrected.** Building the scrolling
+version needed the plain wheel back for the page, because a canvas that swallowed
+the wheel locked every mouse user out of what was under it. With nothing under it,
+that reason is gone: the wheel zooms at the cursor, exactly as ticket 02 decided.
+The `overscroll-behavior: none` on the canvas box — which is what actually ate the
+wheel — stays, and is now correct.
+
+### Where the links live
+
+The top bar carries them. A phone has room for the wordmark, one link and the
+session, so it shows **How it works** — the page that sells. A desktop shows all
+four. Every page beside the board ends in a footer with all four, which is where a
+phone visitor looks for Terms anyway. The wordmark is the way back to the board.
+
+### Two calls about rendering
+
+- **The dataset is read on the server, per page.** A client-side read of the query
+  string would opt every page out of server rendering, and these pages are mostly
+  text. Every link carries `?data=` on, and `nav.ts` takes the name from the board
+  itself rather than the URL.
+- **The board is seeded per page, so navigating resets it.** Ticket 03 already
+  settled this for a reload — a demo wants every visitor on the same board — and
+  navigation is the same event.
+
+### Copy
+
+`/how-it-works` is ticket 07's text, word for word, with the counts and limits read
+from `geometry.ts` so the copy cannot drift from the board. `/about`, `/terms` and
+`/privacy` are new and were written from ticket 07's decided facts: price,
+permanence, what you may put there, no guarantee, no visitor statistics, plus the
+auction rules.
+
+The dev asked for them to follow **outbid.lol**. That site sits behind Vercel's bot
+check and answers 403 without a browser, so the pass never happened, and the dev
+took the drafts as they are. They speak as if the sale is real: no
+"this is a prototype" line, by decision.
+
+Two corrections came out of reading them:
+
+- **The copy no longer forbids resale.** The draft turned ticket 07's promise —
+  your square is never taken back or resold by us — into a rule about what the
+  owner may do. That closed a door, and resale is now ticket 11.
+- **Contact is a handle, not an address**: @the_robvb on X, and it is a link.
+
+### Deliberately not built
+
+- Any resale flow. That is ticket 11, and it decides before it builds.
+- An archive page for past banner days — the record shows what the dataset holds.
+  Still on the map under Not yet specified.
