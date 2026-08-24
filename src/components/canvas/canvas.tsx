@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Board } from "./board";
 import { useCanvasTransform, useWheelZoom, type Pt } from "./transform";
+import { useScreen } from "../panel/flow";
 import { useBoard } from "@/lib/board/state";
 import {
   MAX_SCALE,
@@ -24,7 +25,6 @@ import {
   selectionBlocked,
   type BoardModel,
 } from "@/lib/board/geometry";
-import type { Rect } from "@/lib/board/types";
 
 type CellRef = { r: number; c: number };
 
@@ -40,14 +40,17 @@ function tooltipFor(board: BoardModel, bannerName: string | null, at: CellRef): 
   return owner ? `${owner.name} · Opens ${owner.url}` : null;
 }
 
-export function Canvas({
-  selection,
-  onSelectionChange,
-}: {
-  selection: Rect | null;
-  onSelectionChange: (rect: Rect | null) => void;
-}) {
+export function Canvas() {
   const { board, bannerToday, ownerOfBannerToday } = useBoardCanvasData();
+  // The selection is the panel's business as much as the canvas's: it is what
+  // opens the buy flow, so it lives in the screen state, not in here.
+  const {
+    selection,
+    selectRect: onSelectionChange,
+    preview,
+    highlight,
+    setDragging,
+  } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
   const cv = useCanvasTransform(boxRef);
 
@@ -138,6 +141,7 @@ export function Canvas({
     }
 
     mode.current = "select";
+    setDragging(true);
     if (e.shiftKey && anchor.current) {
       onSelectionChange(rectFrom(anchor.current, at));
     } else {
@@ -190,6 +194,7 @@ export function Canvas({
 
   const endPointer = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
+    setDragging(false);
     if (mode.current === "press" && pressed.current) openOwnerSite(pressed.current);
     pressed.current = null;
     if (pointers.current.size < 2 && mode.current === "pinch") mode.current = "idle";
@@ -239,6 +244,8 @@ export function Canvas({
           selection={selection}
           blocked={blocked}
           hovered={hovered}
+          preview={preview}
+          highlight={highlight}
         />
       </div>
 
