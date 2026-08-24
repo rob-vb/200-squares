@@ -19,7 +19,8 @@ export function TopBar() {
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between px-4 lg:px-8">
-      <span className="font-display text-[22px] leading-none tracking-[0.01em]">200 SQUARES</span>
+      {/* The wordmark is the page's heading. Nothing above the canvas outranks it. */}
+      <h1 className="font-display text-[22px] leading-none tracking-[0.01em]">200 SQUARES</h1>
 
       {state.signedIn && viewer ? (
         <div className="flex items-center gap-4">
