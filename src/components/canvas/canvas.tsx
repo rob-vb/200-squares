@@ -15,7 +15,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Board } from "./board";
 import { useCanvasTransform, useWheelZoom, type Pt } from "./transform";
-import { useScreen } from "../panel/flow";
+import { PANEL_MEDIA, PANEL_WIDTH, useScreen } from "../panel/flow";
+import { useMediaQuery } from "../use-media-query";
 import { useBoard } from "@/lib/board/state";
 import {
   MAX_SCALE,
@@ -50,9 +51,13 @@ export function Canvas() {
     preview,
     highlight,
     setDragging,
+    panelOpen,
   } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const cv = useCanvasTransform(boxRef);
+  // The side panel lies over the right of this box. The board re-centres into
+  // what is left, so the panel arrives beside the board and not on top of it.
+  const sidePanel = useMediaQuery(PANEL_MEDIA);
+  const cv = useCanvasTransform(boxRef, sidePanel && panelOpen ? PANEL_WIDTH : 0);
 
   const [hovered, setHovered] = useState<CellRef | null>(null);
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -280,6 +285,7 @@ export function Canvas() {
       )}
 
       <ZoomControls
+        inset={sidePanel && panelOpen ? PANEL_WIDTH : 0}
         scale={cv.scale}
         onIn={() => cv.zoomBy(1.6)}
         onOut={() => cv.zoomBy(1 / 1.6)}
@@ -290,11 +296,14 @@ export function Canvas() {
 }
 
 function ZoomControls({
+  inset,
   scale,
   onIn,
   onOut,
   onFit,
 }: {
+  /** The panel's width, so the controls stay beside the board and not under it. */
+  inset: number;
   scale: number;
   onIn: () => void;
   onOut: () => void;
@@ -305,8 +314,8 @@ function ZoomControls({
   return (
     // Touch has pinch and double-tap, so on a phone these would only cover squares.
     <div
-      className="border-hairline absolute right-4 bottom-4 hidden border lg:flex"
-      style={{ boxShadow: "var(--shadow-lift)" }}
+      className="border-hairline absolute bottom-4 hidden border lg:flex"
+      style={{ right: inset + 16, boxShadow: "var(--shadow-lift)" }}
     >
       <button type="button" className={btn} onClick={onOut} disabled={scale <= 1} aria-label="Zoom out">
         −

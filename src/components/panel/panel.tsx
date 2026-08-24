@@ -1,16 +1,23 @@
 "use client";
 
-// The one surface. On a wide screen it is a column that is always there, open or
-// closed, so opening a flow never resizes the canvas. Below 1280px it is the
-// bottom sheet, which is the only thing in the product allowed to cover the
-// board — and it still never covers the banner, because the banner is top-left.
+// The one surface, in two placements.
+//
+// On a wide screen it slides in over the right of the canvas area when a flow
+// opens, and leaves again when the flow closes. The canvas does not resize for
+// it — the square keeps the size it had — it only re-centres into the width the
+// panel leaves free, so the panel never lands on top of the board. Below the
+// breakpoint it is the bottom sheet, which is the only thing in the product
+// allowed to cover the board, and even then never the banner: the banner is
+// top-left and the sheet comes from the bottom.
+//
+// It waits for the pointer to lift. A panel that arrived mid-drag would move the
+// board under the hand that is still drawing on it.
 
 import { useEffect } from "react";
 import { BidFlow } from "./bid-flow";
 import { BoughtFlow, BuyFlow } from "./buy-flow";
-import { useScreen } from "./flow";
+import { PANEL_WIDTH, useScreen } from "./flow";
 import { MySquares } from "./my-squares";
-import { MAX_BLOCK, PRICE_PER_SQUARE } from "@/lib/board/geometry";
 
 function FlowBody() {
   const { flow, selection } = useScreen();
@@ -41,48 +48,33 @@ function useEscapeToClose(close: () => void, open: boolean) {
   }, [close, open]);
 }
 
-/**
- * The desktop column. Closed, it carries the only permanent explanation of how
- * to buy — which is why the reserved column is not dead space.
- */
-export function PanelColumn() {
-  const { flow, close } = useScreen();
-  useEscapeToClose(close, flow.kind !== "none");
+/** The side panel. It sits inside the canvas area, over the right of it. */
+export function PanelSide() {
+  const { panelOpen, close } = useScreen();
+  useEscapeToClose(close, panelOpen);
+
+  if (!panelOpen) return null;
 
   return (
     <section
-      className="border-hairline bg-square flex min-h-0 flex-1 flex-col overflow-hidden border"
-      style={{ boxShadow: "var(--shadow-lift)" }}
+      className="border-hairline bg-square panel-slide absolute inset-y-0 right-0 z-30 hidden flex-col overflow-y-auto border xl:flex"
+      style={{ width: PANEL_WIDTH, boxShadow: "var(--shadow-lift)" }}
     >
-      {flow.kind === "none" ? (
-        <div className="flex flex-1 flex-col justify-center gap-2 px-4 py-6">
-          <p className="font-display text-[19px] leading-tight">
-            Drag to select up to {MAX_BLOCK} × {MAX_BLOCK}
-          </p>
-          <p className="text-faint text-[14px] leading-snug">
-            ${PRICE_PER_SQUARE} per square, once. Your artwork goes on it and a click opens your
-            website.
-          </p>
-        </div>
-      ) : (
-        <FlowBody />
-      )}
+      <FlowBody />
     </section>
   );
 }
 
-/** The bottom sheet, below 1280px. It only exists while a flow is open. */
+/** The bottom sheet, below the breakpoint. */
 export function PanelSheet() {
-  const { flow, close, dragging } = useScreen();
-  useEscapeToClose(close, flow.kind !== "none");
+  const { panelOpen, close } = useScreen();
+  useEscapeToClose(close, panelOpen);
 
-  // A sheet that slid up mid-drag would cover the board under the finger that is
-  // still drawing on it. It waits for the finger to lift.
-  if (flow.kind === "none" || dragging) return null;
+  if (!panelOpen) return null;
 
   return (
     <section
-      className="border-hairline bg-square fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col overflow-y-auto border-t xl:hidden"
+      className="border-hairline bg-square sheet-rise fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col overflow-y-auto border-t xl:hidden"
       style={{ boxShadow: "var(--shadow-dock)" }}
     >
       <FlowBody />

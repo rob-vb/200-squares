@@ -1,18 +1,29 @@
 "use client";
 
-// The legend. It earns its place by carrying real counts: scarcity is the
-// product, so the numbers that shrink stay on screen.
+// The legend under the canvas. It earns its place by carrying real counts:
+// scarcity is the product, so the numbers that shrink stay on screen.
 //
-// Two shapes for one thing. Under the canvas it is a strip of the three counts
-// that move; inside the reserved panel column it is a plate of all six, because
-// there the width is fixed and the height is free.
+// Every field draws its own left rule and the box closes on the right, so the
+// rules land between fields at both breakpoints — a phone shows the three
+// counts that move, a desktop shows all six, beside the line that says how to
+// buy.
 
 import { useBoard } from "@/lib/board/state";
 import { PRICE_PER_SQUARE, SQUARE_COUNT } from "@/lib/board/geometry";
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({
+  label,
+  value,
+  desktopOnly = false,
+}: {
+  label: string;
+  value: string;
+  desktopOnly?: boolean;
+}) {
   return (
-    <div className="bg-square px-2 py-1">
+    <div
+      className={`border-hairline border-l px-2 py-1 ${desktopOnly ? "hidden lg:block" : ""}`}
+    >
       <div className="text-faint text-[11px]">{label}</div>
       <div className="font-display text-[15px] leading-tight" data-numeric>
         {value}
@@ -21,34 +32,18 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function TitleBlock({ variant }: { variant: "strip" | "column" }) {
+export function TitleBlock() {
   const { board } = useBoard();
   const { taken, pending, available } = board.stats;
 
-  const moving = (
-    <>
+  return (
+    <div className="border-hairline bg-square grid w-full shrink-0 grid-cols-3 border-y border-r lg:w-auto lg:grid-cols-6">
+      <Field label="Sheet" value="01 / 01" desktopOnly />
+      <Field label="Squares" value={String(SQUARE_COUNT)} desktopOnly />
       <Field label="Taken" value={String(taken)} />
       <Field label="Pending" value={String(pending)} />
       <Field label="Available" value={String(available)} />
-    </>
-  );
-
-  // The hairlines are the gaps: a 1px grid gap over the hairline colour draws
-  // every rule between the fields at once, whatever the column count.
-  if (variant === "strip") {
-    return (
-      <div className="bg-hairline grid shrink-0 grid-cols-3 gap-px border-y border-hairline xl:hidden">
-        {moving}
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-hairline border-hairline grid shrink-0 grid-cols-3 gap-px border">
-      <Field label="Sheet" value="01 / 01" />
-      <Field label="Squares" value={String(SQUARE_COUNT)} />
-      <Field label="Rate" value={`$${PRICE_PER_SQUARE}`} />
-      {moving}
+      <Field label="Rate" value={`$${PRICE_PER_SQUARE}`} desktopOnly />
     </div>
   );
 }

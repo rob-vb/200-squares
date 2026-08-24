@@ -11,6 +11,11 @@ import { selectionBlocked } from "@/lib/board/geometry";
 import { useBoard } from "@/lib/board/state";
 import type { Rect } from "@/lib/board/types";
 
+/** How wide the sliding panel is. The canvas needs the number too. */
+export const PANEL_WIDTH = 380;
+/** The breakpoint where the panel is a side panel instead of a bottom sheet. */
+export const PANEL_MEDIA = "(min-width: 1280px)";
+
 export type Flow =
   | { kind: "none" }
   | { kind: "buy" }
@@ -25,9 +30,11 @@ type ScreenValue = {
   highlight: Rect | null;
   /** An object URL, painted over the selection before the purchase is confirmed. */
   preview: string | null;
-  /** A selection drag is under way. The sheet waits for the finger to lift. */
+  /** A selection drag is under way. The panel waits for the pointer to lift. */
   dragging: boolean;
   setDragging: (on: boolean) => void;
+  /** A flow is on screen. Not the same as "a flow is chosen": see `dragging`. */
+  panelOpen: boolean;
   selectRect: (rect: Rect | null) => void;
   setPreview: (src: string | null) => void;
   setHighlight: (rect: Rect | null) => void;
@@ -79,6 +86,7 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       preview,
       dragging,
       setDragging,
+      panelOpen: flow.kind !== "none" && !dragging,
       selectRect,
       setPreview,
       setHighlight,

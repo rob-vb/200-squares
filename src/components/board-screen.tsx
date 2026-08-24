@@ -1,12 +1,13 @@
 "use client";
 
-// The first screen: top bar, canvas, panel, legend, auction dock.
+// The first screen: top bar, canvas, legend, auction dock, and the panel that
+// arrives over the canvas area when a flow opens.
 //
-// The panel column is reserved from 1280px up, open or closed. That is the whole
-// reason for the breakpoint: at 1024px the canvas becomes width-bound and a
-// column appearing beside it would visibly shrink the board. Below 1280px the
-// panel is the bottom sheet, and the column's contents — legend and auction —
-// go back under and below the canvas.
+// The board is the whole point, so nothing stands beside it while nothing is
+// happening. The panel slides in from the right on a wide screen and rises from
+// the bottom on a phone, and the board re-centres beside it instead of shrinking
+// for it. The one permanent explanation of how to buy sits under the canvas,
+// next to the legend, where it costs the board nothing.
 //
 // The canvas box is not 100dvh on a phone. Fit is contain, and a phone is
 // width-bound, so the grid is 8:7 whatever the viewport height — a full-height
@@ -15,10 +16,11 @@
 
 import { AuctionDock } from "./auction-dock";
 import { Canvas } from "./canvas/canvas";
-import { ScreenProvider, useScreen } from "./panel/flow";
-import { PanelColumn, PanelSheet } from "./panel/panel";
+import { ScreenProvider } from "./panel/flow";
+import { PanelSheet, PanelSide } from "./panel/panel";
 import { TitleBlock } from "./title-block";
 import { TopBar } from "./top-bar";
+import { MAX_BLOCK, PRICE_PER_SQUARE } from "@/lib/board/geometry";
 import { BoardProvider } from "@/lib/board/state";
 import type { Dataset } from "@/lib/board/types";
 
@@ -33,33 +35,28 @@ export function BoardScreen({ dataset }: { dataset: Dataset }) {
 }
 
 function Screen() {
-  const { flow, dragging } = useScreen();
-  const sheetOpen = flow.kind !== "none" && !dragging;
-
   return (
-    <div className="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
+    <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
       <TopBar />
 
-      <main className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-4 xl:flex-row xl:items-stretch xl:gap-6 xl:px-8 xl:pb-8">
-        <div className="flex min-w-0 flex-col gap-2 xl:min-h-0 xl:flex-1">
-          <div className="flex aspect-[8/7] w-full xl:aspect-auto xl:min-h-0 xl:flex-1">
-            <Canvas />
-          </div>
-          <TitleBlock variant="strip" />
+      <main className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-4 lg:px-8 lg:pb-8">
+        <div className="relative flex aspect-[8/7] w-full lg:aspect-auto lg:min-h-0 lg:flex-1">
+          <Canvas />
+          <PanelSide />
         </div>
 
-        <aside className="hidden w-[360px] shrink-0 flex-col gap-3 xl:flex">
-          <PanelColumn />
-          <TitleBlock variant="column" />
-          <AuctionDock variant="static" />
-        </aside>
+        <div className="flex shrink-0 items-end justify-between gap-6">
+          <p className="text-faint hidden text-[13px] lg:block">
+            Drag to select up to {MAX_BLOCK} × {MAX_BLOCK} · ${PRICE_PER_SQUARE} per square
+          </p>
+          <TitleBlock />
+        </div>
       </main>
 
       {/* Room for the docked auction strip on a phone. */}
-      <div className="h-28 shrink-0 xl:hidden" />
+      <div className="h-28 shrink-0 lg:hidden" />
 
-      {/* The sheet takes the bottom of the screen, so the dock steps aside. */}
-      {sheetOpen ? null : <AuctionDock variant="fixed" />}
+      <AuctionDock />
       <PanelSheet />
     </div>
   );
