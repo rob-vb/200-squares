@@ -47,13 +47,15 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 
 - [12 — Build: the resale market](issues/12-build-resale.md) — the market is on `main`: a listing is a rectangle of a block plus a price **per square**, the buyer drags any rectangle out of it down to one square, and the switch lives in the top bar. Selling part of a block leaves the seller up to four blocks with the artwork cropped to each, and whatever the buyer left stays on the market at the same rate. Three decisions were corrected by building — the straight cut, the $100 floor, and where the switch stands.
 
+- [13 — The copy for resale](issues/13-resale-copy.md) — the pages beside the board describe the market. The FAQ grows to nine: the sell question is now yes and carries the seam a part sale leaves through the seller's own image, and a new buy question gives the `For sale` switch the words it never had. `Why 4 × 4 at most?` stops claiming it stops a takeover — the limit is on one image. `/terms` gets a **Selling your square on** section written from the sale rather than from one party, and it is where "no handing a square back" is stated. Three more untrue lines were found by reading the rest: the counter's pitch line, `/about`'s "once, at $100 each", and `/privacy`'s silence about a seller. The market view is deliberately undescribed — the switch is off by default and one click undoes it.
+
 ## Not yet specified
 
 - Auth provider once a backend exists (Clerk, Supabase, something else) — the prototype fakes the session.
 - Anti-snipe rules for the auction (last-second bids, extension window, minimum increment beyond the $100 floor). Ticket 03 uses top bid + $10 as a prototype placeholder only.
 - Requirements for supplied artwork: file size, aspect ratio per block size, formats, animation.
 - Archive page for past banner winners — `/how-it-works` shows the record the dataset holds, and nothing older.
-- SEO and share images. (Visible traffic proof is answered for now: ticket 07 says there are none and points owners at their own tracking parameters.)
+- SEO and share images.
 - Pricing model if squares get scarce, and what happens to the last squares.
 - What a real resale needs once money is real: escrow between two strangers, payouts to sellers, refunds, tax on the site's 10%. Ticket 11 ruled all of it prototype-only; it belongs with **Real payment** below.
 - Whether an owner whose block was cut apart can put the pieces back together, or replace the artwork across them at once. Ticket 12 leaves them holding up to four blocks with one image sliced between them, and blocks never merge — so today the answer is: replace each block's artwork one at a time.

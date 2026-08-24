@@ -86,7 +86,7 @@ What the Banner shows when nobody has won it: a message inviting the first bid, 
 
 ## Detail panel
 
-The single surface that shows detail and holds every flow: a right-hand column on desktop, a bottom sheet on mobile. Selecting squares, buying, bidding and My squares all use it, one flow at a time. Nothing else covers the canvas, and nothing ever covers the banner artwork: on desktop the column stands beside the canvas and is always present, so opening it never changes the size of the board.
+The single surface that shows detail and holds every flow: a right-hand column on desktop, a bottom sheet on mobile. Selecting squares, buying, bidding, selling, buying second-hand and My squares all use it, one flow at a time. Nothing else covers the canvas, and nothing ever covers the banner artwork. Opening the panel never resizes a square: on desktop the board keeps its scale and re-centres into the width beside the panel.
 
 ## Dataset
 
