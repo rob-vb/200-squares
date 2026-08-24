@@ -30,10 +30,6 @@ const STEPS: [string, string][] = [
 
 const FAQ: [string, string][] = [
   [
-    "What happens if the site goes down?",
-    "Then the squares go with it. This is one project run by one person, not a company with a guarantee behind it. That is the honest answer, and it is priced in at $100.",
-  ],
-  [
     "Can I buy more squares later, next to mine?",
     "Yes, as long as they are still free. Each purchase is its own block, so two blocks side by side stay two images.",
   ],
@@ -59,7 +55,7 @@ const FAQ: [string, string][] = [
   ],
   [
     "What if every square sells?",
-    "Then that is it — there are no more. The banner is still auctioned every day.",
+    "Then the site has no more to sell — but squares change hands. Owners put theirs up for sale, and the For sale switch at the top of the board shows what is on offer. The banner is still auctioned every day.",
   ],
 ];
 

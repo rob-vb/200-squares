@@ -45,7 +45,7 @@ export default async function Page(props: PageProps<"/about">) {
         <Section title="Who runs it">
           <P>
             One person, not a company. That is worth knowing before you spend $100 here, so it is on
-            this page and in the FAQ rather than in the small print.
+            this page rather than in the small print.
           </P>
           <Contact />
         </Section>
