@@ -37,3 +37,21 @@ Settled already, and not to be reopened without a reason:
 
 Then check the rest of the copy against what 12 actually built, the way reading
 the drafts in ticket 10 found the resale hole in the first place.
+
+
+## Changed by ticket 12 (2026-08-24)
+
+Read [ticket 12's Resolution](12-build-resale.md) before this ticket's own
+sources: it corrected two of the facts ticket 11 proposed lines for, and added
+one nobody had to describe yet.
+
+- **The price is per square**, set by the seller, floor $1. Not one price for
+  the block, and no $100 floor. The FAQ line ticket 11 drafted says "asking
+  price from $100" — that is now wrong twice over.
+- **The buyer takes any rectangle**, down to a single square. An owner can sell
+  one square out of a block.
+- **A part sale leaves the seller more than one block**, with their artwork
+  cropped and a grid seam through it. Nobody has written a line about this and
+  it is a real cost to an owner. It belongs in the answer.
+- Unchanged: the site keeps 10%, listing is free, and the block arrives without
+  the seller's image or link.

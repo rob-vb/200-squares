@@ -181,17 +181,29 @@ in the FAQ.
 
 ## Corrected by ticket 12 (2026-08-24)
 
-**The floor is $1, not $100.** Building the market showed the $100 floor does
-not do the job this answer gave it. It was there to stop second-hand blocks
-undercutting the $100 the site charges for a square — but a 4 × 4 at $100 is
-$6.25 a square, which undercuts the primary price exactly as hard as the $40
-this answer refused. A floor that actually worked would have to be $100 *a
-square*, the seller's own cost, and that is the site deciding what somebody
-else's block is worth.
+Building the market reversed two of the answers above. Everything else in it
+stands — the 10% share, listing free, the split on sale, the switch, the empty
+arrival, no release, no merge.
 
-The dev's call on the preview, and it goes the other way: the price is the
-seller's, all of it. $1 is the floor, and it is only there to stop a price of
-nothing. Everything else in this answer stands — the 10% share, listing free,
-the split on sale, the switch, the empty arrival.
+**One straight cut is out. The buyer drags, and the price is per square.** This
+answer let the owner choose one cut off one edge, which means the owner of a
+2 × 2 can sell 2 × 2, 2 × 1 or 1 × 2 and never one square. The dev caught it on
+the preview, and it contradicts the product: the site sells squares at $100
+each, and the counter says SQUARES LEFT.
+
+The rule was guarding the wrong side. What is **sold** has to be a rectangle,
+because a block renders one image — but what is **left** does not have to be one
+block. A 2 × 2 minus a corner is a 1 × 2 plus a 1 × 1: two blocks, no L, and the
+model holds. So the owner offers a rectangle of their block at a price per
+square, and the buyer drags out any rectangle inside it, down to one square. The
+seller keeps everything they did not sell, as up to four blocks with the artwork
+cropped to each.
+
+**The floor is $1, not $100.** This answer gave the $100 floor the job of
+stopping second-hand blocks undercutting the $100 the site charges for a square.
+It never did that: a 4 × 4 at $100 is $6.25 a square, which undercuts the
+primary price exactly as hard as the $40 this answer refused. A price per square
+does the job properly — the buyer reads "$40 a square" against "$100 a square"
+and judges — so the floor has no work left beyond refusing zero.
 
 See [ticket 12's Resolution](12-build-resale.md).
