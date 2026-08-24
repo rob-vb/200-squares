@@ -101,6 +101,11 @@ const blocks = [
   makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, { sell: { price: 150 } }),
   makeBlock("blk_29", { r: 10, c: 7, w: 2, h: 2 }, brands.beacon, { pending: true }),
   makeBlock("blk_30", { r: 10, c: 14, w: 2, h: 2 }, brands.quarry),
+  // The viewer's big block. Without one, My squares can only ever offer a cut of
+  // depth 1: the seller side of the market is unreachable in the demo unless the
+  // visitor first buys something 4 wide. It is 4 x 2, which is the largest thing
+  // the board still has room for.
+  makeBlock("blk_38", { r: 10, c: 9, w: 4, h: 2 }, brands.vb),
   makeBlock("blk_31", { r: 11, c: 3, w: 3, h: 2 }, brands.sable),
   makeBlock("blk_32", { r: 12, c: 0, w: 2, h: 2 }, brands.harbor),
   makeBlock("blk_33", { r: 12, c: 6, w: 1, h: 2 }, brands.reed),

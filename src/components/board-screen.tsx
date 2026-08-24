@@ -30,9 +30,12 @@ export function BoardScreen() {
 
         {/* The switch belongs to the board, not to the counter it was charted
             beside: ticket 10 moved that counter to /how-it-works, and a control
-            that changes the canvas has to stand where the canvas is. */}
-        <div className="flex shrink-0 flex-col gap-2 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
-          <div className="flex items-center justify-between gap-4">
+            that changes the canvas has to stand where the canvas is.
+            It shares the legend's row rather than taking one of its own — a
+            phone has exactly the height between the board and the auction dock,
+            and a second row spends more of it than there is. */}
+        <div className="flex shrink-0 items-end justify-between gap-3 lg:gap-6">
+          <div className="flex items-center gap-4">
             <p className="text-faint hidden text-[13px] lg:block">
               Drag to select up to {MAX_BLOCK} × {MAX_BLOCK} · ${PRICE_PER_SQUARE} per square
             </p>

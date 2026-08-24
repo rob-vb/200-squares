@@ -178,3 +178,20 @@ in the FAQ.
   three listings in `full`.
 - **13 — The copy for resale**, blocked by 12, so the words describe what was
   actually built. Same shape as 07 → 10.
+
+## Corrected by ticket 12 (2026-08-24)
+
+**The floor is $1, not $100.** Building the market showed the $100 floor does
+not do the job this answer gave it. It was there to stop second-hand blocks
+undercutting the $100 the site charges for a square — but a 4 × 4 at $100 is
+$6.25 a square, which undercuts the primary price exactly as hard as the $40
+this answer refused. A floor that actually worked would have to be $100 *a
+square*, the seller's own cost, and that is the site deciding what somebody
+else's block is worth.
+
+The dev's call on the preview, and it goes the other way: the price is the
+seller's, all of it. $1 is the floor, and it is only there to stop a price of
+nothing. Everything else in this answer stands — the 10% share, listing free,
+the split on sale, the switch, the empty arrival.
+
+See [ticket 12's Resolution](12-build-resale.md).
