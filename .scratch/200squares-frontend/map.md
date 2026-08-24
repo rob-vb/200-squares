@@ -39,6 +39,8 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - [02 — Canvas feel: zoom, pan, selection](issues/02-canvas-feel.md) — **Direct** wins: selection owns the primary drag at every input, panning is asked for (space or middle drag, two fingers). Hand-rolled single transform, not a library; scale and pan in one state; wheel listener registered by hand. Fit is contain, so a phone is width-bound at a 24px square and a desktop is height-bound at 60px.
 - [03 — Data shapes and the two mock datasets](issues/03-data-shapes.md) — blocks are the only record and every square state is derived from them; the banner is its own type, owners exist once and are referenced by id, artwork is one union of mock-colour and uploaded image. No absolute dates: a `dayOffset` and `minutesBeforeClose` resolve against the next 00:00 UTC. The dataset is only a seed for a reducer, so buying and bidding really change the board. `early` and `full` switch on `?data=`, default `full`, and the model lives in `src/lib/board/`.
 - [08 — Build: app skeleton and canvas](issues/08-build-canvas.md) — the real prototype is on `main`: `src/lib/board/` holds the model and the two datasets, `src/components/` the first screen. Direct wins on the real board and needs no inertia. Three earlier decisions were corrected by building: the seam belongs in the hit-testing maths (a phone square is 23px, not 24), a bid stores `minutesAgo`, and the block edge is removed entirely — the seam is the whole grid.
+- [06 — Detail panel and the flows](issues/06-panel-and-flows.md) — one surface, one flow at a time, and the canvas never resizes: the desktop panel column is permanently reserved from 1280px up (legend moves into it), below that it is the bottom sheet. Buying needs no sign-in, is one screen, and artwork is optional so the flow can really produce `pending`; choosing a file previews it on the canvas before confirming. Bidding keeps top bid + $10 and a single fake rival outbids the visitor once, ~20s later. Sign-in stays a one-click toggle.
+- [07 — Content and copy below the canvas](issues/07-below-the-fold.md) — compact, no pitch line: a live `142 SQUARES LEFT` counter opens the page and takes `Available` out of the legend, then what-you-get, how-it-works, the daily banner with the past-winners strip (winning bids public), a six-question FAQ and one name. Squares are permanent and pay-once; artwork and link stay editable; link shorteners are out but tracking parameters are in, because there are no visitor statistics and the copy says so.
 
 ## Not yet specified
 
@@ -46,7 +48,7 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - Anti-snipe rules for the auction (last-second bids, extension window, minimum increment beyond the $100 floor). Ticket 03 uses top bid + $10 as a prototype placeholder only.
 - Requirements for supplied artwork: file size, aspect ratio per block size, formats, animation.
 - Archive page for past banner winners — the prototype only shows a strip.
-- SEO, share images, and what a square owner gets in terms of visible traffic proof.
+- SEO and share images. (Visible traffic proof is answered for now: ticket 07 says there are none and points owners at their own tracking parameters.)
 - Pricing model if squares get scarce, and what happens to the last squares.
 
 ## Out of scope
