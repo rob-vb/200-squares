@@ -84,3 +84,23 @@ The dark button is the commit action and appears once per surface. The accent bu
 ### Verified
 
 The impeccable mechanical detector returns zero findings on `globals.css`, the state sheet and the canvas prototype.
+
+## Correction — 2026-08-24, from building ticket 08
+
+"Every block carries a 1px inset hairline edge — taken, pending and the banner
+alike" is too broad. On the real board the dev read it as a doubled rule: the
+seam already draws a light line around every block, and the hairline lands right
+beside it.
+
+The edge exists for **artwork that melts into the paper**, which is the case it
+was invented for. So only that artwork gets it. The test is distance from the page
+ground in RGB: under 70, the artwork needs a line of its own.
+
+- Gets an edge: HALCYON (14 away), ATLAS FOUNDRY (20), MARLOW & CO (36), a plain
+  white block (64), and every pending block, whose hatch sits on paper.
+- Gets none: everything dark or saturated. ORBIT's yellow is 169 away and is just
+  as light as the ground — hue separates it on its own.
+
+The gap between the two groups is wide, so the threshold is not delicate.
+
+Rule in `src/lib/board/artwork.ts`.
