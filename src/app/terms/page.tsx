@@ -32,10 +32,30 @@ export default async function Page(props: PageProps<"/terms">) {
             promise about what this site does, not a rule about what you may do with what you
             bought.
           </P>
+        </Section>
+
+        <Section title="Selling your square on">
           <P>
-            Selling your square on to somebody else is not supported yet. There is no listing, no
-            transfer and no price for it here, so a square changes hands only if this site learns
-            how to do it.
+            You may offer any rectangle of a block for sale, from a single square to the whole of
+            it. You set the price per square, and the only floor is $1. Listing costs nothing, and
+            you can change the price or take the offer down at any time.
+          </P>
+          <P>
+            A buyer takes any rectangle out of your offer and pays here. The site keeps 10% of the
+            sale; the rest is yours. Whatever the buyer leaves stays on the market at the same
+            price.
+          </P>
+          <P>
+            What is sold arrives empty. Your image and your link were yours and stay with you, so
+            the block reaches its new owner with nothing on it until they supply their own.
+          </P>
+          <P>
+            A part sale splits the block. What you keep becomes as many blocks as the shape needs —
+            at most four — each holding the same image cropped to it. Blocks never merge, so a buyer
+            who already owns the square next door ends up with two blocks and two images.
+          </P>
+          <P>
+            There is no way to hand a square back to the site. Selling it on is the only exit.
           </P>
         </Section>
 

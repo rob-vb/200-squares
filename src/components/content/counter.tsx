@@ -37,7 +37,7 @@ export function Counter() {
         <p className="pt-4 text-[17px] leading-snug">
           {soldOut
             ? "The banner is still auctioned every day."
-            : "$100 each. Buy once, keep it."}
+            : "$100 each, paid once. Some owners sell theirs on."}
         </p>
       </div>
     </section>

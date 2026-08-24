@@ -20,9 +20,10 @@ export default async function Page(props: PageProps<"/about">) {
       >
         <Section title="What this is">
           <P>
-            200 Squares is a single page with a fixed grid on it. 199 of the squares are for sale,
-            once, at $100 each. The 5 × 5 area in the top-left corner is the banner, and it is not
-            for sale: it is auctioned, one day at a time.
+            200 Squares is a single page with a fixed grid on it. 199 of the squares are for sale
+            at $100 each. The site sells each one once; after that it is the owner&rsquo;s, to keep
+            or to sell on. The 5 × 5 area in the top-left corner is the banner, and it is not for
+            sale: it is auctioned, one day at a time.
           </P>
           <P>
             Every square that sells stays sold. The picture on the grid is the sum of everyone who
