@@ -15,14 +15,22 @@ export type Artwork =
   | { kind: "mock"; bg: string; fg: string; label: string }
   | { kind: "image"; src: string };
 
-/** One party. It exists once, however many blocks it holds. */
-export type Owner = { id: string; name: string; url: string };
+/**
+ * One party. It exists once, however many blocks it holds.
+ *
+ * It carries no link. A link belongs to whatever was clicked — a block or a
+ * banner day — because one party can hold several blocks and point each one at
+ * a different page.
+ */
+export type Owner = { id: string; name: string };
 
 export type Block = {
   /** Opaque. Position is not the identity. */
   id: string;
   rect: Rect;
   ownerId: string;
+  /** Where a click on this block goes. Every block has its own. */
+  url: string;
   /** null means pending — paid for, artwork not supplied yet. */
   artwork: Artwork | null;
 };
@@ -37,6 +45,8 @@ export type Block = {
 export type BannerDay = {
   dayOffset: number;
   ownerId: string;
+  /** Where a click on the banner goes on this day. */
+  url: string;
   artwork: Artwork;
   /** The winning bid, USD. */
   wonWith: number;

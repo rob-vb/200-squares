@@ -58,6 +58,10 @@ export function Field({
   );
 }
 
+/** What the visitor types is an address, not a URL. Store it bare. */
+export const cleanUrl = (raw: string) =>
+  raw.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+
 export const inputClass =
   "border-hairline w-full border bg-white px-3 py-2 text-[14px] placeholder:text-faint/70";
 

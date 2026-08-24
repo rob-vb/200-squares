@@ -9,7 +9,15 @@
 // a state the product cannot reach.
 
 import { useRef, useState } from "react";
-import { Field, Money, PanelHeader, PrimaryButton, SecondaryButton, inputClass } from "./controls";
+import {
+  Field,
+  Money,
+  PanelHeader,
+  PrimaryButton,
+  SecondaryButton,
+  cleanUrl,
+  inputClass,
+} from "./controls";
 import { useScreen } from "./flow";
 import { useBoard } from "@/lib/board/state";
 import { PRICE_PER_SQUARE, cellCount, priceOf, squareRange } from "@/lib/board/geometry";
@@ -17,8 +25,6 @@ import type { Rect } from "@/lib/board/types";
 
 /** The one rule the upload enforces. Aspect ratio is handled by object-fit. */
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-
-const cleanUrl = (raw: string) => raw.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
 
 export function BuyFlow({ rect }: { rect: Rect }) {
   const { dispatch } = useBoard();

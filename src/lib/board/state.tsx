@@ -32,7 +32,7 @@ export type BoardAction =
   | { type: "signOut" }
   | { type: "buy"; rect: Rect; company: string; url: string; artwork: Artwork | null }
   | { type: "uploadArtwork"; blockId: string; artwork: Artwork }
-  | { type: "editLink"; url: string }
+  | { type: "editLink"; blockId: string; url: string }
   | { type: "placeBid"; amount: number }
   | { type: "rivalBid"; amount: number; bidderId: string };
 
@@ -65,19 +65,20 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
 
     case "buy": {
       // Buying needs no sign-in, so the purchase is what makes the visitor an
-      // owner: the block goes to the viewer, and the company they typed becomes
-      // the viewer's name and link. From here the top bar knows who they are.
+      // owner: the block goes to the viewer, the company they typed becomes the
+      // viewer's name, and the website they typed goes on the block itself.
       const block: Block = {
         id: `blk_u${state.blocks.length + 1}`,
         rect: action.rect,
         ownerId: state.viewerId,
+        url: action.url,
         artwork: action.artwork,
       };
       return {
         ...state,
         signedIn: true,
         owners: state.owners.map((o) =>
-          o.id === state.viewerId ? { ...o, name: action.company, url: action.url } : o,
+          o.id === state.viewerId ? { ...o, name: action.company } : o,
         ),
         blocks: [...state.blocks, block],
       };
@@ -91,12 +92,13 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         ),
       };
 
-    // A link belongs to the owner, not to the block: one party, one website.
+    // A link belongs to the block. One owner can hold several blocks and send
+    // each one somewhere else.
     case "editLink":
       return {
         ...state,
-        owners: state.owners.map((o) =>
-          o.id === state.viewerId ? { ...o, url: action.url } : o,
+        blocks: state.blocks.map((b) =>
+          b.id === action.blockId ? { ...b, url: action.url } : b,
         ),
       };
 

@@ -20,11 +20,13 @@ A contiguous rectangle of squares bought together, at most 4 wide and 4 high. A 
 
 A block is the thing that is bought and owned. A square is never owned on its own: it is `taken` or `pending` because a block covers it.
 
+A block carries its own link. A click anywhere on it opens that address.
+
 ## Owner
 
-The party that bought a block or won the banner. An owner supplies artwork and a link. A click on their block or banner opens their website.
+The party that bought a block or won the banner. An owner supplies artwork and a link for each thing they hold.
 
-One party is one owner, however many blocks they hold. A square owner and a past banner winner can be the same owner.
+One party is one owner, however many blocks they hold. A square owner and a past banner winner can be the same owner. An owner has no link of their own: the link belongs to the block or the banner day, so one owner can send each of their blocks somewhere else.
 
 ## Artwork
 
@@ -40,7 +42,7 @@ The window between two 00:00 UTC boundaries. The winner of yesterday's auction o
 
 ## Banner day
 
-One day of banner occupancy: which owner held it, with which artwork, and the bid that won it. Today's banner day is on the canvas. Past banner days are the strip of past winners.
+One day of banner occupancy: which owner held it, with which artwork and link, and the bid that won it. Today's banner day is on the canvas. Past banner days are the strip of past winners.
 
 ## Bid
 

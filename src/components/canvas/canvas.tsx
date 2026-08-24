@@ -42,7 +42,20 @@ function tooltipFor(board: BoardModel, bannerName: string | null, at: CellRef): 
   if (cell.state === "available") return `${cell.n} · Available · $${PRICE_PER_SQUARE}`;
   if (cell.state === "pending") return "Sold · artwork coming";
   const owner = cell.block ? board.ownerById.get(cell.block.ownerId) : null;
-  return owner ? `${owner.name} · Opens ${owner.url}` : null;
+  return owner && cell.block ? `${owner.name} · Opens ${cell.block.url}` : null;
+}
+
+/**
+ * What the pointer says this cell will do. An available square is something to
+ * draw on, a block and the banner are links, and a pending block is neither: it
+ * is paid for but has nowhere to send anybody yet.
+ */
+function cursorFor(board: BoardModel, at: CellRef | null): string {
+  if (!at) return "default";
+  const state = board.cells[at.r][at.c].state;
+  if (state === "available") return "crosshair";
+  if (state === "pending") return "default";
+  return "pointer";
 }
 
 export function Canvas() {
@@ -56,6 +69,7 @@ export function Canvas() {
     highlight,
     setDragging,
     panelOpen,
+    openBid,
   } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
   // The side panel lies over the right of this box. The board re-centres into
@@ -64,6 +78,7 @@ export function Canvas() {
   const cv = useCanvasTransform(boxRef, sidePanel && panelOpen ? PANEL_WIDTH : 0);
 
   const [hovered, setHovered] = useState<CellRef | null>(null);
+  const [cursor, setCursor] = useState("default");
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const pointers = useRef(new Map<number, Pt>());
@@ -88,20 +103,26 @@ export function Canvas() {
     };
   }, []);
 
-  const openOwnerSite = useCallback(
+  const follow = useCallback(
     (at: CellRef) => {
       const cell = board.cells[at.r][at.c];
-      const owner =
+      const url =
         cell.state === "banner"
-          ? ownerOfBannerToday
-          : cell.block
-            ? board.ownerById.get(cell.block.ownerId)
-            : null;
-      // A pending block is paid for but has nothing to show yet, so it leads nowhere.
-      if (!owner || cell.state === "pending") return;
-      window.open(`https://${owner.url}`, "_blank", "noopener,noreferrer");
+          ? bannerToday?.url
+          : cell.state === "pending"
+            ? // A pending block is paid for but has nothing to show yet.
+              undefined
+            : cell.block?.url;
+      // An unsold banner is the house ad. It asks for a bid, so it opens the
+      // bid flow rather than sitting there as the one dead end on the board.
+      if (cell.state === "banner" && !bannerToday) {
+        openBid();
+        return;
+      }
+      if (!url) return;
+      window.open(`https://${url}`, "_blank", "noopener,noreferrer");
     },
-    [board, ownerOfBannerToday],
+    [board, bannerToday, openBid],
   );
 
   const twoFinger = () => {
@@ -165,6 +186,7 @@ export function Canvas() {
     if (e.pointerType === "mouse" && mode.current === "idle") {
       const at = cv.toCell(p);
       setHovered(at && board.cells[at.r][at.c].state === "available" ? at : null);
+      setCursor(cursorFor(board, at));
       const text = at ? tooltipFor(board, ownerOfBannerToday?.name ?? null, at) : null;
       setTip(text ? { x: p.x, y: p.y, text } : null);
     }
@@ -204,7 +226,7 @@ export function Canvas() {
   const endPointer = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
     setDragging(false);
-    if (mode.current === "press" && pressed.current) openOwnerSite(pressed.current);
+    if (mode.current === "press" && pressed.current) follow(pressed.current);
     pressed.current = null;
     if (pointers.current.size < 2 && mode.current === "pinch") mode.current = "idle";
     if (pointers.current.size === 0) mode.current = "idle";
@@ -233,10 +255,11 @@ export function Canvas() {
       onPointerLeave={() => {
         setHovered(null);
         setTip(null);
+        setCursor("default");
       }}
       onDoubleClick={onDoubleClick}
-      className="relative flex-1 cursor-crosshair overflow-hidden select-none"
-      style={{ touchAction: "none", overscrollBehavior: "none" }}
+      className="relative flex-1 overflow-hidden select-none"
+      style={{ touchAction: "none", overscrollBehavior: "none", cursor }}
     >
       <div
         className="absolute"
