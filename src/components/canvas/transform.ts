@@ -154,9 +154,15 @@ export function useWheelZoom(
     const el = boxRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
+      // The wheel belongs to the page. The canvas fills the first screen, so a
+      // canvas that swallowed the wheel would lock a mouse user out of
+      // everything under it. Zoom is asked for, the way panning is: a trackpad
+      // pinch (which arrives as ctrl+wheel), ctrl or cmd held, the buttons, or
+      // a double-click.
+      if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
       const box = el.getBoundingClientRect();
-      // ctrlKey means a trackpad pinch, which arrives with much larger deltas.
+      // A real pinch arrives with much larger deltas than a held-modifier wheel.
       const stepSize = e.ctrlKey ? 0.012 : 0.0022;
       cb.current(Math.exp(-e.deltaY * stepSize), { x: e.clientX - box.left, y: e.clientY - box.top });
     };
