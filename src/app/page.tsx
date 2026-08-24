@@ -1,8 +1,8 @@
-export default function Home() {
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="font-display text-5xl tracking-[0.01em]">200 SQUARES</h1>
-      <p className="text-faint text-sm">Preview deploy works. The canvas arrives in ticket 08.</p>
-    </main>
-  );
+import { BoardScreen } from "@/components/board-screen";
+import { getDataset } from "@/lib/board/datasets";
+
+export default async function Home(props: PageProps<"/">) {
+  // `?data=early` gives the nearly empty board. Anything else gives `full`.
+  const { data } = await props.searchParams;
+  return <BoardScreen dataset={getDataset(data)} />;
 }
