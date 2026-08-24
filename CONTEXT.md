@@ -95,3 +95,27 @@ One complete mock board the prototype runs on. There are two: **early**, a nearl
 ## Viewer
 
 The person looking at the board. Signed out, the viewer is a stranger. The fake sign-in makes the viewer one of the owners in the dataset, which is what fills My squares.
+
+## Clicks
+
+How often visitors followed a Block, or a Banner day, to where it points. It
+counts departures from the board, not arrivals at it: a square nobody clicks
+stays at zero however long it is on screen. A `pending` block has no count,
+because a click on it opens nothing.
+
+The count belongs to a block under one Owner. Artwork and link may change as
+often as the owner likes and the count runs on through every change. It returns
+to zero on one event only: the block changing hands. What a Resale buyer
+receives is empty of artwork, of link, and of clicks alike — the count measures
+what the seller put there, not the place.
+
+An owner sees the count of each thing they hold, and nobody else does. Not the
+public, and not a buyer looking at a block that is For sale.
+
+The **site total** is one public number: every click on every block and every
+banner day, added up. It names no owner and no block, so it says the board
+works without saying which square does.
+
+The site counts clicks, not people. Nothing about a visitor is kept, so the same
+person can raise a count more than once. It is a rough number and the site says
+so.
