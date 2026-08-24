@@ -4,7 +4,7 @@ Label: wayfinder:map
 
 ## Destination
 
-A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend and no real payment. Selling a square on is a live question on this map (ticket 11); whether the prototype shows it is decided there.
+A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend and no real payment. Selling a square on is part of it: ticket 11 made the grid a market, and tickets 12-13 build and describe it.
 
 ## Notes
 
@@ -43,6 +43,7 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - [07 — Content and copy below the canvas](issues/07-below-the-fold.md) — compact, no pitch line: a live `142 SQUARES LEFT` counter opens the page and takes `Available` out of the legend, then what-you-get, how-it-works, the daily banner with the past-winners strip (winning bids public), a six-question FAQ and one name. Squares are permanent and pay-once; artwork and link stay editable; link shorteners are out but tracking parameters are in, because there are no visitor statistics and the copy says so.
 - [09 — Build: flows and fake sign-in](issues/09-build-flows.md) — the flows are on `main`: buy, bid, sign in and My squares all run in one panel, and the reducer really changes the board. Two earlier decisions were corrected by building: the reserved panel column is gone (the panel slides in, the board re-centres instead of shrinking), and the link belongs to the block, not to the owner.
 - [10 — Build: the pages beside the board](issues/10-build-content.md) — ticket 07's page is `/how-it-works`, and `/about`, `/terms` and `/privacy` are built beside it; the links live in the top bar and in every page's footer. The board page carries nothing under it and does not scroll, so ticket 02's wheel zoom is restored whole. The dataset is a server-side read per page, and every link carries `?data=` on. Contact is @the_robvb on X, not an address.
+- [11 — Selling a square on](issues/11-resale.md) — the grid becomes a market: the owner sets an asking price with a floor of $100, the site moves the money and keeps 10%, and listing is free. For sale is a property of the **block**, not a fourth square state, and it is shown by a `For sale (n)` switch that is off by default, never by a mark over paid-for artwork. A sold block arrives `pending` — no artwork, no link. Splitting is a straight cut and happens on sale, not on listing; blocks never merge. No handing a square back. "Permanent" stands untouched: it was always a promise about what the site does.
 
 ## Not yet specified
 
@@ -52,10 +53,12 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - Archive page for past banner winners — `/how-it-works` shows the record the dataset holds, and nothing older.
 - SEO and share images. (Visible traffic proof is answered for now: ticket 07 says there are none and points owners at their own tracking parameters.)
 - Pricing model if squares get scarce, and what happens to the last squares.
+- What a real resale needs once money is real: escrow between two strangers, payouts to sellers, refunds, tax on the site's 10%. Ticket 11 ruled all of it prototype-only; it belongs with **Real payment** below.
+- Whether a block shows what it last sold for, and whether the market has a price record the way the banner has one.
 
 ## Out of scope
 
-<!-- Resale left this list on 2026-08-24: it is now ticket 11. -->
+<!-- Resale left this list on 2026-08-24 and did not come back: ticket 11 made it part of the product. -->
 
 - Real payment (Stripe or otherwise) and invoicing.
 - Real authentication and accounts.

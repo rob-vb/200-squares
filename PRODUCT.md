@@ -58,7 +58,9 @@ Undecided, and not to be invented:
 - What happens when squares get scarce, and what the last squares cost.
 - Auth provider, payment provider, image storage.
 
-Out of scope for the current effort: a resale market for squares, real payment and invoicing, real authentication, backend and database, the cron for the 00:00 UTC rollover, and moderation of uploaded artwork and links.
+A square can be sold on, through this site: the owner sets an asking price with a floor of $100, the site takes the payment and keeps 10%, and a sold block arrives without the seller's artwork or link. Listing is free. Ticket 11 decided it; the model is in `CONTEXT.md` under **Listing**, **Asking price** and **Resale**.
+
+Out of scope for the current effort: real payment and invoicing (including escrow and payouts to sellers on a resale), real authentication, backend and database, the cron for the 00:00 UTC rollover, and moderation of uploaded artwork and links.
 
 ## Brand Commitments
 
