@@ -22,15 +22,33 @@ A block is the thing that is bought and owned. A square is never owned on its ow
 
 A block carries its own link. A click anywhere on it opens that address.
 
+A block can be **split**, but only with a straight cut: both parts have to stay rectangles. A 4 x 4 splits into 4 x 2 and 4 x 2, never into a corner of 2 x 2 and the L around it. Blocks never merge: two blocks side by side stay two blocks, however they were bought, because each holds its own artwork and its own link.
+
 ## Owner
 
 The party that bought a block or won the banner. An owner supplies artwork and a link for each thing they hold.
 
-One party is one owner, however many blocks they hold. A square owner and a past banner winner can be the same owner. An owner has no link of their own: the link belongs to the block or the banner day, so one owner can send each of their blocks somewhere else.
+One party is one owner, however many blocks they hold. Nothing limits how many blocks one owner may hold: the 4 x 4 limit is about one **image**, not about one owner's share of the canvas. A square owner and a past banner winner can be the same owner. An owner has no link of their own: the link belongs to the block or the banner day, so one owner can send each of their blocks somewhere else.
 
 ## Artwork
 
 The image an owner supplies for a block or for the banner. One image covers the whole block. A block without artwork is `pending`; artwork is what turns it `taken`.
+
+## Listing
+
+A block its owner offers for sale, with an asking price. A listing is not a state of a square: the squares under it stay `taken`, because the block still covers them. It lasts until it sells or the owner withdraws it, and the price can be changed while it stands.
+
+The word is for the model. What a viewer reads is **For sale**.
+
+## Asking price
+
+What the owner of a Listing wants for the block. It is theirs to set and it can never be under $100, the price the site itself charges for a square. On a sale the site keeps 10% and the rest is the seller's.
+
+## Resale
+
+A block moving from one owner to another through this site. The buyer needs no account, the same as a first purchase. A resold block arrives **empty**: the artwork and the link were the seller's and do not travel. If only part of a block was sold, the block splits at that moment, and the part the seller keeps holds its artwork cropped to the smaller rectangle.
+
+There is no way to hand a square back to the site. Selling it on is the only exit.
 
 ## Auction
 
