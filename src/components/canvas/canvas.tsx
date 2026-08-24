@@ -11,6 +11,10 @@
 //            pans · double-click steps the zoom · shift-click extends
 //   touch  — one finger selects · two fingers pan and pinch, and the second
 //            finger cancels the selection the first one started
+//
+// The box takes `select-none`. A drag across the board is a selection of
+// squares, never a selection of the numbers printed on them. The panel is a
+// sibling of this box, not a child, so its fields stay selectable.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Board } from "./board";
@@ -231,7 +235,7 @@ export function Canvas() {
         setTip(null);
       }}
       onDoubleClick={onDoubleClick}
-      className="relative flex-1 cursor-crosshair overflow-hidden"
+      className="relative flex-1 cursor-crosshair overflow-hidden select-none"
       style={{ touchAction: "none", overscrollBehavior: "none" }}
     >
       <div
