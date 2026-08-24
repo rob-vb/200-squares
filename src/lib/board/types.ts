@@ -26,11 +26,13 @@ export type Crop = { x: number; y: number; w: number; h: number };
  * A block its owner offers for sale. It is not a state of a square: the squares
  * under it stay `taken`, because the block still covers them.
  *
- * `rect` is what is for sale, which is the whole block or a straight cut off one
- * of its edges. The block is not split while the listing stands — only when it
- * sells — so until then this rect is a window on a block that is still whole.
+ * `rect` is the part of the block on offer, and the buyer takes any rectangle
+ * they like out of it — one square or all of it. So the price is **per square**,
+ * the way the site's own price is, which also puts the two side by side for the
+ * buyer to judge. The block is not split while the listing stands, only when it
+ * sells, so until then this rect is a window on a block that is still whole.
  */
-export type Listing = { rect: Rect; price: number };
+export type Listing = { rect: Rect; pricePerSquare: number };
 
 /**
  * One party. It exists once, however many blocks it holds.

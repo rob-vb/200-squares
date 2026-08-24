@@ -36,7 +36,7 @@ function FlowBody() {
     case "sell":
       return <SellFlow blockId={flow.blockId} />;
     case "resale":
-      return <ResaleFlow blockId={flow.blockId} />;
+      return <ResaleFlow blockId={flow.blockId} rect={flow.rect} />;
     case "none":
       return null;
   }

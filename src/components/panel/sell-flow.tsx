@@ -1,56 +1,45 @@
 "use client";
 
-// Sell: what the owner offers, and for how much.
+// Sell: which part of the block is on offer, and what a square of it costs.
 //
-// The whole block, or a straight cut off one of its edges — ticket 11 allows no
-// other shape, because both halves have to stay rectangles for ticket 03's model
-// to hold them. So the picker offers a side and a depth, and it cannot express
-// an L.
+// The owner draws the offer on a thumbnail of their own block, with the same
+// gesture the board uses. Any rectangle inside it, down to one square. There is
+// no cut to choose, because what the owner offers no longer has to leave a
+// rectangle behind — the split handles that (see `remainderOf`).
+//
+// The price is per square, like the site's own $100. That is what makes a part
+// sale pricable at all, and it puts the two numbers side by side for the buyer.
 //
 // Nothing is split here. A listing is a window on a block that is still whole,
-// and it stays whole, with its artwork, until somebody buys the part.
+// and it stays whole, with its artwork, until somebody buys part of it.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Field, Money, PanelHeader, PrimaryButton, SecondaryButton, inputClass } from "./controls";
 import { useScreen } from "./flow";
 import { useBoard } from "@/lib/board/state";
 import {
   MIN_ASKING,
-  cutOf,
-  cutPart,
-  cutSides,
+  PRICE_PER_SQUARE,
+  askingFor,
+  cellCount,
   feeOn,
-  maxCut,
-  priceOf,
+  rectWithin,
   sellerGets,
   squareRange,
-  type CutSide,
 } from "@/lib/board/geometry";
 import type { Rect } from "@/lib/board/types";
-
-const SIDE_LABEL: Record<CutSide, string> = {
-  whole: "All of it",
-  top: "Top",
-  bottom: "Bottom",
-  left: "Left",
-  right: "Right",
-};
 
 export function SellFlow({ blockId }: { blockId: string }) {
   const { state, dispatch } = useBoard();
   const { close, openMine, setHighlight } = useScreen();
   const block = state.blocks.find((b) => b.id === blockId);
-
   const listed = block?.listing ?? null;
-  const start = block && listed ? cutOf(block.rect, listed.rect) : { side: "whole" as CutSide, size: 0 };
-  const [side, setSide] = useState<CutSide>(start.side);
-  const [size, setSize] = useState(start.size || 1);
-  const [price, setPrice] = useState(listed ? String(listed.price) : "");
+
+  const [part, setPart] = useState<Rect | null>(listed?.rect ?? block?.rect ?? null);
+  const [price, setPrice] = useState(listed ? String(listed.pricePerSquare) : "");
   const [touched, setTouched] = useState(false);
 
-  const part: Rect | null = block ? cutPart(block.rect, side, size) : null;
-
-  // The canvas says what is being sold while the price is being typed.
+  // The canvas says what is on offer while the price is being typed.
   useEffect(() => {
     if (part) setHighlight(part);
   }, [part?.r, part?.c, part?.w, part?.h]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -59,67 +48,52 @@ export function SellFlow({ blockId }: { blockId: string }) {
 
   const asking = Number.parseInt(price, 10);
   const valid = Number.isFinite(asking) && asking >= MIN_ASKING;
-  const sides = cutSides(block.rect);
-
-  const chooseSide = (next: CutSide) => {
-    setSide(next);
-    setSize(Math.min(size, Math.max(1, maxCut(block.rect, next))));
-  };
+  const squares = cellCount(part);
+  const total = valid ? askingFor(asking, part) : 0;
+  const whole = squares === cellCount(block.rect);
 
   const list = () => {
     setTouched(true);
     if (!valid) return;
-    dispatch({ type: "list", blockId, rect: part, price: asking });
+    dispatch({ type: "list", blockId, rect: part, pricePerSquare: asking });
     openMine();
   };
 
   return (
     <>
       <PanelHeader
-        title={listed ? "Change your price" : `Sell ${block.rect.w} × ${block.rect.h}`}
+        title={listed ? "Change your offer" : `Sell ${block.rect.w} × ${block.rect.h}`}
         note={`Square ${squareRange(block.rect)}`}
         onClose={close}
       />
 
       <div className="flex flex-col gap-4 px-4 py-4">
-        {sides.length > 0 ? (
-          <Field label="What you sell" hint="A straight cut only. Both parts stay rectangles.">
-            <div className="flex items-start gap-3">
-              <BlockDiagram rect={block.rect} part={part} />
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <div className="flex flex-wrap gap-1">
-                  {(["whole", ...sides] as CutSide[]).map((s) => (
-                    <Chip key={s} on={side === s} onClick={() => chooseSide(s)}>
-                      {SIDE_LABEL[s]}
-                    </Chip>
-                  ))}
-                </div>
-                {side === "whole" ? null : (
-                  <Stepper
-                    value={size}
-                    max={maxCut(block.rect, side)}
-                    unit={side === "top" || side === "bottom" ? "rows" : "columns"}
-                    onChange={setSize}
-                  />
-                )}
+        <Field
+          label="What you offer"
+          hint="Drag inside your block. One square, or all of it."
+        >
+          <div className="flex items-start gap-3">
+            <BlockPicker rect={block.rect} part={part} onPick={setPart} />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="font-display text-[19px] leading-none">
+                {part.w} × {part.h}
               </div>
+              <div className="text-faint text-[13px] leading-tight">
+                {squares} of your {cellCount(block.rect)} squares · {squareRange(part)}
+              </div>
+              {whole ? null : (
+                <SecondaryButton onClick={() => setPart(block.rect)}>
+                  Offer all of it
+                </SecondaryButton>
+              )}
             </div>
-          </Field>
-        ) : null}
-
-        <div className="border-hairline flex items-baseline justify-between border-y py-3">
-          <span className="text-[14px]">
-            {part.w} × {part.h} · square {squareRange(part)}
-          </span>
-          <span className="text-faint text-[13px]">
-            paid <Money amount={priceOf(part)} className="text-[13px]" />
-          </span>
-        </div>
+          </div>
+        </Field>
 
         <Field
-          label="Asking price"
+          label="Your price, per square"
           error={touched && !valid ? `A price is needed. The floor is $${MIN_ASKING}.` : null}
-          hint={valid ? undefined : "Yours to set. No floor worth the name, no ceiling."}
+          hint={valid ? undefined : `The site charges $${PRICE_PER_SQUARE} for a fresh square.`}
         >
           <div className="flex items-center gap-2">
             <span className="font-display text-[19px] leading-none">$</span>
@@ -127,26 +101,28 @@ export function SellFlow({ blockId }: { blockId: string }) {
               className={inputClass}
               value={price}
               onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder={String(priceOf(part))}
+              placeholder={String(PRICE_PER_SQUARE)}
               inputMode="numeric"
               autoFocus
             />
+            <span className="text-faint shrink-0 text-[13px]">a square</span>
           </div>
         </Field>
 
         {valid ? (
-          <div className="border-hairline flex items-baseline justify-between border bg-white px-3 py-2">
-            <span className="text-[14px]">You receive</span>
-            <span className="text-right">
-              <Money amount={sellerGets(asking)} className="text-[22px] leading-none" />
-              <span className="text-faint block text-[12px]">
-                the site keeps 10% · ${feeOn(asking).toLocaleString("en-US")}
-              </span>
-            </span>
+          <div className="border-hairline border bg-white px-3 py-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[14px]">If all {squares} go</span>
+              <Money amount={sellerGets(total)} className="text-[22px] leading-none" />
+            </div>
+            <div className="text-faint pt-1 text-[12px] leading-snug">
+              ${total.toLocaleString("en-US")} less the site&rsquo;s 10% · $
+              {feeOn(total).toLocaleString("en-US")}. A buyer may take fewer.
+            </div>
           </div>
         ) : null}
 
-        <PrimaryButton onClick={list}>{listed ? "SAVE THE PRICE" : "PUT IT UP FOR SALE"}</PrimaryButton>
+        <PrimaryButton onClick={list}>{listed ? "SAVE THE OFFER" : "PUT IT UP FOR SALE"}</PrimaryButton>
 
         {listed ? (
           <SecondaryButton
@@ -160,78 +136,63 @@ export function SellFlow({ blockId }: { blockId: string }) {
         ) : null}
 
         <p className="text-faint text-[12px] leading-snug">
-          Listing is free. Nothing splits until it sells, and you can change the price or withdraw
-          at any time. Your artwork and your link do not go with it.
+          Listing is free, and you can change it or withdraw at any time. A buyer takes any
+          rectangle out of your offer, so you may end up holding what is left as more than one
+          block. Your artwork and your link never go with it.
         </p>
       </div>
     </>
   );
 }
 
-function Chip({
-  on,
-  children,
-  ...rest
-}: { on: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...rest}
-      type="button"
-      className={`border-hairline border px-2 py-1 text-[12px] font-medium transition-colors duration-150 ${
-        on ? "bg-accent border-accent text-white" : "hover:bg-white bg-transparent"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Stepper({
-  value,
-  max,
-  unit,
-  onChange,
+/** The block at thumbnail size. Drag on it the way you drag on the board. */
+function BlockPicker({
+  rect,
+  part,
+  onPick,
 }: {
-  value: number;
-  max: number;
-  unit: string;
-  onChange: (n: number) => void;
+  rect: Rect;
+  part: Rect;
+  onPick: (next: Rect) => void;
 }) {
-  const btn =
-    "border-hairline grid h-7 w-7 place-items-center border bg-white text-[15px] leading-none disabled:text-ink/25";
-  return (
-    <div className="flex items-center gap-2">
-      <button type="button" className={btn} onClick={() => onChange(value - 1)} disabled={value <= 1}>
-        −
-      </button>
-      <span className="text-[13px]" data-numeric>
-        {value} {unit}
-      </span>
-      <button type="button" className={btn} onClick={() => onChange(value + 1)} disabled={value >= max}>
-        +
-      </button>
-    </div>
-  );
-}
+  const px = 20;
+  const anchor = useRef<{ r: number; c: number } | null>(null);
 
-/** The block at thumbnail size, with the part being sold filled in. */
-function BlockDiagram({ rect, part }: { rect: Rect; part: Rect }) {
-  const px = 13;
+  const cellAt = (r: number, c: number) => ({ r, c });
+  const start = (r: number, c: number) => {
+    anchor.current = cellAt(r, c);
+    onPick(rectWithin(anchor.current, anchor.current, rect));
+  };
+  const extend = (r: number, c: number) => {
+    if (anchor.current) onPick(rectWithin(anchor.current, cellAt(r, c), rect));
+  };
+
   return (
     <div
-      className="bg-hairline grid shrink-0 gap-px p-px"
+      className="bg-hairline grid shrink-0 cursor-crosshair touch-none gap-px p-px select-none"
       style={{
         gridTemplateColumns: `repeat(${rect.w}, ${px}px)`,
         gridTemplateRows: `repeat(${rect.h}, ${px}px)`,
       }}
+      onPointerUp={() => (anchor.current = null)}
+      onPointerLeave={() => (anchor.current = null)}
     >
       {Array.from({ length: rect.w * rect.h }, (_, i) => {
         const r = rect.r + Math.floor(i / rect.w);
         const c = rect.c + (i % rect.w);
-        const inPart =
-          r >= part.r && r < part.r + part.h && c >= part.c && c < part.c + part.w;
+        const on = r >= part.r && r < part.r + part.h && c >= part.c && c < part.c + part.w;
         return (
-          <div key={i} style={{ background: inPart ? "var(--color-accent)" : "var(--color-square)" }} />
+          <div
+            key={i}
+            onPointerDown={(e) => {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              start(r, c);
+            }}
+            onPointerEnter={(e) => {
+              if (e.buttons > 0) extend(r, c);
+            }}
+            style={{ background: on ? "var(--color-accent)" : "var(--color-square)" }}
+          />
         );
       })}
     </div>

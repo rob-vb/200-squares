@@ -166,14 +166,17 @@ export function squareRange(rect: Rect): string {
 // Resale. Ticket 11: an owner may sell a block on, at a price they set, and the
 // site keeps a share of the sale.
 
+/** What a rectangle costs at a listing's price. The site's own price works the same. */
+export const askingFor = (pricePerSquare: number, rect: Rect) =>
+  cellCount(rect) * pricePerSquare;
+
 /**
- * The floor on an asking price, which is only there to stop a price of nothing.
+ * The floor on an asking price per square, only there to stop a price of nothing.
  *
- * Ticket 11 put this at $100, to keep second-hand blocks from undercutting the
- * $100 the site charges. Building it showed the number does not do that job: a
- * 4 x 4 at $100 is $6.25 a square, which undercuts the primary price as hard as
- * the $40 ticket 11 was refusing. Corrected on 2026-08-24, the other way — the
- * price is the seller's, all of it, and what they may ask is not the site's call.
+ * Ticket 11 put a $100 floor on the whole block, to keep second-hand blocks from
+ * undercutting the $100 the site charges for a square. A price per square does
+ * that job on its own: the buyer reads "$140 a square" against the site's "$100
+ * a square" and judges. So the floor has no work left beyond refusing zero.
  */
 export const MIN_ASKING = 1;
 /** The site's share of a completed sale, from the seller. Listing is free. */
@@ -185,65 +188,63 @@ export const sellerGets = (price: number) => price - feeOn(price);
 export const sameRect = (a: Rect, b: Rect) =>
   a.r === b.r && a.c === b.c && a.w === b.w && a.h === b.h;
 
-/** Which edge a cut is taken off. A whole block is sold with no cut at all. */
-export type CutSide = "whole" | "top" | "bottom" | "left" | "right";
-
 /**
- * The part of `rect` a cut of `size` off `side` covers.
+ * A rectangle drawn from anchor to head, kept inside `bound`.
  *
- * A block may only be split with a straight cut: both halves have to stay
- * rectangles, because ticket 03's model cannot hold anything else. So the part
- * offered is always the whole block or a full-width / full-height strip off one
- * of its four edges.
+ * This is `rectFrom` for a drag that lives inside something smaller than the
+ * grid — a buyer drawing inside a listing, an owner drawing inside their own
+ * block. It needs no 4 x 4 clamp of its own: a block is already at most 4 x 4,
+ * so anything inside one is too.
  */
-export function cutPart(rect: Rect, side: CutSide, size: number): Rect {
-  switch (side) {
-    case "whole":
-      return { ...rect };
-    case "top":
-      return { ...rect, h: size };
-    case "bottom":
-      return { ...rect, r: rect.r + rect.h - size, h: size };
-    case "left":
-      return { ...rect, w: size };
-    case "right":
-      return { ...rect, c: rect.c + rect.w - size, w: size };
-  }
+export function rectWithin(
+  anchor: { r: number; c: number },
+  head: { r: number; c: number },
+  bound: Rect,
+): Rect {
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
+  const r1 = clamp(anchor.r, bound.r, bound.r + bound.h - 1);
+  const r2 = clamp(head.r, bound.r, bound.r + bound.h - 1);
+  const c1 = clamp(anchor.c, bound.c, bound.c + bound.w - 1);
+  const c2 = clamp(head.c, bound.c, bound.c + bound.w - 1);
+  return {
+    r: Math.min(r1, r2),
+    c: Math.min(c1, c2),
+    w: Math.abs(c2 - c1) + 1,
+    h: Math.abs(r2 - r1) + 1,
+  };
 }
 
-/** How far a cut off this side can go. 0 means the side cannot be cut at all. */
-export const maxCut = (rect: Rect, side: CutSide) =>
-  side === "top" || side === "bottom" ? rect.h - 1 : side === "whole" ? 0 : rect.w - 1;
-
-/** Every side this block is wide or tall enough to cut. */
-export const cutSides = (rect: Rect): CutSide[] =>
-  (["top", "bottom", "left", "right"] as CutSide[]).filter((s) => maxCut(rect, s) > 0);
+/** The overlap of two rectangles, or null where they do not touch. */
+export function intersect(a: Rect, b: Rect): Rect | null {
+  const r = Math.max(a.r, b.r);
+  const c = Math.max(a.c, b.c);
+  const r2 = Math.min(a.r + a.h, b.r + b.h);
+  const c2 = Math.min(a.c + a.w, b.c + b.w);
+  return r2 > r && c2 > c ? { r, c, w: c2 - c, h: r2 - r } : null;
+}
 
 /**
  * What the seller is left holding once `part` is sold out of `rect`.
  *
- * null means the whole block went. Anything that is not a straight cut is a
- * programming error, not a case: the picker cannot produce one.
+ * A buyer takes any rectangle they like, so what is left is a rectangle with a
+ * bite out of it — which is not a block, because a block renders one image and
+ * an L cannot. It falls apart into at most four blocks instead: a strip above,
+ * a strip below, and whatever is left to the left and right of the bite.
+ *
+ * The seller keeps every square they did not sell. They simply hold them as
+ * more than one block, each with its own crop of the artwork they had.
  */
-export function remainderOf(rect: Rect, part: Rect): Rect | null {
-  if (sameRect(rect, part)) return null;
-  if (part.w === rect.w) {
-    return part.r === rect.r
-      ? { ...rect, r: rect.r + part.h, h: rect.h - part.h }
-      : { ...rect, h: rect.h - part.h };
-  }
-  return part.c === rect.c
-    ? { ...rect, c: rect.c + part.w, w: rect.w - part.w }
-    : { ...rect, w: rect.w - part.w };
-}
-
-/** Read a listing's part back as the cut that produced it, for the picker. */
-export function cutOf(rect: Rect, part: Rect): { side: CutSide; size: number } {
-  if (sameRect(rect, part)) return { side: "whole", size: 0 };
-  if (part.w === rect.w) {
-    return { side: part.r === rect.r ? "top" : "bottom", size: part.h };
-  }
-  return { side: part.c === rect.c ? "left" : "right", size: part.w };
+export function remainderOf(rect: Rect, part: Rect): Rect[] {
+  const above = part.r - rect.r;
+  const below = rect.r + rect.h - (part.r + part.h);
+  const left = part.c - rect.c;
+  const right = rect.c + rect.w - (part.c + part.w);
+  const out: Rect[] = [];
+  if (above > 0) out.push({ r: rect.r, c: rect.c, w: rect.w, h: above });
+  if (below > 0) out.push({ r: part.r + part.h, c: rect.c, w: rect.w, h: below });
+  if (left > 0) out.push({ r: part.r, c: rect.c, w: left, h: part.h });
+  if (right > 0) out.push({ r: part.r, c: part.c + part.w, w: right, h: part.h });
+  return out;
 }
 
 /**

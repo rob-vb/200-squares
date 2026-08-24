@@ -70,9 +70,11 @@ const blocks = [
   makeBlock("blk_06", { r: 2, c: 5, w: 2, h: 2 }, brands.slate),
   makeBlock("blk_07", { r: 2, c: 8, w: 1, h: 3 }, brands.tallboy),
   // Three listings, so the For sale switch does something before anyone signs
-  // in: one whole block over what it cost, one strip cut off a big block, and
-  // one whole block barely over the floor.
-  makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand, { sell: { price: 850 } }),
+  // in. Every price is per square, against the site's own $100: one whole block
+  // over it, one part of a big block well over it, and one whole block under it.
+  makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand, {
+    sell: { pricePerSquare: 140 },
+  }),
   makeBlock("blk_09", { r: 2, c: 14, w: 1, h: 1 }, brands.dot),
   makeBlock("blk_10", { r: 3, c: 14, w: 2, h: 2 }, brands.vb),
   makeBlock("blk_11", { r: 4, c: 5, w: 1, h: 1 }, brands.ess),
@@ -87,8 +89,8 @@ const blocks = [
   makeBlock("blk_18", { r: 5, c: 11, w: 1, h: 1 }, brands.tick),
   makeBlock("blk_19", { r: 5, c: 12, w: 4, h: 3 }, brands.atlas, {
     // The right-hand column only. The block stays whole and keeps its artwork
-    // until somebody buys the strip.
-    sell: { price: 400, part: { r: 5, c: 15, w: 1, h: 3 } },
+    // until somebody buys into the strip.
+    sell: { pricePerSquare: 260, part: { r: 5, c: 15, w: 1, h: 3 } },
   }),
   makeBlock("blk_20", { r: 6, c: 10, w: 2, h: 1 }, brands.verge),
   makeBlock("blk_21", { r: 7, c: 0, w: 3, h: 2 }, brands.redcap),
@@ -98,7 +100,7 @@ const blocks = [
   makeBlock("blk_25", { r: 8, c: 12, w: 2, h: 2 }, brands.nomad),
   makeBlock("blk_26", { r: 9, c: 0, w: 2, h: 1 }, brands.hollow),
   makeBlock("blk_27", { r: 9, c: 3, w: 3, h: 2 }, brands.longshore),
-  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, { sell: { price: 150 } }),
+  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, { sell: { pricePerSquare: 40 } }),
   makeBlock("blk_29", { r: 10, c: 7, w: 2, h: 2 }, brands.beacon, { pending: true }),
   makeBlock("blk_30", { r: 10, c: 14, w: 2, h: 2 }, brands.quarry),
   // The viewer's big block. Without one, My squares can only ever offer a cut of

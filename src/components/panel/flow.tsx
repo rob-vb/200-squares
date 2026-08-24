@@ -24,8 +24,11 @@ export type Flow =
   | { kind: "mine" }
   /** The owner putting one of their blocks up for sale, or changing the price. */
   | { kind: "sell"; blockId: string }
-  /** A visitor buying somebody else's listing. No sign-in, like a fresh buy. */
-  | { kind: "resale"; blockId: string };
+  /**
+   * A visitor buying part of somebody's listing. No sign-in, like a fresh buy.
+   * `rect` is what they drew inside the offer — one square, or all of it.
+   */
+  | { kind: "resale"; blockId: string; rect: Rect };
 
 type ScreenValue = {
   flow: Flow;
@@ -53,7 +56,12 @@ type ScreenValue = {
   openBid: () => void;
   openMine: () => void;
   openSell: (blockId: string) => void;
-  openResale: (blockId: string) => void;
+  /**
+   * A drag inside a listing. It runs through the selection, exactly like a drag
+   * on empty squares does, so the canvas draws it with the machinery it already
+   * has and the panel waits for the pointer to lift.
+   */
+  selectInListing: (blockId: string, rect: Rect) => void;
   showBought: (rect: Rect, hasArtwork: boolean) => void;
   close: () => void;
 };
@@ -118,7 +126,12 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       openBid: replace({ kind: "bid" }),
       openMine: replace({ kind: "mine" }),
       openSell: (blockId: string) => replace({ kind: "sell", blockId })(),
-      openResale: (blockId: string) => replace({ kind: "resale", blockId })(),
+      selectInListing: (blockId: string, rect: Rect) => {
+        setSelection(rect);
+        setPreview(null);
+        setHighlight(null);
+        setFlow({ kind: "resale", blockId, rect });
+      },
       showBought: (rect: Rect, hasArtwork: boolean) => {
         setSelection(null);
         setPreview(null);

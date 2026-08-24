@@ -22,7 +22,7 @@ A block is the thing that is bought and owned. A square is never owned on its ow
 
 A block carries its own link. A click anywhere on it opens that address.
 
-A block can be **split**, but only with a straight cut: both parts have to stay rectangles. A 4 x 4 splits into 4 x 2 and 4 x 2, never into a corner of 2 x 2 and the L around it. Blocks never merge: two blocks side by side stay two blocks, however they were bought, because each holds its own artwork and its own link.
+A block can be **split**, and a split always produces blocks: rectangles, never an L. Selling one square out of a 2 x 2 leaves the seller a 1 x 2 and a 1 x 1 — two blocks, because one image cannot fill an L. Any rectangle taken out of a block leaves at most four blocks behind. Blocks never merge: two blocks side by side stay two blocks, however they were bought, because each holds its own artwork and its own link.
 
 ## Owner
 
@@ -36,17 +36,21 @@ The image an owner supplies for a block or for the banner. One image covers the 
 
 ## Listing
 
-A block its owner offers for sale, with an asking price. A listing is not a state of a square: the squares under it stay `taken`, because the block still covers them. It lasts until it sells or the owner withdraws it, and the price can be changed while it stands.
+Part of a block, or all of it, offered for sale by its owner at a price per square. A listing is not a state of a square: the squares under it stay `taken`, because the block still covers them. It lasts until the owner withdraws it, and the offer and the price can both be changed while it stands.
+
+A buyer takes any rectangle out of a listing, so a listing can survive its own sale: whatever the buyer left is still offered, at the same price.
 
 The word is for the model. What a viewer reads is **For sale**.
 
 ## Asking price
 
-What the owner of a Listing wants for the block. It is theirs to set, whatever they set it to: the only floor is $1, which exists to stop a price of nothing and not to defend the site's own $100. What a block is worth second-hand is the seller's business. On a sale the site keeps 10% and the rest is the seller's.
+What the owner of a Listing wants for one square of it. Per square, the way the site's own $100 is, so a buyer reads the two numbers side by side and judges. It is the seller's to set, whatever they set it to: the only floor is $1, which stops a price of nothing and nothing more. On a sale the site keeps 10% and the rest is the seller's.
 
 ## Resale
 
-A block moving from one owner to another through this site. The buyer needs no account, the same as a first purchase. A resold block arrives **empty**: the artwork and the link were the seller's and do not travel. If only part of a block was sold, the block splits at that moment, and the part the seller keeps holds its artwork cropped to the smaller rectangle.
+Squares moving from one owner to another through this site. The buyer drags the rectangle they want out of a Listing, exactly as they would drag on empty squares, and needs no account. What they buy arrives **empty**: the artwork and the link were the seller's and do not travel.
+
+The block splits at the moment of sale, never at the moment of listing. What the seller keeps becomes as many blocks as the shape needs, each holding the same artwork cropped to it.
 
 There is no way to hand a square back to the site. Selling it on is the only exit.
 

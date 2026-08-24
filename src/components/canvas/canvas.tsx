@@ -25,9 +25,11 @@ import { useBoard } from "@/lib/board/state";
 import {
   MAX_SCALE,
   PRICE_PER_SQUARE,
+  askingFor,
   covers,
   priceOf,
   rectFrom,
+  rectWithin,
   selectionBlocked,
   type BoardModel,
 } from "@/lib/board/geometry";
@@ -61,8 +63,8 @@ function tooltipFor(
     const listed = listingAt(board, at);
     if (!listed) return null;
     const owner = board.ownerById.get(listed.ownerId);
-    const { rect, price } = listed.listing!;
-    return `${owner?.name ?? "For sale"} · ${rect.w} × ${rect.h} · $${price.toLocaleString("en-US")}`;
+    const { rect, pricePerSquare } = listed.listing!;
+    return `${owner?.name ?? "For sale"} · ${rect.w} × ${rect.h} for sale · $${pricePerSquare} a square`;
   }
   if (cell.state === "banner") {
     return bannerName ? `${bannerName} · today's banner` : "Banner · nobody has bid";
@@ -80,7 +82,9 @@ function tooltipFor(
  */
 function cursorFor(board: BoardModel, at: CellRef | null, forSale: boolean): string {
   if (!at) return "default";
-  if (forSale) return listingAt(board, at) ? "pointer" : "default";
+  // Drawing, not following: inside a listing the drag buys, so the cursor is the
+  // same crosshair an empty square gets.
+  if (forSale) return listingAt(board, at) ? "crosshair" : "default";
   const state = board.cells[at.r][at.c].state;
   if (state === "available") return "crosshair";
   if (state === "pending") return "default";
@@ -100,7 +104,8 @@ export function Canvas() {
     panelOpen,
     openBid,
     forSale,
-    openResale,
+    selectInListing,
+    flow,
   } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
   // The side panel lies over the right of this box. The board re-centres into
@@ -115,6 +120,8 @@ export function Canvas() {
   const pointers = useRef(new Map<number, Pt>());
   const mode = useRef<"idle" | "select" | "pan" | "pinch" | "press">("idle");
   const anchor = useRef<CellRef | null>(null);
+  /** The listing a market drag is drawing inside. It bounds the rectangle. */
+  const offer = useRef<Block | null>(null);
   const pressed = useRef<CellRef | null>(null);
   const lastPan = useRef<Pt>({ x: 0, y: 0 });
   const pinchStart = useRef({ dist: 0, mid: { x: 0, y: 0 }, scale: 1, t: { x: 0, y: 0 } });
@@ -136,14 +143,6 @@ export function Canvas() {
 
   const follow = useCallback(
     (at: CellRef) => {
-      // The market view turns a click into an offer to buy. It is the one place
-      // a click on somebody else's block does not open their website — which is
-      // why the view has to be asked for, and is off by default.
-      if (forSale) {
-        const listed = listingAt(board, at);
-        if (listed) openResale(listed.id);
-        return;
-      }
       const cell = board.cells[at.r][at.c];
       const url =
         cell.state === "banner"
@@ -161,7 +160,7 @@ export function Canvas() {
       if (!url) return;
       window.open(`https://${url}`, "_blank", "noopener,noreferrer");
     },
-    [board, bannerToday, openBid, forSale, openResale],
+    [board, bannerToday, openBid],
   );
 
   const twoFinger = () => {
@@ -201,12 +200,18 @@ export function Canvas() {
     const at = cv.toCell(p);
     if (!at) return;
 
-    // Nothing on a dimmed board is drawable. In the market view the only thing
-    // the canvas does is open a listing.
+    // In the market view the board answers for listings and nothing else — but
+    // it answers with the same gesture as everywhere else. A buyer draws the
+    // rectangle they want, from one square to the whole offer, and the drag is
+    // held inside the part that is actually for sale.
     if (forSale) {
-      if (!listingAt(board, at)) return;
-      mode.current = "press";
-      pressed.current = at;
+      const listed = listingAt(board, at);
+      if (!listed) return;
+      offer.current = listed;
+      anchor.current = at;
+      mode.current = "select";
+      setDragging(true);
+      selectInListing(listed.id, rectWithin(at, at, listed.listing!.rect));
       return;
     }
 
@@ -261,7 +266,13 @@ export function Canvas() {
     }
     if (mode.current === "select" && anchor.current) {
       const at = cv.toCell(p);
-      if (at) onSelectionChange(rectFrom(anchor.current, at));
+      if (!at) return;
+      const listed = offer.current;
+      if (listed) {
+        selectInListing(listed.id, rectWithin(anchor.current, at, listed.listing!.rect));
+      } else {
+        onSelectionChange(rectFrom(anchor.current, at));
+      }
       return;
     }
     if (mode.current === "press" && pressed.current) {
@@ -276,6 +287,7 @@ export function Canvas() {
     setDragging(false);
     if (mode.current === "press" && pressed.current) follow(pressed.current);
     pressed.current = null;
+    if (pointers.current.size === 0) offer.current = null;
     if (pointers.current.size < 2 && mode.current === "pinch") mode.current = "idle";
     if (pointers.current.size === 0) mode.current = "idle";
   };
@@ -285,7 +297,12 @@ export function Canvas() {
     cv.zoomAbs(cv.scale >= MAX_SCALE ? 1 : cv.scale < 2 ? 2 : MAX_SCALE, p);
   };
 
-  const blocked = selection ? selectionBlocked(board, selection) : false;
+  // A market drag is never blocked: it can only be drawn inside an offer. The
+  // offer comes from the flow and not from the drag's ref, which is cleared the
+  // moment the pointer lifts — the chip has to survive that.
+  const marketOffer =
+    flow.kind === "resale" ? (board.blocks.find((b) => b.id === flow.blockId) ?? null) : null;
+  const blocked = !forSale && selection ? selectionBlocked(board, selection) : false;
   const chip = selection
     ? {
         x: cv.t.x + selection.c * cv.step * cv.scale,
@@ -343,13 +360,16 @@ export function Canvas() {
         >
           {blocked
             ? "Not available"
-            : `${selection.w}×${selection.h} $${priceOf(selection).toLocaleString("en-US")}`}
+            : `${selection.w}×${selection.h} $${(marketOffer
+                ? askingFor(marketOffer.listing!.pricePerSquare, selection)
+                : priceOf(selection)
+              ).toLocaleString("en-US")}`}
         </span>
       )}
 
       {forSale &&
         board.listed.map((block) => {
-          const { rect, price } = block.listing!;
+          const { rect, pricePerSquare } = block.listing!;
           const x = cv.t.x + rect.c * cv.step * cv.scale;
           const y = cv.t.y + rect.r * cv.step * cv.scale;
           const below = y < 22;
@@ -363,7 +383,7 @@ export function Canvas() {
                 transform: below ? undefined : "translateY(-100%)",
               }}
             >
-              {rect.w}×{rect.h} ${price.toLocaleString("en-US")}
+              {rect.w}×{rect.h} · ${pricePerSquare}/sq
             </span>
           );
         })}

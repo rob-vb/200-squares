@@ -1,16 +1,19 @@
 "use client";
 
-// Buying a listing. It is a purchase, so it is the buy flow: company, website,
-// optional artwork, one screen. No sign-in, exactly like a fresh square.
+// Buying part of a listing. It is a purchase, so it is the buy flow: company,
+// website, optional artwork, one screen. No sign-in, exactly like a fresh square.
 //
-// The only differences are the price, which the seller set instead of the site,
-// and what arrives — the seller's artwork and the seller's link stay with the
-// seller, so the block lands empty and waits for the buyer's own.
+// The rectangle came from a drag on the board, inside the seller's offer, and it
+// can be one square or the whole thing. So the price is per square and the total
+// follows the drag — which is exactly how a fresh square already works. The only
+// real differences: the seller set the rate instead of the site, and nothing of
+// theirs travels. Their artwork and their link stay with them, so the block
+// lands empty and waits for the buyer's own.
 //
 // The site's 10% is not here. Ticket 11 put it on the seller's side: the buyer
 // pays the asking price and nothing else.
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Field,
   Money,
@@ -22,13 +25,14 @@ import {
 } from "./controls";
 import { useScreen } from "./flow";
 import { useBoard } from "@/lib/board/state";
-import { squareRange } from "@/lib/board/geometry";
+import type { Rect } from "@/lib/board/types";
+import { askingFor, cellCount, squareRange } from "@/lib/board/geometry";
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
-export function ResaleFlow({ blockId }: { blockId: string }) {
+export function ResaleFlow({ blockId, rect }: { blockId: string; rect: Rect }) {
   const { state, board, dispatch } = useBoard();
-  const { close, setPreview, setHighlight, showBought } = useScreen();
+  const { close, setPreview, showBought, selectInListing } = useScreen();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [company, setCompany] = useState("");
@@ -40,15 +44,12 @@ export function ResaleFlow({ blockId }: { blockId: string }) {
   const block = state.blocks.find((b) => b.id === blockId);
   const listing = block?.listing ?? null;
 
-  // What is being bought is drawn on the canvas, the same way a selection is.
-  useEffect(() => {
-    if (listing) setHighlight(listing.rect);
-  }, [listing?.rect.r, listing?.rect.c, listing?.rect.w, listing?.rect.h]); // eslint-disable-line react-hooks/exhaustive-deps
-
   if (!block || !listing) return null;
 
   const seller = board.ownerById.get(block.ownerId);
-  const rect = listing.rect;
+  const squares = cellCount(rect);
+  const offered = cellCount(listing.rect);
+  const total = askingFor(listing.pricePerSquare, rect);
   const urlOk = /^[^\s.]+\.[^\s.]{2,}/.test(cleanUrl(url));
   const ready = company.trim().length > 0 && urlOk;
 
@@ -70,6 +71,7 @@ export function ResaleFlow({ blockId }: { blockId: string }) {
     dispatch({
       type: "buyListing",
       blockId,
+      rect,
       company: company.trim(),
       url: cleanUrl(url),
       artwork: file ? { kind: "image", src: file.src } : null,
@@ -80,20 +82,35 @@ export function ResaleFlow({ blockId }: { blockId: string }) {
   return (
     <>
       <PanelHeader
-        title={`${rect.w} × ${rect.h} · for sale`}
+        title={`${rect.w} × ${rect.h} · ${squares} ${squares === 1 ? "square" : "squares"}`}
         note={`Square ${squareRange(rect)} · from ${seller?.name ?? "the owner"}`}
         onClose={close}
       />
 
       <div className="flex flex-col gap-4 px-4 py-4">
         <div className="border-hairline flex items-baseline justify-between border-b pb-3">
-          <span className="text-[14px]">The owner&rsquo;s price</span>
-          <Money amount={listing.price} className="text-[26px] leading-none" />
+          <span className="text-[14px]">
+            ${listing.pricePerSquare} a square, the owner&rsquo;s price
+          </span>
+          <Money amount={total} className="text-[26px] leading-none" />
         </div>
+
+        {squares < offered ? (
+          <button
+            type="button"
+            onClick={() => selectInListing(blockId, listing.rect)}
+            className="border-hairline text-accent border bg-white px-3 py-2 text-[13px] font-medium transition-colors duration-150 hover:bg-[#F7F8F4]"
+          >
+            Take all {offered} squares · ${askingFor(listing.pricePerSquare, listing.rect).toLocaleString("en-US")}
+          </button>
+        ) : null}
 
         <p className="text-faint text-[13px] leading-snug">
           It arrives empty. The artwork on it now and the address it opens belong to{" "}
           {seller?.name ?? "the owner"} and stay with them.
+          {squares < offered
+            ? " What you leave stays on the market at the same price."
+            : ""}
         </p>
 
         <Field
@@ -160,7 +177,7 @@ export function ResaleFlow({ blockId }: { blockId: string }) {
         </Field>
 
         <PrimaryButton onClick={confirm}>
-          BUY FOR ${listing.price.toLocaleString("en-US")}
+          BUY FOR ${total.toLocaleString("en-US")}
         </PrimaryButton>
         <p className="text-faint text-[12px] leading-snug">
           Nothing is charged. This is a prototype: no payment, no account.

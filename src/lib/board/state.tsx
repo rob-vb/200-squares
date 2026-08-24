@@ -5,7 +5,7 @@
 // puts every visitor back on the same board, which is what a demo wants.
 
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
-import { buildBoard, cropArtwork, remainderOf, type BoardModel } from "./geometry";
+import { buildBoard, cropArtwork, intersect, remainderOf, type BoardModel } from "./geometry";
 import type { Artwork, Bid, Block, Dataset, DatasetName, Owner, BannerDay, Rect } from "./types";
 
 /** The floor bid, and the step above the top bid. Ticket 06 keeps both as placeholders. */
@@ -35,9 +35,17 @@ export type BoardAction =
   | { type: "editLink"; blockId: string; url: string }
   | { type: "placeBid"; amount: number }
   | { type: "rivalBid"; amount: number; bidderId: string }
-  | { type: "list"; blockId: string; rect: Rect; price: number }
+  | { type: "list"; blockId: string; rect: Rect; pricePerSquare: number }
   | { type: "unlist"; blockId: string }
-  | { type: "buyListing"; blockId: string; company: string; url: string; artwork: Artwork | null };
+  | {
+      type: "buyListing";
+      blockId: string;
+      /** The rectangle the buyer drew inside the listing. One square is allowed. */
+      rect: Rect;
+      company: string;
+      url: string;
+      artwork: Artwork | null;
+    };
 
 export const seed = (dataset: Dataset): BoardState => ({
   name: dataset.name,
@@ -122,7 +130,7 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         ...state,
         blocks: state.blocks.map((b) =>
           b.id === action.blockId
-            ? { ...b, listing: { rect: action.rect, price: action.price } }
+            ? { ...b, listing: { rect: action.rect, pricePerSquare: action.pricePerSquare } }
             : b,
         ),
       };
@@ -133,18 +141,27 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         blocks: state.blocks.map((b) => (b.id === action.blockId ? { ...b, listing: null } : b)),
       };
 
-    // The sale is the moment the block splits. Until here a part-listing was only
-    // a window on a whole block; now the sold part becomes a block of its own and
-    // the seller keeps the rest, with the artwork cropped to it.
+    // The sale is the moment the block splits. Until here a listing was only a
+    // window on a whole block; now the buyer's rectangle becomes a block of its
+    // own and the seller keeps everything else.
     //
-    // Nothing of the seller's travels. The buyer's own website goes on, and their
-    // artwork if they brought any — the block is `pending` until it does, exactly
-    // like a fresh purchase.
+    // "Everything else" is a rectangle with a bite out of it, so the seller ends
+    // up holding up to four blocks instead of one, each with the artwork cropped
+    // to it. That is the price of selling part of a block, and it is the owner's
+    // to pay: a block renders one image, and an L cannot.
+    //
+    // Each remaining block stays on the market for whatever part of it was still
+    // on offer, at the same price per square. So a listing survives its own
+    // partial sale without the seller having to put it back up.
+    //
+    // Nothing of the seller's travels to the buyer. The buyer's own website goes
+    // on, and their artwork if they brought any — `pending` until they do,
+    // exactly like a fresh purchase.
     case "buyListing": {
       const sold = state.blocks.find((b) => b.id === action.blockId);
       if (!sold?.listing) return state;
-      const part = sold.listing.rect;
-      const kept = remainderOf(sold.rect, part);
+      const offered = sold.listing.rect;
+      const part = action.rect;
 
       const bought: Block = {
         id: `blk_u${state.blocks.length + 1}`,
@@ -154,16 +171,18 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         artwork: action.artwork,
         listing: null,
       };
-      const seller: Block[] = kept
-        ? [
-            {
-              ...sold,
-              rect: kept,
-              artwork: cropArtwork(sold.artwork, sold.rect, kept),
-              listing: null,
-            },
-          ]
-        : [];
+      const kept: Block[] = remainderOf(sold.rect, part).map((rect, i) => {
+        const stillOffered = intersect(rect, offered);
+        return {
+          ...sold,
+          id: `${sold.id}_${i + 1}`,
+          rect,
+          artwork: cropArtwork(sold.artwork, sold.rect, rect),
+          listing: stillOffered
+            ? { rect: stillOffered, pricePerSquare: sold.listing!.pricePerSquare }
+            : null,
+        };
+      });
 
       return {
         ...state,
@@ -171,7 +190,7 @@ export function reduce(state: BoardState, action: BoardAction): BoardState {
         owners: state.owners.map((o) =>
           o.id === state.viewerId ? { ...o, name: action.company } : o,
         ),
-        blocks: [...state.blocks.filter((b) => b.id !== sold.id), ...seller, bought],
+        blocks: [...state.blocks.filter((b) => b.id !== sold.id), ...kept, bought],
       };
     }
   }

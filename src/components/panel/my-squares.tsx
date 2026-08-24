@@ -15,7 +15,7 @@ import { useRef, useState } from "react";
 import { Money, PanelHeader, SecondaryButton, cleanUrl, inputClass } from "./controls";
 import { useScreen } from "./flow";
 import { useBoard } from "@/lib/board/state";
-import { cellCount, priceOf, sellerGets, squareRange } from "@/lib/board/geometry";
+import { askingFor, cellCount, priceOf, sellerGets, squareRange } from "@/lib/board/geometry";
 import { agoLabel } from "@/lib/board/time";
 import type { Block } from "@/lib/board/types";
 
@@ -189,20 +189,22 @@ function BlockRow({
 
       <div className="flex items-center justify-between gap-3 pt-2">
         {block.listing ? (
-          <span className="text-[13px]">
+          <span className="min-w-0 text-[13px]">
             <span className="text-accent font-semibold">For sale</span>
             <span className="text-faint">
               {" · "}
               {block.listing.rect.w} × {block.listing.rect.h} at $
-              {block.listing.price.toLocaleString("en-US")} · you get $
-              {sellerGets(block.listing.price).toLocaleString("en-US")}
+              {block.listing.pricePerSquare} a square · all of it nets you $
+              {sellerGets(
+                askingFor(block.listing.pricePerSquare, block.listing.rect),
+              ).toLocaleString("en-US")}
             </span>
           </span>
         ) : (
           <span className="text-faint text-[13px]">Not for sale</span>
         )}
         <SecondaryButton onClick={onSell}>
-          {block.listing ? "Change price" : "Sell"}
+          {block.listing ? "Change offer" : "Sell"}
         </SecondaryButton>
       </div>
     </div>

@@ -228,7 +228,7 @@ export function Board({
 
       {selection && (
         <div
-          className="pointer-events-none absolute"
+          className="pointer-events-none absolute z-[4]"
           style={{
             left: selection.c * step,
             top: selection.r * step,
