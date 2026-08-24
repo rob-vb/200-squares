@@ -4,7 +4,7 @@ Label: wayfinder:map
 
 ## Destination
 
-A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend and no real payment. Selling a square on is part of it: ticket 11 made the grid a market, and tickets 12-13 build and describe it. Click counters are part of it too: ticket 14 decided them, and tickets 15-16 build and describe them.
+A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL: Next.js + TypeScript + Tailwind, all data mocked in the browser. The canvas (16 x 14 cells, 5 x 5 banner top-left), zoom/pan, block selection up to 4 x 4, fake buy + image upload, the daily banner auction with countdown, fake sign-in with "My squares", and the pages beside the board — How it works, About, Terms, Privacy. No backend and no real payment. Selling a square on is part of it: ticket 11 made the grid a market, and tickets 12-13 build and describe it. Click counters are part of it too: ticket 14 decided them, ticket 15 built them, and ticket 16 makes the copy true.
 
 ## Notes
 
@@ -51,6 +51,8 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 
 - [14 — Traffic numbers for owners](issues/14-traffic-numbers.md) — the site counts **clicks**, and nothing else: no impressions, no visitors, nothing kept about anybody. Two numbers with two jobs — a per-block count only its owner sees, on the row in My squares, and one public site total under the counter on `/how-it-works`, which names no owner. The count belongs to the block under one owner: artwork and link may change and it runs on, and it returns to zero on one event only, the block changing hands — so a resale buyer starts at zero and never sees the seller's number. Total since purchase, no window and no graph, because the model has no dates and gains none. `clicks` on `Block` and `BannerDay`, seeded wide and really incremented by the reducer. `/privacy` keeps all three of its promises and loses one line: *"There are no visitor statistics here at all"*. Tickets 15-16 build it and make the copy true.
 
+- [15 — Build: click counters](issues/15-build-clicks.md) — the counters are on `build-15-clicks`: `clicks` on `Block` and `BannerDay`, seeded wide in both datasets and really incremented by `follow()`, with the owner's number on the block's row in My squares and one public total under the pitch on `/how-it-works`. Two things ticket 14 left open were settled by building: the viewer had to be given a past banner day, or the banner half of My squares is unreachable in a demo where the auction closes at 00:00 UTC; and a part sale does not divide the seller's count — it lands whole on the largest piece they keep, because the site never knew which square was clicked and any split would be invention that also multiplies the public total.
+
 ## Not yet specified
 
 - Auth provider once a backend exists (Clerk, Supabase, something else) — the prototype fakes the session.
@@ -62,6 +64,7 @@ A clickable frontend prototype of 200 squares, viewable on a Vercel preview URL:
 - What a real resale needs once money is real: escrow between two strangers, payouts to sellers, refunds, tax on the site's 10%. Ticket 11 ruled all of it prototype-only; it belongs with **Real payment** below.
 - Whether an owner whose block was cut apart can put the pieces back together, or replace the artwork across them at once. Ticket 12 leaves them holding up to four blocks with one image sliced between them, and blocks never merge — so today the answer is: replace each block's artwork one at a time.
 - Whether a block shows what it last sold for, and whether the market has a price record the way the banner has one.
+- Whether an owner's count should survive a cut they made themselves. Ticket 15 puts it whole on the largest piece a part sale leaves, which is right for a sale; an owner who splits their own block for their own reasons has no such event to hang it on, and today there is no way for them to do that at all.
 - Filtering a click count once a backend exists: the same visitor clicking ten times, and bots. Ticket 14 accepted a rough number on purpose — no trace per visitor — so this is a question for the day the site keeps anything at all, and it lands next to **Real payment** below.
 - A click count over time — per day, a window, a graph. It needs dates in the model, and ticket 14 refused to add them for a prototype counter.
 
