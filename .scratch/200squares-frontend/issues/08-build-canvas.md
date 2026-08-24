@@ -1,7 +1,7 @@
 # 08 — Build: app skeleton and canvas
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 02, 03, 04, 05
 Parent: ../map.md
 
@@ -95,3 +95,89 @@ the server computed: 134 / 6 / 59 and 8 / 2 / 189.
 3. Numbers appear from about 1.5x. Is that early enough?
 4. Does the canvas want inertia and eased zoom, or is the direct feel better?
 5. Light artwork — HALCYON, ATLAS FOUNDRY, MARLOW — does the hairline edge hold it?
+
+## Answer
+
+The canvas is built and approved by the dev on 2026-08-24, on the preview, on a
+real phone. It is on `main`.
+
+Live: https://200-squares-robs-projects-52973834.vercel.app
+Early board: https://200-squares-robs-projects-52973834.vercel.app/?data=early
+
+This is the first ticket whose code stays. Everything before it was a throwaway
+branch.
+
+### What is on main
+
+```
+src/lib/board/
+  types.ts        the shapes from ticket 03
+  geometry.ts     the fixed board, the 1..199 numbering, the 4 x 4 clamp, buildBoard
+  time.ts         the auction clock — every date derived from the next 00:00 UTC
+  state.tsx       the reducer and its context, seeded from a dataset
+  datasets/       brands.ts, early.ts, full.ts, index.ts
+src/components/
+  board-screen.tsx   the first screen
+  canvas/            transform.ts, canvas.tsx, board.tsx
+  top-bar.tsx  title-block.tsx  auction-dock.tsx  countdown.tsx
+```
+
+`full` is 37 blocks — 134 taken and 6 pending, 70.4% of 199 — with 6 past winners
+and 14 bids. `early` is 4 blocks and 10 squares, no banner winner. The counts on
+screen are computed from the blocks, not written down: 134 / 6 / 59 and 8 / 2 / 189.
+
+### Answered on the phone
+
+- The drag still buys without thinking, now that it is the real board.
+- Zoom holds the point under the finger. The pan never feels dead.
+- Numbers from about 1.5x is early enough.
+- **The canvas does not want inertia or eased zoom.** Ticket 02 left this open and
+  noted the library variant had both for free. Direct is better; nothing to add.
+
+### Four corrections to earlier tickets, all found by building
+
+1. **The seam was missing from ticket 02's maths.** The spike computed the board as
+   `COLS * cell` while the grid measures `COLS * (cell + 1) - 1`. Over 16 columns
+   that is 15px of drift, so a click near the right edge landed most of a square
+   off. Hit-testing now advances by `cell + SEAM`. The fit numbers move with it: a
+   390px phone gives a **23px** square, not 24, and a 1440 x 900 desktop gives
+   **59px**, not 60.
+2. **`minutesBeforeClose` put bids in the future.** Recorded on ticket 03; the field
+   is now `minutesAgo`.
+3. **The block edge is gone.** Recorded on ticket 05, twice — first narrowed to
+   light artwork, then removed entirely on the dev's call. The seam already draws a
+   line around every block, so a hairline inside it reads as one doubled rule. The
+   state sheet's before/after put two light blocks *touching*; on the board there is
+   always a seam between them, so the case the edge was invented for never occurs.
+4. **This ticket's own brief said the top bar carries the auction block.** Ticket 01
+   moved the auction into a docked card on purpose. The card wins; the top bar
+   carries the wordmark and the session only.
+
+### Decisions taken while building
+
+- **The seam and everything grid-like scale with the transform. Controls do not.**
+  The selection outline stays 2px on screen and the price chip is drawn outside the
+  transform entirely, so it never grows with the zoom.
+- **Pressing a sold block does not start a selection.** A drag that *runs into*
+  taken squares still shows blocked, as ticket 02 decided. A press that *starts* on
+  a block is a click on what that owner paid for, so it opens their site. A pending
+  block leads nowhere: it is paid for but has nothing to show yet.
+- **The canvas box is 8:7 on a phone, not full height.** Ticket 02 left this to this
+  ticket. Fit is contain and a phone is width-bound, so a taller box adds empty
+  bands and nothing else.
+- **The title block shows three counts on a phone and six on a desktop.** Ticket 01
+  had it desktop-only. Scarcity is the product, so the numbers that shrink stay on
+  screen at every size.
+- **The zoom controls are desktop-only.** Ticket 02's contract listed +/- buttons at
+  every input. On a phone pinch and double-tap already do the job and the buttons
+  covered squares. They also never worked anywhere until this ticket: pointer
+  capture on the canvas box swallowed the click before the button saw it.
+
+### Deliberately not built
+
+- **The BID button leads nowhere.** The auction panel is ticket 09. It is the only
+  control on the screen that does nothing.
+- The detail panel, buying, upload and My squares are ticket 09. Sign in is real: it
+  names the viewer and counts their squares.
+- The reducer has `signIn` and `signOut` only. `buy`, `uploadArtwork`, `editLink`
+  and `placeBid` land in ticket 09, in the same commit as the screens that call them.
