@@ -70,6 +70,15 @@ real backend, and then makes the copy true again.
   to end on staging in Stripe test mode. ⚠️ Give each run a **different address** — Stripe's
   email is what makes an owner, and a bidder who raises their own bid has their earlier hold
   released, so a one-address run can never build the ladder the close needs.
+- **Driving a click**: `node scripts/clicks.mjs [prefix]` starts from the session
+  `scripts/signin.mjs` leaves in `.auth.json`, reads the owner's own count out of My squares,
+  clicks their block on the board three ways — mouse, mouse again on the same permit, and the
+  keyboard — drags across it once to prove a drag counts nothing, and reads the count again.
+  It sets a link on the block first if `seed:adopt` left it without one. The count is private
+  to its owner (ticket 14), so the panel is the only place it can be checked at all. The
+  public total on `/how-it-works` is an hour old by design: `npx convex run
+  snapshots:buildSiteClicks` forces it rather than waiting. Built by
+  [ticket 21](issues/21-build-clicks.md).
 - ⚠️ **The close cannot be tested by waiting for it.** It fires at 00:00 UTC, once a day.
   `npx convex run seed:ageAuction` moves tomorrow's live bids back to today and clears the
   day row, so the next `npx convex run auction:closeDue` closes it for real against Stripe
@@ -512,6 +521,23 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   owner replaced a picture and both old files went to 404, a $1,000 bid was dressed and won
   the banner through a real close, and the file came back `x-vercel-cache: HIT`.
 
+- [21 — Build: counting clicks for real](issues/21-build-clicks.md) — **a block becomes a
+  real link, and the count is thrown after it.** Blocks and the banner render as `<a>`, so a
+  square behaves like a link everywhere a link behaves — middle-click, ctrl-click, the status
+  bar, copy address, and the keyboard, which reaches the board for the first time. The price
+  is in the canvas: ⚠️ **a press on a link is the one press that does not capture the
+  pointer**, or the click goes to the box and the link never opens; and a pan or a wandering
+  finger that ends over a block has its navigation cancelled, while a **keyboard** click
+  (`detail === 0`) is let through or every one of them would be refused as a stray drag.
+  ⚠️ Ticket 10 asked for a token good for 30 clicks **and** for nothing to be written down,
+  and those cannot both be literal — a countdown is a row per visitor, which is an identifier
+  and a time. The promise wins: a permit is a **signed expiry with no nonce**, so the board
+  spends one on 30 clicks and the server enforces **two minutes**. Turnstile's script is not
+  fetched until somebody clicks, so a plain board load still reaches nothing at Cloudflare.
+  ⚠️ **The reset was not built**: nothing in V1.0 changes hands or splits, so it goes to V1.1
+  with resale — see **Out of scope**. Driven on staging by `scripts/clicks.mjs`, which reads
+  the count out of My squares, clicks three ways, drags once, and reads it again.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -527,9 +553,9 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [16 — Build: the checkout](issues/16-build-checkout.md),
   [18 — Build: accounts and signing in](issues/18-build-accounts.md),
   [19 — Build: the auction on real card holds](issues/19-build-auction.md) and
-  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md).
+  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) and
+  [21 — Build: counting clicks for real](issues/21-build-clicks.md).
   **Still open**:
-  [21 — Build: counting clicks for real](issues/21-build-clicks.md),
   [22 — Build: the mail](issues/22-build-email.md),
   [23 — Build: the invoice document](issues/23-build-invoice.md),
   [24 — Build: the admin page and removal](issues/24-build-removal.md) and
@@ -588,7 +614,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   highest bid that **can be collected**, and that a hold stays on the card until the close;
   `/terms` also still owes ticket 07's **mid-day pro-rata refund**, stated and never built;
   and `/privacy` must say a **pending bid keeps the same salted address hash** a reservation
-  does, for the same fifteen minutes.
+  does, for the same fifteen minutes. ⚠️ Ticket 21 adds two more: `/privacy` and the FAQ
+  describe a click count without saying **what it is** — counted in the visitor's browser,
+  not audited, a **floor** and not a census, which ticket 10 named and left to the copy; and
+  `/privacy`'s *Who else sees it* names the payment provider and Vercel but not **Cloudflare**,
+  which a visitor who only clicks a block now loads a script from. Buying and bidding were
+  always deliberate acts; clicking is not.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
   that a capture was declined, or that a webhook never arrived. It needs the cron and
   the captures to exist first.
@@ -618,7 +649,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   starts from. V1.0 gains **one pricing rule instead of two**, no credit ledger, no
   `listings` in the board query, and no second VAT treatment on the invoice. What replaces
   it is a **promise** in the top bar, which is [ticket 27](issues/27-label-and-sellout.md)
-  and carries its own risk.
+  and carries its own risk. ⚠️ **One rule left with it, quietly**: the click count resetting
+  when a block changes hands, and landing whole on the largest remaining piece of a part
+  sale. [Ticket 21](issues/21-build-clicks.md) found that nothing in V1.0 can fire it —
+  `blocks` is inserted by the webhook and never deleted, re-owned or cut, and removal freezes
+  a block with its owner — so it was not built. The rule and its tiebreak stand as ticket 10
+  wrote them and V1.1 starts from them.
 - **A price that moves with scarcity.** Fixed at $250. It is a product
   decision, not a build decision, and it may wait until scarcity is real.
 - **Marketing, launch and traffic.** The map ends at a site that can be launched.

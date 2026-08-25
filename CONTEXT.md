@@ -156,6 +156,11 @@ to zero on one event only: the block changing hands. A block that changes hands
 arrives empty of artwork, of link, and of clicks alike — the count measures what
 the last owner put there, not the place.
 
+⚠️ **Nothing in V1.0 makes a block change hands**, so the reset is a rule with
+nothing to fire it and it is not built. A block is created by a purchase and is
+never deleted, re-owned or cut; removal freezes it and leaves it with its owner.
+The rule is written down here because it is what resale starts from in V1.1.
+
 An owner sees the count of each thing they hold, and nobody else does. Not the
 public, and not another owner.
 
