@@ -31,7 +31,7 @@ import type { Rect } from "@/lib/board/types";
 type Held = { id: Id<"reservations">; expiresAt: number };
 
 export function BuyFlow({ rect }: { rect: Rect }) {
-  const { close, selectRect } = useScreen();
+  const { close, selectRect, setHolding } = useScreen();
   const reserve = useMutation(api.reservations.reserve);
   const release = useMutation(api.reservations.release);
 
@@ -49,6 +49,7 @@ export function BuyFlow({ rect }: { rect: Rect }) {
       const result = await reserve({ rect });
       if (result.ok) {
         setHeld({ id: result.reservationId, expiresAt: result.expiresAt });
+        setHolding(rect);
         return;
       }
       // ⚠️ Somebody got there first. Ticket 05: the loser is not shown an error
@@ -65,6 +66,7 @@ export function BuyFlow({ rect }: { rect: Rect }) {
   const giveBack = async () => {
     if (held) await release({ reservationId: held.id });
     setHeld(null);
+    setHolding(null);
     close();
   };
 

@@ -67,6 +67,12 @@ export type BoardModel = {
   blocks: Block[];
   /** Every square nobody holds, ready to render one by one. */
   available: { r: number; c: number; n: number }[];
+  /**
+   * Every square somebody is away paying for. It is drawn as a plain tile with
+   * no number: ticket 05 says the viewer is never told the difference between a
+   * held square and a sold one, and a number on it would invite a wait.
+   */
+  reserved: { r: number; c: number }[];
   stats: { total: number; taken: number; pending: number; available: number };
 };
 
@@ -108,12 +114,14 @@ export function buildBoard(blocks: Block[], reserved: Rect[]): BoardModel {
   }
 
   const available: BoardModel["available"] = [];
+  const held: BoardModel["reserved"] = [];
   let taken = 0;
   let pending = 0;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const cell = cells[r][c];
       if (cell.state === "available") available.push({ r, c, n: cell.n! });
+      if (cell.state === "reserved") held.push({ r, c });
       if (cell.state === "taken") taken++;
       if (cell.state === "pending") pending++;
     }
@@ -123,6 +131,7 @@ export function buildBoard(blocks: Block[], reserved: Rect[]): BoardModel {
     cells,
     blocks,
     available,
+    reserved: held,
     // `taken` and `pending` count squares somebody paid for. A reserved square
     // is in none of the three: it is not available, and nobody owns it yet.
     stats: { total: SQUARE_COUNT, taken, pending, available: available.length },

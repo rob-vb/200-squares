@@ -205,6 +205,23 @@ export function Board({
         );
       })}
 
+      {/*
+        A square somebody is away paying for. A plain tile, and deliberately not
+        the pending hatch: a hatched square says *sold, artwork coming*, which
+        would be a lie for the fifteen minutes a hold lasts. It carries no
+        number, so it cannot be read as an invitation to wait for it.
+      */}
+      {board.reserved.map((sq) => (
+        <div
+          key={`held-${sq.r}-${sq.c}`}
+          style={{
+            gridRow: sq.r + 1,
+            gridColumn: sq.c + 1,
+            background: "var(--color-square)",
+          }}
+        />
+      ))}
+
       {previewRect && preview && (
         // The image lands on the board before anything is confirmed. This is the
         // moment the idea lands, so it happens on the canvas, not in the panel.

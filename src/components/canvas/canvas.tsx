@@ -79,6 +79,7 @@ export function Canvas() {
     setDragging,
     panelOpen,
     openBid,
+    holding,
   } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
   // The side panel lies over the right of this box. The board re-centres into
@@ -255,7 +256,10 @@ export function Canvas() {
     cv.zoomAbs(cv.scale >= MAX_SCALE ? 1 : cv.scale < 2 ? 2 : MAX_SCALE, p);
   };
 
-  const blocked = selection ? selectionBlocked(board, selection) : false;
+  // ⚠️ A hold makes the visitor's own squares unavailable on the live board, so
+  // without this their selection turns red over the rectangle they are paying
+  // for. While they hold one, the selection is theirs by definition.
+  const blocked = !holding && selection ? selectionBlocked(board, selection) : false;
   const chip = selection
     ? {
         x: cv.t.x + selection.c * cv.step * cv.scale,
@@ -312,7 +316,9 @@ export function Canvas() {
         >
           {blocked
             ? "Not available"
-            : `${selection.w}×${selection.h} $${priceOf(selection).toLocaleString("en-US")}`}
+            : holding
+              ? "Held for you"
+              : `${selection.w}×${selection.h} $${priceOf(selection).toLocaleString("en-US")}`}
         </span>
       )}
 

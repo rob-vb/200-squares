@@ -35,6 +35,17 @@ type ScreenValue = {
   setDragging: (on: boolean) => void;
   /** A flow is on screen. Not the same as "a flow is chosen": see `dragging`. */
   panelOpen: boolean;
+  /**
+   * The rectangle the visitor is holding a reservation on, if any.
+   *
+   * ⚠️ It exists so the canvas can tell *their own hold* from *somebody else's*.
+   * The board is live, so the moment a reservation is written the squares under
+   * it read as unavailable — including to the visitor who just took them, whose
+   * selection would otherwise turn red and say "Not available" about squares
+   * they are at that second paying for.
+   */
+  holding: Rect | null;
+  setHolding: (rect: Rect | null) => void;
   selectRect: (rect: Rect | null) => void;
   setPreview: (src: string | null) => void;
   setHighlight: (rect: Rect | null) => void;
@@ -53,6 +64,7 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
   const [highlight, setHighlight] = useState<Rect | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [holding, setHolding] = useState<Rect | null>(null);
 
   const selectRect = useCallback(
     (rect: Rect | null) => {
@@ -77,6 +89,7 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       setSelection(null);
       setPreview(null);
       setHighlight(null);
+      setHolding(null);
       setFlow(next);
     };
     return {
@@ -87,6 +100,8 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       dragging,
       setDragging,
       panelOpen: flow.kind !== "none" && !dragging,
+      holding,
+      setHolding,
       selectRect,
       setPreview,
       setHighlight,
@@ -99,7 +114,7 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       },
       close: replace({ kind: "none" }),
     };
-  }, [flow, selection, highlight, preview, dragging, selectRect]);
+  }, [flow, selection, highlight, preview, dragging, holding, selectRect]);
 
   return <ScreenContext.Provider value={value}>{children}</ScreenContext.Provider>;
 }
