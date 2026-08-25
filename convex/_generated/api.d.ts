@@ -13,6 +13,7 @@ import type * as auction from "../auction.js";
 import type * as auth from "../auth.js";
 import type * as board from "../board.js";
 import type * as checkout from "../checkout.js";
+import type * as clicks from "../clicks.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as lib_art from "../lib/art.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   board: typeof board;
   checkout: typeof checkout;
+  clicks: typeof clicks;
   crons: typeof crons;
   http: typeof http;
   "lib/art": typeof lib_art;

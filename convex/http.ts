@@ -21,6 +21,12 @@
 // Session — happens on `/api/bid`, behind a bid id, exactly as ticket 16 put the
 // order behind a reservation id.
 //
+// ⚠️ **Counting a click goes to Convex for the same reason again** (ticket 21).
+// It is the cheapest write on the site to call in a loop, it needs a Turnstile
+// answer checked over the network, and on Hobby a flood of Vercel invocations
+// pauses production. Unlike the two above it writes **nothing about the caller**
+// — see the permit below, which is the whole of how that is kept true.
+//
 // ⚠️ **Better Auth serves from here as well** (ticket 18). Its routes sit under
 // `/api/auth/`, and the browser never calls them at this address: it calls
 // 200squares.com, and the Next.js handler forwards to here. That is what keeps
@@ -195,6 +201,143 @@ const openBid = httpAction(async (ctx, request) => {
   const ipHash = await hashCaller(callerKey(request, token));
   const result = await ctx.runMutation(internal.auction.openBid, { amountCents, ipHash });
   return json(request, result);
+});
+
+// ---------------------------------------------------------------------------
+// Clicks.
+
+/**
+ * A permit: proof that a browser passed Turnstile, and nothing else at all.
+ *
+ * ⚠️ **Nothing is written down for a click, anywhere.** /privacy promises that
+ * no name, no identifier, no address and no time is kept when somebody clicks,
+ * and ticket 10 says that promise holds literally rather than by interpretation.
+ * A stored grant with a countdown on it would be an identifier and a time, so
+ * there is no such row: a permit is an expiry and a signature over it, the site
+ * hands it out and forgets it, and two visitors who load the board in the same
+ * millisecond hold the same string. It carries no nonce **on purpose** — a nonce
+ * would be the identifier the promise rules out.
+ *
+ * ⚠️ Be honest about the bound. Ticket 10 asked for "about 30 clicks" per token,
+ * and 30 is what the board spends one on — but a count the server does not keep
+ * is a count the server cannot enforce, so what this door actually limits is
+ * **time**: one solved challenge buys two minutes of counting and no more. That
+ * stops a script, which is what ticket 10 claimed for it and all it claimed.
+ */
+const PERMIT_MS = 2 * 60 * 1000;
+/** What the board spends one permit on before it asks the widget for another. */
+const PERMIT_CLICKS = 30;
+
+const hex = (bytes: ArrayBuffer) =>
+  Array.from(new Uint8Array(bytes))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+const unhex = (text: string): ArrayBuffer | null => {
+  if (text.length % 2 !== 0 || !/^[0-9a-f]*$/.test(text)) return null;
+  const buffer = new ArrayBuffer(text.length / 2);
+  const out = new Uint8Array(buffer);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(text.slice(i * 2, i * 2 + 2), 16);
+  return buffer;
+};
+
+/**
+ * The signing key, domain-separated from every other use of the same secret.
+ *
+ * No key of its own: ticket 14 fixed what a deployment has to be given, and a
+ * new variable nobody sets is a deployment that signs against nothing.
+ */
+async function permitKey(): Promise<CryptoKey> {
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret) throw new Error("BETTER_AUTH_SECRET is not set.");
+  return await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(`200squares/click-permit/${secret}`),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
+}
+
+async function signPermit(expiresAt: number): Promise<string> {
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    await permitKey(),
+    new TextEncoder().encode(String(expiresAt)),
+  );
+  return `${expiresAt}.${hex(signature)}`;
+}
+
+async function permitOk(permit: string): Promise<boolean> {
+  const dot = permit.indexOf(".");
+  if (dot < 1) return false;
+  const expiresAt = Number(permit.slice(0, dot));
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()) return false;
+  const signature = unhex(permit.slice(dot + 1));
+  if (!signature) return false;
+  return await crypto.subtle.verify(
+    "HMAC",
+    await permitKey(),
+    signature,
+    new TextEncoder().encode(String(expiresAt)),
+  );
+}
+
+/** Spend a Turnstile token, get a permit. One per board load that clicks. */
+const clickPermit = httpAction(async (_ctx, request) => {
+  let body: { token?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return json(request, { ok: false, reason: "bad-request" }, 400);
+  }
+
+  const token = typeof body.token === "string" ? body.token : "";
+  if (!(await turnstileOk(token, request))) {
+    return json(request, { ok: false, reason: "turnstile" }, 403);
+  }
+
+  const expiresAt = Date.now() + PERMIT_MS;
+  return json(request, {
+    ok: true,
+    permit: await signPermit(expiresAt),
+    expiresAt,
+    clicks: PERMIT_CLICKS,
+  });
+});
+
+/**
+ * One click on one block or one banner day.
+ *
+ * ⚠️ **It always answers 204, whatever happened.** The board posts this with
+ * `sendBeacon` on its way out to somebody else's site: there is no caller left
+ * to read a reason, and a door that explained itself would be a way to tell a
+ * real block id from a made-up one. A refused click is simply a click that is
+ * not counted, which the count already allows for — ticket 10 made it a floor.
+ *
+ * ⚠️ `sendBeacon` posts `text/plain`, which is what keeps it a *simple* request
+ * with no preflight in front of it. So the body is read as text and parsed here
+ * rather than with `request.json()`.
+ */
+const click = httpAction(async (ctx, request) => {
+  const done = new Response(null, { status: 204, headers: cors(request) });
+
+  let body: { permit?: string; kind?: string; id?: string };
+  try {
+    body = JSON.parse(await request.text());
+  } catch {
+    return done;
+  }
+
+  const permit = typeof body.permit === "string" ? body.permit : "";
+  if (!(await permitOk(permit))) return done;
+
+  const kind = body.kind === "banner" ? ("banner" as const) : ("block" as const);
+  const id = typeof body.id === "string" ? body.id : "";
+  if (!id) return done;
+
+  await ctx.runMutation(internal.clicks.count, { kind, id });
+  return done;
 });
 
 // ---------------------------------------------------------------------------
@@ -450,6 +593,10 @@ http.route({ path: "/checkout/reserve", method: "POST", handler: reserve });
 http.route({ path: "/checkout/reserve", method: "OPTIONS", handler: preflight });
 http.route({ path: "/auction/bid", method: "POST", handler: openBid });
 http.route({ path: "/auction/bid", method: "OPTIONS", handler: preflight });
+http.route({ path: "/clicks/permit", method: "POST", handler: clickPermit });
+http.route({ path: "/clicks/permit", method: "OPTIONS", handler: preflight });
+http.route({ path: "/clicks", method: "POST", handler: click });
+http.route({ path: "/clicks", method: "OPTIONS", handler: preflight });
 http.route({ path: "/art", method: "GET", handler: art });
 http.route({ path: "/stripe/webhook", method: "POST", handler: webhook });
 http.route({ path: "/stripe/reconcile", method: "POST", handler: reconcile });

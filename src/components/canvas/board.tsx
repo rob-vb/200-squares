@@ -6,8 +6,20 @@
 // Three kinds of child: the banner, one element per block, and one element per
 // available square. A block is a single grid item, which is why the seams inside
 // a bought rectangle disappear on their own.
+//
+// ⚠️ **A block that can be clicked is a real `<a>`** (tickets 10 and 21), and not
+// a div the canvas opens a window from. It is what the owner paid for, so it
+// behaves like a link everywhere a link behaves: middle-click and ctrl-click open
+// it in a tab, the status bar shows where it goes, the context menu can copy the
+// address, and the keyboard can reach it. `window.open` from a handler has none
+// of that, and a pop-up blocker can refuse it.
+//
+// The gesture contract still decides **whether** a click counts as one — that is
+// `canvas.tsx`'s business, through `onFollow`, which may cancel the navigation.
+// Nothing here knows about drags, and nothing here counts anything.
 
 import type { Artwork, BannerToday, Rect } from "@/lib/board/types";
+import type { ClickTarget } from "@/lib/board/clicks";
 import {
   BANNER,
   COLS,
@@ -32,6 +44,18 @@ function labelSize(label: string, wpx: number, hpx: number) {
  */
 const HATCH =
   "repeating-linear-gradient(-45deg, var(--color-square) 0 3px, color-mix(in srgb, var(--color-accent) 35%, transparent) 3px 5px)";
+
+/**
+ * What the canvas is told when somebody clicks a link on the board.
+ *
+ * It is handed the event as well as the target, because the canvas is the only
+ * thing that knows whether the gesture that produced it was a click at all — a
+ * pan that ended over a block is not one, and it cancels the navigation.
+ */
+export type Follow = (target: ClickTarget, e: React.MouseEvent<HTMLAnchorElement>) => void;
+
+/** Blocks and banner days keep their address bare. The scheme is added here. */
+const hrefOf = (url: string) => `https://${url}`;
 
 /**
  * How artwork paints its box.
@@ -77,11 +101,13 @@ function BannerCell({
   cell,
   scale,
   inView,
+  onFollow,
 }: {
   day: BannerToday | null;
   cell: number;
   scale: number;
   inView: Rect | null;
+  onFollow?: Follow;
 }) {
   const step = cell + SEAM;
   const wpx = BANNER.w * step - SEAM;
@@ -114,22 +140,42 @@ function BannerCell({
   // so a banner day with nothing on it reads exactly like an unwon one.
   if (!art) return <BannerCell day={null} cell={cell} scale={scale} inView={inView} />;
 
+  const inside =
+    art.kind === "seed" ? (
+      <span className="font-display leading-none" style={{ fontSize: wpx * 0.13 }}>
+        {art.label}
+      </span>
+    ) : null;
+  const className = "flex flex-col items-center justify-center overflow-hidden text-center";
+  const style = {
+    ...gridArea(BANNER),
+    ...(art.kind === "seed"
+      ? { background: art.bg, color: art.fg }
+      : artStyle(art, wpx, BANNER.h * step - SEAM, scale, touches(inView, BANNER))),
+  };
+
+  // A won day with no address is the winner's own empty hour (ticket 07). It is
+  // still their banner, so it is drawn — but there is nowhere to go, so it is
+  // not a link and no click on it is ever counted.
+  if (!day.url) return <div className={className} style={style}>{inside}</div>;
+
+  const follow = (e: React.MouseEvent<HTMLAnchorElement>) =>
+    onFollow?.({ kind: "banner", id: day.date }, e);
+
   return (
-    <div
-      className="flex flex-col items-center justify-center overflow-hidden text-center"
-      style={{
-        ...gridArea(BANNER),
-        ...(art.kind === "seed"
-          ? { background: art.bg, color: art.fg }
-          : artStyle(art, wpx, BANNER.h * step - SEAM, scale, touches(inView, BANNER))),
-      }}
+    <a
+      href={hrefOf(day.url)}
+      target="_blank"
+      rel="noopener noreferrer"
+      draggable={false}
+      aria-label={`Today's banner: ${day.ownerName}. Opens ${day.url}`}
+      onClick={follow}
+      onAuxClick={follow}
+      className={className}
+      style={style}
     >
-      {art.kind === "seed" ? (
-        <span className="font-display leading-none" style={{ fontSize: wpx * 0.13 }}>
-          {art.label}
-        </span>
-      ) : null}
-    </div>
+      {inside}
+    </a>
   );
 }
 
@@ -144,6 +190,7 @@ export function Board({
   hovered,
   preview,
   highlight,
+  onFollow,
 }: {
   board: BoardModel;
   bannerToday: BannerToday | null;
@@ -162,6 +209,8 @@ export function Board({
   preview: string | null;
   /** A block My squares is pointing at. */
   highlight: Rect | null;
+  /** What the canvas does about a click on one of the board's links. */
+  onFollow?: Follow;
 }) {
   const step = cell + SEAM;
   // A number below 34px rendered is unreadable, so below that a square is a tile.
@@ -181,7 +230,13 @@ export function Board({
         gap: SEAM,
       }}
     >
-      <BannerCell day={bannerToday} cell={cell} scale={scale} inView={inView} />
+      <BannerCell
+        day={bannerToday}
+        cell={cell}
+        scale={scale}
+        inView={inView}
+        onFollow={onFollow}
+      />
 
       {board.blocks.map((block) => {
         const wpx = block.rect.w * step - SEAM;
@@ -199,17 +254,43 @@ export function Board({
           );
         }
 
+        const className =
+          "flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight";
+        const style = {
+          ...gridArea(block.rect),
+          ...artStyle(art, wpx, hpx, scale, touches(inView, block.rect)),
+        };
+        const inside = art.kind === "seed" ? art.label : null;
+
+        // ⚠️ A frozen block is not a link. The third strike takes away the right
+        // to point anywhere (ticket 11), and `buildBoard` already reads one as
+        // pending — so it draws what it has and sends nobody anywhere.
+        if (block.frozen || !block.url) {
+          return (
+            <div key={block.id} className={className} style={style}>
+              {inside}
+            </div>
+          );
+        }
+
+        const follow = (e: React.MouseEvent<HTMLAnchorElement>) =>
+          onFollow?.({ kind: "block", id: block.id }, e);
+
         return (
-          <div
+          <a
             key={block.id}
-            className="flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight"
-            style={{
-              ...gridArea(block.rect),
-              ...artStyle(art, wpx, hpx, scale, touches(inView, block.rect)),
-            }}
+            href={hrefOf(block.url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            draggable={false}
+            aria-label={`${block.ownerName}. Opens ${block.url}`}
+            onClick={follow}
+            onAuxClick={follow}
+            className={className}
+            style={style}
           >
-            {art.kind === "seed" ? art.label : null}
-          </div>
+            {inside}
+          </a>
         );
       })}
 
