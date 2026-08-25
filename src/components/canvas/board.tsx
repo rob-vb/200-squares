@@ -39,21 +39,32 @@ function artStyle(
   wpx: number,
   hpx: number,
   scale: number,
+  onScreen: boolean,
 ): React.CSSProperties {
   if (art.kind === "seed") {
     return { background: art.bg, color: art.fg, fontSize: labelSize(art.label, wpx, hpx) };
   }
-  return { backgroundImage: `url(${artSrc(art, scale)})`, ...cropStyle(art.crop) };
+  return { backgroundImage: `url(${artSrc(art, scale, onScreen)})`, ...cropStyle(art.crop) };
 }
+
+/** Two rectangles share at least one cell. `null` means "everything counts". */
+const touches = (window: Rect | null, rect: Rect) =>
+  window === null ||
+  (window.c < rect.c + rect.w &&
+    rect.c < window.c + window.w &&
+    window.r < rect.r + rect.h &&
+    rect.r < window.r + window.h);
 
 function BannerCell({
   day,
   cell,
   scale,
+  inView,
 }: {
   day: BannerToday | null;
   cell: number;
   scale: number;
+  inView: Rect | null;
 }) {
   const step = cell + SEAM;
   const wpx = BANNER.w * step - SEAM;
@@ -84,7 +95,7 @@ function BannerCell({
   const art = day.artwork;
   // A winner who brought no artwork gets the house ad in their place (ticket 07),
   // so a banner day with nothing on it reads exactly like an unwon one.
-  if (!art) return <BannerCell day={null} cell={cell} scale={scale} />;
+  if (!art) return <BannerCell day={null} cell={cell} scale={scale} inView={inView} />;
 
   return (
     <div
@@ -93,7 +104,10 @@ function BannerCell({
         ...gridArea(BANNER),
         ...(art.kind === "seed"
           ? { background: art.bg, color: art.fg }
-          : { backgroundImage: `url(${artSrc(art, scale)})`, ...cropStyle(art.crop) }),
+          : {
+              backgroundImage: `url(${artSrc(art, scale, touches(inView, BANNER))})`,
+              ...cropStyle(art.crop),
+            }),
       }}
     >
       {art.kind === "seed" ? (
@@ -110,6 +124,7 @@ export function Board({
   bannerToday,
   cell,
   scale,
+  inView,
   selection,
   blocked,
   hovered,
@@ -121,6 +136,11 @@ export function Board({
   /** Square size in px at scale 1 — the fit size. */
   cell: number;
   scale: number;
+  /**
+   * The cells on screen, or null while the viewport is unknown. Artwork above 2x
+   * zoom is only fetched at full size for blocks inside it (ticket 09).
+   */
+  inView: Rect | null;
   selection: Rect | null;
   blocked: boolean;
   hovered: { r: number; c: number } | null;
@@ -147,7 +167,7 @@ export function Board({
         gap: SEAM,
       }}
     >
-      <BannerCell day={bannerToday} cell={cell} scale={scale} />
+      <BannerCell day={bannerToday} cell={cell} scale={scale} inView={inView} />
 
       {board.blocks.map((block) => {
         const wpx = block.rect.w * step - SEAM;
@@ -173,7 +193,10 @@ export function Board({
           <div
             key={block.id}
             className="flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight"
-            style={{ ...gridArea(block.rect), ...artStyle(art, wpx, hpx, scale) }}
+            style={{
+              ...gridArea(block.rect),
+              ...artStyle(art, wpx, hpx, scale, touches(inView, block.rect)),
+            }}
           >
             {art.kind === "seed" ? art.label : null}
           </div>

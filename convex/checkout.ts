@@ -210,6 +210,12 @@ export const orderBySession = query({
       /** The public company name, once the buyer has supplied it. */
       companyName: v.string(),
       url: v.string(),
+      /**
+       * Whether a picture is on the block yet. A boolean and not the artwork:
+       * the page only has to know which word the button says, and the file
+       * itself is drawn on the board.
+       */
+      hasArtwork: v.boolean(),
     }),
   ),
   handler: async (ctx, { stripeSessionId }) => {
@@ -237,20 +243,21 @@ export const orderBySession = query({
       refundReason: order.refundReason ?? null,
       companyName: owner?.name ?? "",
       url: block?.url ?? "",
+      hasArtwork: Boolean(block?.artwork),
     };
   },
 });
 
 /**
- * The one right the session id grants: name the block and point it somewhere.
+ * Name the block and point it somewhere, on the strength of the session id.
  *
  * Ticket 06 moved company, link and artwork off the panel and behind the
  * payment, and this is where the first two land — before any email arrives, so
  * nobody leaves the site with a square that says nothing.
  *
- * ⚠️ The artwork half is [ticket 20](../.scratch/200squares-v1/issues/20-build-artwork.md)'s
- * and it hangs on this same grant: the upload URL is authorised by the session
- * id in exactly the way this mutation is, and nothing else here has to change.
+ * The artwork is the third, and it hangs on the same grant: `art.orderUploadUrls`
+ * and `art.setOrderArtwork` check this session id in exactly the way this
+ * mutation does (ticket 20).
  */
 export const completeBySession = mutation({
   args: { stripeSessionId: v.string(), companyName: v.string(), url: v.string() },

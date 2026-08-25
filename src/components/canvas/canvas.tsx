@@ -16,7 +16,7 @@
 // squares, never a selection of the numbers printed on them. The panel is a
 // sibling of this box, not a child, so its fields stay selectable.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Board } from "./board";
 import { useCanvasTransform, useWheelZoom, type Pt } from "./transform";
 import { PANEL_MEDIA, PANEL_WIDTH, useScreen } from "../panel/flow";
@@ -90,6 +90,26 @@ export function Canvas() {
   const [hovered, setHovered] = useState<CellRef | null>(null);
   const [cursor, setCursor] = useState("default");
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
+
+  // ⚠️ Which cells are actually on screen, for the artwork the board draws.
+  //
+  // Above 2x zoom a block swaps to its `4x` file, and at 4x about a sixteenth of
+  // the board is in view. Without this, one zoom gesture would fetch 199 large
+  // files — 80 MB of edge traffic for a look at one corner. Ticket 09 asked for
+  // the large set "only above 2x, lazy-loaded off-screen"; a background image
+  // has no `loading="lazy"`, so this is what lazy means here.
+  //
+  // It is deliberately coarse and one cell generous on every side: the point is
+  // to keep the other fifteen sixteenths on the small file, not to be exact.
+  const inView = useMemo(() => {
+    const span = cv.step * cv.scale;
+    if (span <= 0) return null;
+    const c = Math.floor((-cv.t.x) / span) - 1;
+    const r = Math.floor((-cv.t.y) / span) - 1;
+    const w = Math.ceil(cv.viewport.w / span) + 3;
+    const h = Math.ceil(cv.viewport.h / span) + 3;
+    return { r, c, w, h };
+  }, [cv.step, cv.scale, cv.t.x, cv.t.y, cv.viewport.w, cv.viewport.h]);
 
   const pointers = useRef(new Map<number, Pt>());
   const mode = useRef<"idle" | "select" | "pan" | "pinch" | "press">("idle");
@@ -295,6 +315,7 @@ export function Canvas() {
           bannerToday={bannerToday}
           cell={cv.cell}
           scale={cv.scale}
+          inView={inView}
           selection={selection}
           blocked={blocked}
           hovered={hovered}

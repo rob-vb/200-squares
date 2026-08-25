@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as art from "../art.js";
 import type * as auction from "../auction.js";
 import type * as auth from "../auth.js";
 import type * as board from "../board.js";
 import type * as checkout from "../checkout.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
+import type * as lib_art from "../lib/art.js";
 import type * as lib_board from "../lib/board.js";
 import type * as lib_mail from "../lib/mail.js";
 import type * as lib_time from "../lib/time.js";
@@ -31,12 +33,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  art: typeof art;
   auction: typeof auction;
   auth: typeof auth;
   board: typeof board;
   checkout: typeof checkout;
   crons: typeof crons;
   http: typeof http;
+  "lib/art": typeof lib_art;
   "lib/board": typeof lib_board;
   "lib/mail": typeof lib_mail;
   "lib/time": typeof lib_time;

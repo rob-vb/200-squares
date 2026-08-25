@@ -233,8 +233,37 @@ export function cropStyle(crop: Crop | undefined): React.CSSProperties {
 export const artUrl = (storageId: string) => `/art/${storageId}`;
 
 /**
+ * The square size the `1x` set is produced against, and the multiplier for the
+ * `4x`. A block's image is exactly the box the board draws, internal seams
+ * included — a bought rectangle is one grid item, so the seams inside it are
+ * part of the picture.
+ *
+ * ⚠️ The board's real square size is the viewport's, not a constant: `cell` is
+ * whatever a 16 x 14 grid fits into the screen. So these are the size artwork is
+ * *made* at, chosen to cover the screens the board is actually opened on — a
+ * phone draws a square at about 23px and the largest desktop at about 150px, and
+ * 80px carries both at fit scale.
+ */
+export const ART_CELL = 80;
+/** The zoom the `4x` set is made for. It is `MAX_SCALE`, and it is not a coincidence. */
+export const ART_ZOOM = MAX_SCALE;
+
+/** The pixel box a rect's artwork is drawn into, at a given square size. */
+export const artPixels = (rect: Rect, cell: number) => {
+  const step = cell + SEAM;
+  return { w: rect.w * step - SEAM, h: rect.h * step - SEAM };
+};
+
+/**
  * The two sizes the browser produced before upload: the `1x` set below 2x zoom,
  * the `4x` only above it. A phone never downloads the large one at fit scale.
+ *
+ * ⚠️ `onScreen` is the other half of that rule and it is a bill, not a nicety.
+ * At 4x zoom about a sixteenth of the board is in view; without this every one
+ * of 199 blocks would swap to its 400 KB file the moment somebody zoomed in,
+ * which is 80 MB of edge traffic for one gesture. Ticket 09 asked for the large
+ * set "only above 2x, lazy-loaded off-screen", and on a background image this is
+ * what lazy means: the small file stays until the block is actually in view.
  */
-export const artSrc = (art: Artwork, scale: number) =>
-  art.kind === "upload" ? artUrl(scale > 2 ? art.large : art.small) : null;
+export const artSrc = (art: Artwork, scale: number, onScreen = true) =>
+  art.kind === "upload" ? artUrl(scale > 2 && onScreen ? art.large : art.small) : null;

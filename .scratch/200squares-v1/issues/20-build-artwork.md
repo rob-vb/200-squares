@@ -1,7 +1,7 @@
 # 20 — Build: artwork upload, storage and delivery
 
 Type: task
-Status: open
+Status: claimed (rob-vb, 2026-08-25)
 Blocked by: 09, 14, 15, 18 (all done 2026-08-25 — this is now on the frontier)
 Parent: ../map.md
 

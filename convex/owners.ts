@@ -50,6 +50,12 @@ export const mine = query({
           placedAt: v.number(),
           /** Where the banner will point if this bid wins. Ticket 19. */
           url: v.string(),
+          /**
+           * Whether a picture is already attached. A boolean and not the
+           * artwork: the panel only has to know which word the button says, and
+           * the file itself is drawn on the banner, never in this list.
+           */
+          artwork: v.boolean(),
         }),
       ),
     }),
@@ -113,6 +119,7 @@ export const mine = query({
         amountCents: r.amountCents,
         placedAt: r.placedAt,
         url: r.url ?? "",
+        artwork: Boolean(r.artwork),
       }));
 
     return {

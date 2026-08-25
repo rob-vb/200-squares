@@ -29,6 +29,7 @@
 
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { authComponent, createAuth } from "./auth";
 import { internal } from "./_generated/api";
 import { rectIsSellable, type Rect } from "./lib/board";
@@ -194,6 +195,39 @@ const openBid = httpAction(async (ctx, request) => {
   const ipHash = await hashCaller(callerKey(request, token));
   const result = await ctx.runMutation(internal.auction.openBid, { amountCents, ipHash });
   return json(request, result);
+});
+
+// ---------------------------------------------------------------------------
+// Artwork, out.
+
+/**
+ * The bytes of one stored file. **Not for a visitor** — for the one route on
+ * 200squares.com that streams them.
+ *
+ * ⚠️ Ticket 09's rule, and the reason this endpoint reads the way it does:
+ * **artwork is never served from Convex to a visitor.** Convex Free includes 1 GB
+ * of egress and a board that served its own pictures would spend it on a good
+ * day. `/art/<storageId>` on Vercel fetches this once per file per region and
+ * the edge cache answers everybody else, so what leaves here is close to nothing.
+ *
+ * The id is the whole address and it is not a secret: what it points at is a
+ * picture already painted on a public board. There is nothing here to guard, and
+ * a guard would only be a lookup the edge cache would then have to skip.
+ */
+const art = httpAction(async (ctx, request) => {
+  const id = new URL(request.url).searchParams.get("id") ?? "";
+  // An id that is not one gets the same answer a missing file does. There is no
+  // `normalizeId` here — an HTTP action has no database handle — so the cast is
+  // checked by the lookup itself, which throws rather than finding anything.
+  const blob = await ctx.storage.get(id as Id<"_storage">).catch(() => null);
+  if (!blob) return new Response("No such file.", { status: 404 });
+  return new Response(blob, {
+    headers: {
+      "Content-Type": blob.type || "application/octet-stream",
+      // A new file is a new id is a new URL, so nothing is ever busted.
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -416,6 +450,7 @@ http.route({ path: "/checkout/reserve", method: "POST", handler: reserve });
 http.route({ path: "/checkout/reserve", method: "OPTIONS", handler: preflight });
 http.route({ path: "/auction/bid", method: "POST", handler: openBid });
 http.route({ path: "/auction/bid", method: "OPTIONS", handler: preflight });
+http.route({ path: "/art", method: "GET", handler: art });
 http.route({ path: "/stripe/webhook", method: "POST", handler: webhook });
 http.route({ path: "/stripe/reconcile", method: "POST", handler: reconcile });
 http.route({ path: "/stripe/reconcile", method: "OPTIONS", handler: preflight });

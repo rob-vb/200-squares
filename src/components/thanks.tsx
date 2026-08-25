@@ -10,17 +10,19 @@
 // where somebody who has paid is shown an error.
 //
 // ⚠️ The session id in the URL is the grant. It is the one thing that says *you
-// are the person who just paid*, and it buys exactly one right: naming this
-// block and pointing it somewhere. Ticket 06 moved company, link and artwork
-// behind the payment, and the first two land here — before any email arrives, so
-// nobody leaves the site with a square that says nothing.
+// are the person who just paid*, and it buys three things and no others: naming
+// this block, pointing it somewhere, and putting a picture on it. Ticket 06
+// moved all three behind the payment and they all land here — before any email
+// arrives, so nobody leaves the site with a square that says nothing.
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/api";
+import type { Id } from "@convex/dataModel";
 import { PrimaryButton, cleanUrl, inputClass } from "./panel/controls";
+import { ArtworkRules, ArtworkUpload } from "./art/artwork-upload";
 import { Section } from "./content/section";
 import { clearHold, convexSite } from "@/lib/checkout/hold";
 import { useOnClient } from "./use-on-client";
@@ -117,6 +119,8 @@ type Order = NonNullable<FunctionReturnType<typeof api.checkout.orderBySession>>
 
 function Complete({ sessionId, order }: { sessionId: string; order: Order }) {
   const complete = useMutation(api.checkout.completeBySession);
+  const uploadUrls = useMutation(api.art.orderUploadUrls);
+  const setArtwork = useMutation(api.art.setOrderArtwork);
   const [companyName, setCompanyName] = useState(order.companyName);
   const [url, setUrl] = useState(order.url);
   const [busy, setBusy] = useState(false);
@@ -177,12 +181,33 @@ function Complete({ sessionId, order }: { sessionId: string; order: Order }) {
           <PrimaryButton onClick={save} disabled={busy || !companyName.trim()}>
             {busy ? "SAVING…" : done ? "SAVE CHANGES" : "SAVE"}
           </PrimaryButton>
+        </div>
+      </Section>
+
+      {/*
+        ⚠️ The upload hangs on the same grant the two fields above do: the Stripe
+        session id in this page's address is what says *you are the person who
+        just paid*, and it is the only thing this buyer holds before any mail
+        arrives (ticket 06). The magic link in their email is the way back later.
+      */}
+      <Section title={order.hasArtwork ? "Your picture" : "Put a picture on it"}>
+        <div className="flex max-w-[420px] flex-col gap-3">
+          <ArtworkUpload
+            rect={order.rect}
+            hasArtwork={order.hasArtwork}
+            urls={() => uploadUrls({ stripeSessionId: sessionId })}
+            save={(ids) =>
+              setArtwork({
+                stripeSessionId: sessionId,
+                small: ids.small as Id<"_storage">,
+                large: ids.large as Id<"_storage">,
+              })
+            }
+          />
+          <ArtworkRules />
           <p className="text-faint text-[12px] leading-snug">
-            {/* ⚠️ The upload itself is ticket 20's, and it hangs on this same
-                grant: the session id in this page's address is what authorises
-                it, exactly as it authorises the two fields above. */}
-            Uploading the picture is not built yet. When it is, it happens here and from your
-            account — and the magic link in your email is the way back to both.
+            You can do this later instead. The square stays yours either way, and the magic link
+            in your email brings you back to it.
           </p>
         </div>
       </Section>

@@ -12,14 +12,15 @@
 // that earned it. This panel is the only place it appears: ticket 14 keeps every
 // per-block number private to its owner, so nothing here has a public twin.
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
 import { Money, PanelHeader, SecondaryButton, cleanUrl, inputClass } from "./controls";
+import { ArtworkRules, ArtworkUpload } from "../art/artwork-upload";
 import { useScreen } from "./flow";
 import { useViewer } from "@/lib/board/viewer";
-import { cellCount, priceOf, squareRange } from "@/lib/board/geometry";
+import { BANNER, cellCount, priceOf, squareRange } from "@/lib/board/geometry";
 import { agoLabel, dayLabel, usd } from "@/lib/board/time";
 import { useClientDate } from "../use-client-date";
 import type { Rect } from "@/lib/board/types";
@@ -133,12 +134,15 @@ function BidRow({
   bid,
   now,
 }: {
-  bid: { id: string; amountCents: number; placedAt: number; url: string };
+  bid: { id: string; amountCents: number; placedAt: number; url: string; artwork: boolean };
   now: Date | null;
 }) {
   const setBannerContent = useMutation(api.auction.setBannerContent);
+  const bidUploadUrls = useMutation(api.art.bidUploadUrls);
+  const setBidArtwork = useMutation(api.art.setBidArtwork);
   const [url, setUrl] = useState(bid.url);
   const [saved, setSaved] = useState(false);
+  const bidId = bid.id as Id<"bids">;
 
   return (
     <div className="flex flex-col gap-2 py-1">
@@ -159,14 +163,30 @@ function BidRow({
         />
         <SecondaryButton
           onClick={() => {
-            void setBannerContent({ bidId: bid.id as Id<"bids">, url: cleanUrl(url) }).then(() =>
-              setSaved(true),
-            );
+            void setBannerContent({ bidId, url: cleanUrl(url) }).then(() => setSaved(true));
           }}
         >
           {saved ? "Saved" : "Save"}
         </SecondaryButton>
       </div>
+      {/*
+        ⚠️ The banner is 5 x 5, so the crop is against that shape and not a
+        block's. A bidder who prepares gets the whole day; one who does not gets
+        the house ad until they upload, which is ticket 07's empty hour.
+      */}
+      <ArtworkUpload
+        rect={BANNER}
+        hasArtwork={bid.artwork}
+        urls={() => bidUploadUrls({ bidId })}
+        save={(ids) =>
+          setBidArtwork({
+            bidId,
+            small: ids.small as Id<"_storage">,
+            large: ids.large as Id<"_storage">,
+          })
+        }
+      />
+      <ArtworkRules />
     </div>
   );
 }
@@ -180,28 +200,24 @@ function BlockRow({
   lit: boolean;
   onPoint: () => void;
 }) {
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const setBlockUrl = useMutation(api.art.setBlockUrl);
+  const blockUploadUrls = useMutation(api.art.blockUploadUrls);
+  const setBlockArtwork = useMutation(api.art.setBlockArtwork);
+  const { setPreview } = useScreen();
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [link, setLink] = useState(block.url);
-
-  // ⚠️ Neither write is built. Ticket 20 owns the upload — the browser crops and
-  // resizes to two exact WebP files before anything leaves the machine — and the
-  // guard both writes go through is ticket 18's `requireOwner(ctx, blockId)`.
-  // A button that silently did nothing would be worse than one that says so.
-  const soon = (what: string) => setError(`${what} is not built on this deployment yet.`);
-
-  const upload = (chosen: File | null) => {
-    if (!chosen) return;
-    soon("Uploading artwork");
-    if (fileRef.current) fileRef.current.value = "";
-  };
+  const blockId = block.id as Id<"blocks">;
 
   const saveLink = () => {
     const next = cleanUrl(link);
-    soon("Changing the link");
-    setLink(next || block.url);
+    setError(null);
+    setLink(next);
     setEditing(false);
+    void setBlockUrl({ blockId, url: next }).catch(() => {
+      setLink(block.url);
+      setError("That did not save. Try again.");
+    });
   };
 
   return (
@@ -232,17 +248,26 @@ function BlockRow({
           </div>
         ) : (
           <div className="flex items-baseline justify-between gap-3">
-            <span className="min-w-0 truncate text-[13px]">{block.url}</span>
-            <button
-              type="button"
-              className="text-accent shrink-0 text-[13px] font-medium"
-              onClick={() => {
-                setLink(block.url);
-                setEditing(true);
-              }}
-            >
-              Edit link
-            </button>
+            <span className="min-w-0 truncate text-[13px]">{block.url || "No link yet"}</span>
+            {/*
+              ⚠️ A frozen block takes neither (ticket 11). It is still owned and
+              still on the board; what the third strike takes away is the right
+              to put anything new on it.
+            */}
+            {block.frozen ? (
+              <span className="text-accent shrink-0 text-[13px] font-semibold">Frozen</span>
+            ) : (
+              <button
+                type="button"
+                className="text-accent shrink-0 text-[13px] font-medium"
+                onClick={() => {
+                  setLink(block.url);
+                  setEditing(true);
+                }}
+              >
+                Edit link
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -259,25 +284,35 @@ function BlockRow({
         >
           {block.artwork ? `Live · ${clicksLabel(block.clicks)}` : "Waiting for artwork"}
         </span>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => upload(e.target.files?.[0] ?? null)}
-        />
-        {block.artwork ? (
-          <SecondaryButton onClick={() => fileRef.current?.click()}>Replace image</SecondaryButton>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="bg-accent shrink-0 px-3 py-2 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[#B81C4E]"
-          >
-            Upload image
-          </button>
-        )}
       </div>
+
+      {block.frozen ? null : (
+        <div className="pt-2">
+          {/*
+            The cropped picture lands on the board before the write does, over
+            the same highlight this row already points at. It is the `1x` file
+            itself, so what the owner sees is what the board will draw.
+          */}
+          <ArtworkUpload
+            rect={block.rect}
+            hasArtwork={Boolean(block.artwork)}
+            urls={() => blockUploadUrls({ blockId })}
+            save={(ids) =>
+              setBlockArtwork({
+                blockId,
+                small: ids.small as Id<"_storage">,
+                large: ids.large as Id<"_storage">,
+              })
+            }
+            onPreview={(url) => {
+              onPoint();
+              setPreview(url);
+            }}
+          />
+          {block.artwork ? null : <ArtworkRules className="pt-2" />}
+        </div>
+      )}
+
       {error ? <div className="text-accent pt-1 text-[12px]">{error}</div> : null}
     </div>
   );

@@ -36,4 +36,10 @@ crons.hourly("sum site clicks", { minuteUTC: 15 }, internal.snapshots.buildSiteC
 // fires twice.
 crons.hourly("close the banner auction", { minuteUTC: 0 }, internal.auction.closeDue);
 
+// Files nothing points at (ticket 20). Replacing artwork already deletes what it
+// replaces, so this is only the half-written case: two files posted straight to
+// Convex and a setter that never ran. Daily, because an orphan costs a few
+// kilobytes of the free plan's gigabyte and nothing else.
+crons.daily("sweep orphan files", { hourUTC: 3, minuteUTC: 30 }, internal.art.sweepOrphans);
+
 export default crons;
