@@ -34,3 +34,11 @@ Decide how that actually works with Convex and Better Auth:
 
 `Owner` and `Viewer` are already defined in `CONTEXT.md`. A logged-in viewer is an
 owner; keep the words and do not invent a `user` beside them without saying why.
+
+## From resolved decisions
+
+[Ticket 06](06-buying-for-real.md) fixed two things here. The **webhook** creates the
+account, not the buyer. And the **thank-you page must work before the mail is ever
+opened**: the Stripe session id in the return URL grants exactly one right — set artwork
+and link on the blocks of that order — so nobody leaves the site with an empty square.
+The magic link is the way back later, not the way in.

@@ -62,3 +62,11 @@ model from the prototype survives whole; how the money moves does not.
 - Open for a professional, and it decides when VAT falls: is site credit a
   **single-purpose or multi-purpose voucher**, and is credit paid to a seller a
   voucher transfer at all. See also the new **Site credit as a product** fog on the map.
+
+## From resolved decisions
+
+[Ticket 06](06-buying-for-real.md) priced the **first** sale VAT-**inclusive** — $100 is
+what the buyer pays — while [ticket 01](01-resale-platform-cost.md) priced the **resale**
+VAT-**on-top**, because inclusive loses $19 there. Both are deliberate and both stand.
+This ticket owns the consequence: the site now has two pricing rules, and the copy must
+say which is which without making the resale look like a trick.

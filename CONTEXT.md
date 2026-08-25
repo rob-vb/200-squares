@@ -63,6 +63,17 @@ An order is not the same thing as ownership. The Block is what says a block is s
 the order says how it became theirs and what the invoice has to show. A refund, a removal
 or a resale changes the board and leaves the order alone.
 
+## Invoice
+
+The document that says what VAT was owed on an Order and to whom. It is not the receipt
+Stripe mails: a receipt says money moved, an invoice is a tax document, and only one of
+them satisfies the law.
+
+A consumer is owed no invoice; a business always is. The site issues its own, because the
+VAT amount must appear in euros even when the sale is in dollars. An invoice is rendered
+from the Order and never recomputed — a rate that changes next year must not change last
+year's invoice.
+
 ## Site credit
 
 What a Resale pays a seller in. It is not cash and it does not leave the site.

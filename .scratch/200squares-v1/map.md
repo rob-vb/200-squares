@@ -162,6 +162,26 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   are not. ⚠️ The reservation flood from ticket 02 is now a **quota** attack as well as a
   board freeze, and it stays open for ticket 06.
 
+- [06 — Buying with real money](issues/06-buying-for-real.md) — **the order is placed on
+  200squares.com, $100 includes VAT, and only the webhook writes the block.** ⚠️ Charting
+  said "checkout is Stripe's hosted page"; under *Fuhrmann-2* only the words on the button
+  count, so the **order button moves into the panel** (*Order now — obliges you to pay*)
+  and Stripe is demoted to executing an order that already exists. The panel stays one
+  screen: company, link and artwork leave it, the ticket 03 fields take their place.
+  ⚠️ **`tax_behavior: inclusive`, irreversible, and Stripe Tax off** — the site computes
+  VAT itself and freezes it into the order, recorded as
+  [ADR 0002](../../docs/adr/0002-vat-inclusive-priced-and-computed-here.md). $100 stays
+  $100, and **revenue now depends on who buys**: a full board is worth $16,446 to $19,900,
+  not one number. The first sale is therefore priced inclusive while ticket 01's resale is
+  priced on top — deliberate, and ticket 12 must explain it. The late-webhook gap closes
+  with a subscribing return page plus a 10-second server-side session retrieve, keyed on
+  the session id so writing twice is impossible. The **reservation flood** that tickets 02
+  and 05 both left open is answered by Turnstile plus one reservation per IP plus a 10%
+  ceiling on the free squares. VIES failures never block an order; a country mismatch is
+  accepted and costs at most $17.36, which only inclusive pricing makes survivable. The
+  buyer uploads artwork on the **thank-you page**, before any mail arrives. Orders are kept
+  **10 years**, and `pending` has no deadline.
+
 ## Not yet specified
 
 - **Site credit as a product.** Ticket 01 moved resale onto credit instead of cash, and
@@ -173,8 +193,18 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   beside it.
 - **The build tickets.** Every decision here is followed by building it, the way
   08-10, 12 and 15 followed their decisions on the prototype map. They are created
-  as each decision lands, not before. The first is
-  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md).
+  as each decision lands, not before. So far:
+  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md) and
+  [16 — Build: the checkout](issues/16-build-checkout.md).
+- **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
+  hand, which is right below the cross-border B2C threshold and wrong above it: the
+  Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
+  rate. Something has to tell the dev the crossing is coming *before* it happens. It
+  belongs with monitoring, and it needs real sales first.
+- **Who reads the flagged orders.** Ticket 06 accepts a country mismatch and flags the
+  order rather than refusing it. Nothing yet looks at those flags, and there is no admin
+  surface to look at them from. Ticket 11 builds one for removal; whether it grows this
+  too is open.
 - **Making the copy true again.** `/how-it-works`, `/terms`, `/privacy` and the FAQ
   describe a site that fakes everything. Real accounts, real payment, real refunds
   and a real removal policy all break lines that are true today. This is the same

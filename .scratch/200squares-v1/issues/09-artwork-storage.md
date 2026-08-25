@@ -41,3 +41,10 @@ fixed quality and no varying query string. Vercel Image Optimization cache write
 **$4.00 per 1M**, and a varying query string is exactly how an attacker forces them.
 Set `images.qualities: [75]`, trim `deviceSizes`, and put an explicit `search` in the
 image patterns. The board page must stay cacheable and cookie-free.
+
+## From resolved decisions
+
+[Ticket 06](06-buying-for-real.md) moved the **first** upload to the thank-you page,
+authorised by the Stripe session id rather than by a signed-in account. Whatever storage
+this ticket picks must accept an upload from a visitor who has no session with the site
+yet.

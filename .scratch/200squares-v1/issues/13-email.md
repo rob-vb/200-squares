@@ -32,3 +32,11 @@ auction is dead without "you have been outbid" — and messages that are only no
 
 Not this ticket: the words themselves, if they turn out to need their own pass. This
 decides which messages exist and what each must carry.
+
+## From resolved decisions
+
+[Ticket 06](06-buying-for-real.md) adds three messages to this ticket's plate: the
+**artwork reminders** at 1, 7 and 30 days for a `pending` square that never got its image;
+the **automatic full refund** mail from [ticket 05](05-convex-model.md) when a payment
+lands on squares somebody else already took; and the **invoice**, whose document is
+[ticket 17](17-invoice-document.md)'s but whose delivery is this ticket's.
