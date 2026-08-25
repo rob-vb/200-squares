@@ -11,8 +11,10 @@
 // that link — it is the page that sells. About, Terms and Privacy sit in the
 // footer of every page, which is where a phone visitor looks for them anyway.
 //
-// Sign in stays a one-click toggle. A fake form would add nothing to the idea
-// being sold, and buying needs no sign-in at all.
+// ⚠️ Sign in is a real form now (ticket 18) and it opens in the panel, like
+// every other flow. It stays one word in the bar: buying needs no account at
+// all, so a sign-in that took more room than that would be selling the wrong
+// thing.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,12 +24,15 @@ import { useViewer } from "@/lib/board/viewer";
 import { cellCount } from "@/lib/board/geometry";
 
 export function TopBar() {
-  const { viewer, available, signIn, signOut, mine } = useViewer();
-  const { openMine } = useScreen();
+  const { viewer, signedIn, signOut, mine } = useViewer();
+  const { openMine, openSignIn } = useScreen();
   const pathname = usePathname();
   const onBoard = pathname === "/";
 
   const owned = (mine?.blocks ?? []).reduce((n, b) => n + cellCount(b.rect), 0);
+  // Signed in with no owner row behind the address is a normal state, not a
+  // broken one: somebody may make an account before they ever buy anything.
+  const label = viewer?.name ?? "My squares";
   const wordmark = "200 SQUARES";
   const wordmarkClass = "font-display text-[22px] leading-none tracking-[0.01em]";
 
@@ -60,7 +65,7 @@ export function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-3 lg:gap-4">
-        {viewer ? (
+        {signedIn ? (
           <div className="flex items-center gap-3 lg:gap-4">
             {onBoard ? (
               <button
@@ -68,7 +73,7 @@ export function TopBar() {
                 onClick={openMine}
                 className="hover:text-accent text-[13px] transition-colors duration-150"
               >
-                {viewer.name}
+                {label}
                 <span className="text-faint"> · {owned} squares</span>
               </button>
             ) : (
@@ -76,7 +81,7 @@ export function TopBar() {
                 href="/"
                 className="hover:text-accent text-[13px] transition-colors duration-150"
               >
-                {viewer.name}
+                {label}
                 <span className="text-faint"> · {owned} squares</span>
               </Link>
             )}
@@ -89,14 +94,9 @@ export function TopBar() {
             </button>
           </div>
         ) : (
-          // ⚠️ The prototype's fake sign-in, and it is gone with ticket 18. It
-          // has nobody to become unless the deployment is seeded, so on
-          // production it is hidden rather than broken.
-          available && (
-            <button type="button" className="shrink-0 text-[14px] font-medium" onClick={signIn}>
-              Sign in
-            </button>
-          )
+          <button type="button" className="shrink-0 text-[14px] font-medium" onClick={openSignIn}>
+            Sign in
+          </button>
         )}
       </div>
     </header>

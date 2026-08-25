@@ -18,6 +18,7 @@ import { BidFlow } from "./bid-flow";
 import { BuyFlow } from "./buy-flow";
 import { PANEL_WIDTH, useScreen } from "./flow";
 import { MySquares } from "./my-squares";
+import { SignInFlow } from "./sign-in";
 
 function FlowBody() {
   const { flow, selection } = useScreen();
@@ -29,6 +30,8 @@ function FlowBody() {
       return <BidFlow />;
     case "mine":
       return <MySquares />;
+    case "signin":
+      return <SignInFlow />;
     case "none":
       return null;
   }

@@ -11,9 +11,16 @@
 // billing for it. It also has to see two things a Convex mutation cannot: the
 // caller's IP, and a Turnstile answer that has to be checked over the network.
 // So the mutation stays internal and this is the only door to it.
+//
+// ⚠️ **Better Auth serves from here as well** (ticket 18). Its routes sit under
+// `/api/auth/`, and the browser never calls them at this address: it calls
+// 200squares.com, and the Next.js handler forwards to here. That is what keeps
+// the session cookie first-party and is why ticket 08 refused the `crossDomain`
+// plugin.
 
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
+import { authComponent, createAuth } from "./auth";
 import { internal } from "./_generated/api";
 import { rectIsSellable, type Rect } from "./lib/board";
 import Stripe from "stripe";
@@ -289,6 +296,9 @@ const reconcile = httpAction(async (ctx, request) => {
 // ---------------------------------------------------------------------------
 
 const http = httpRouter();
+
+// `/api/auth/*`, GET and POST. Registered first so nothing below can shadow it.
+authComponent.registerRoutes(http, createAuth);
 
 http.route({ path: "/checkout/reserve", method: "POST", handler: reserve });
 http.route({ path: "/checkout/reserve", method: "OPTIONS", handler: preflight });

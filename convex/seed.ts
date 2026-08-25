@@ -18,6 +18,7 @@
 // would take.
 
 import { v, ConvexError } from "convex/values";
+import { normalise } from "./auth";
 import { mutation, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { todayUtc } from "./lib/time";
@@ -192,5 +193,56 @@ export const clear = mutation({
     guard();
     await wipe(ctx);
     return "Cleared.";
+  },
+});
+
+/**
+ * Hand a seeded owner's squares to a real address, so My squares can be looked at.
+ *
+ * ⚠️ Ticket 18 deleted the prototype's fake sign-in, and with it the only way the
+ * dev had to be somebody. Signing in for real now works — but a real address has
+ * no owner row behind it, so My squares is correctly empty and there is nothing
+ * to look at. This re-points the busiest seeded owner at an address the dev can
+ * actually receive mail on. Sign in with it and their blocks, banner days and
+ * bids are all there.
+ *
+ *   npx convex run seed:adopt '{"email":"you@example.com"}'
+ *
+ * `SEED_ENABLED` guards it like everything else here, so it does not exist on
+ * production. It is still a mutation that gives one address somebody else's
+ * squares, which is exactly why it may never leave the dev deployment.
+ */
+export const adopt = mutation({
+  args: { email: v.string() },
+  returns: v.string(),
+  handler: async (ctx, { email }) => {
+    guard();
+    const address = normalise(email);
+    if (!address.includes("@")) throw new ConvexError("That is not an email address.");
+
+    const seeded = (await ctx.db.query("owners").collect()).filter((o) =>
+      o.emailNormalised.endsWith("@example.invalid"),
+    );
+    if (seeded.length === 0) throw new ConvexError("There are no seeded owners. Seed first.");
+
+    let best = seeded[0];
+    let most = -1;
+    for (const owner of seeded) {
+      const n = (
+        await ctx.db
+          .query("blocks")
+          .withIndex("by_owner", (q) => q.eq("ownerId", owner._id))
+          .collect()
+      ).length;
+      if (n > most) {
+        most = n;
+        best = owner;
+      }
+    }
+
+    // `userId` is cleared with the address. The join is on the email, so a row
+    // still pointing at yesterday's account would answer for the wrong person.
+    await ctx.db.patch(best._id, { email, emailNormalised: address, userId: undefined });
+    return `${best.name} (${most} blocks) now answers to ${address}.`;
   },
 });

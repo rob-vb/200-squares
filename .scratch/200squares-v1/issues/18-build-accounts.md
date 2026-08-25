@@ -1,7 +1,7 @@
 # 18 — Build: accounts and signing in
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 08, 14, 15 (15 done 2026-08-25)
 Parent: ../map.md
 

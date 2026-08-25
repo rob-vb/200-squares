@@ -10,7 +10,9 @@
 // a late or lost webhook is never something the buyer has to see.
 
 import { v, ConvexError } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { normalise } from "./auth";
 import { rect as rectValidator } from "./schema";
 import { cellCount, overlaps } from "./lib/board";
 import { vatInsideCents } from "./lib/vat";
@@ -38,9 +40,6 @@ const declared = v.object({
   vatRateBps: v.number(),
   ip: v.string(),
 });
-
-/** Lower-cased and trimmed. The only form the owner join ever matches on. */
-const normalise = (email: string) => email.trim().toLowerCase();
 
 /**
  * Turn a paid Stripe session into a block, or into a refund.
@@ -171,6 +170,18 @@ export const fulfil = internalMutation({
       orderId,
       createdAt: now,
     });
+
+    // ⚠️ The third thing the webhook does (ticket 08): ask for a magic link. The
+    // buyer was never asked to make an account and does not need the mail to
+    // finish — the return page already grants them artwork and a link on the
+    // strength of the session id — so this is the way *back*, later, and it is
+    // sent whether or not they have signed in before.
+    //
+    // Scheduled rather than awaited: a mutation cannot reach the network, and a
+    // Resend outage must not undo a payment that has already landed.
+    if (args.email) {
+      await ctx.scheduler.runAfter(0, internal.auth.sendSignInLink, { email: args.email });
+    }
 
     return { status: "written" as const, paymentIntentId: args.paymentIntentId };
   },

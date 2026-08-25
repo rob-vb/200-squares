@@ -1,18 +1,15 @@
 // What one owner holds. Everything here is private to them.
 //
-// ⚠️ **This file is keyed on an owner id passed in by the client, and ticket 18
-// replaces that with the Better Auth session.** Until then, anybody who knows an
-// owner id can read that owner's click counts and bids. That is why `mine` is
-// only reachable through the seeded viewer (`seedViewer` below), which refuses
-// unless `SEED_ENABLED` is set — so on production there is no way to call it
-// with an id at all.
-//
-// When ticket 18 lands, `mine` takes no argument and resolves the owner through
-// `requireOwner(ctx)`, and `seedViewer` is deleted with the prototype's fake
-// sign-in.
+// ⚠️ **It takes no owner id.** Ticket 15 keyed this on an id the client passed
+// in, which meant anybody holding an id could read that owner's click counts and
+// bids — safe only because the fake sign-in refused to hand one out unless
+// `SEED_ENABLED` was set. Ticket 18 replaces that with the session: the caller
+// is whoever Better Auth says they are, and the answer is about them or it is
+// null. There is no argument left to get wrong.
 
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { currentOwner } from "./auth";
 import { artwork, rect } from "./schema";
 import { nextDate, todayUtc, STRIKE_MS } from "./lib/time";
 
@@ -26,7 +23,7 @@ export const liveStrikes = (strikeAt: number[], now: number) =>
   strikeAt.filter((t) => now - t < STRIKE_MS).length;
 
 export const mine = query({
-  args: { ownerId: v.id("owners") },
+  args: {},
   returns: v.union(
     v.null(),
     v.object({
@@ -49,9 +46,13 @@ export const mine = query({
       bids: v.array(v.object({ id: v.string(), amountCents: v.number(), placedAt: v.number() })),
     }),
   ),
-  handler: async (ctx, { ownerId }) => {
-    const owner = await ctx.db.get(ownerId);
+  handler: async (ctx) => {
+    // Null covers three cases and the panel treats them alike: nobody is signed
+    // in, the session is stale, or the address has no owner row behind it —
+    // somebody who made an account before they ever bought anything.
+    const owner = await currentOwner(ctx);
     if (!owner) return null;
+    const ownerId = owner._id;
     const now = Date.now();
 
     const blockRows = await ctx.db
@@ -109,28 +110,5 @@ export const mine = query({
       bannerDays,
       bids,
     };
-  },
-});
-
-/**
- * ⚠️ The prototype's fake sign-in, and nothing more.
- *
- * It hands back one seeded owner so the panel can be looked at on a preview URL
- * before [ticket 18](../.scratch/200squares-v1/issues/18-build-accounts.md)
- * builds real accounts. It refuses unless `SEED_ENABLED` is set, so on
- * production it returns null and the fake sign-in has nobody to be.
- *
- * Delete this with ticket 18.
- */
-export const seedViewer = query({
-  args: {},
-  returns: v.union(v.null(), v.object({ id: v.string(), name: v.string() })),
-  handler: async (ctx) => {
-    if (!process.env.SEED_ENABLED) return null;
-    const owner = await ctx.db
-      .query("owners")
-      .withIndex("by_email", (q) => q.eq("emailNormalised", "vb@example.invalid"))
-      .unique();
-    return owner ? { id: owner._id as string, name: owner.name } : null;
   },
 });

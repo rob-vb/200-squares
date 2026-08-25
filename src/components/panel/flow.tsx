@@ -21,7 +21,8 @@ export type Flow =
   | { kind: "none" }
   | { kind: "buy" }
   | { kind: "bid" }
-  | { kind: "mine" };
+  | { kind: "mine" }
+  | { kind: "signin" };
 
 // ⚠️ There is no `bought` flow any more. The prototype confirmed a purchase in
 // the panel; ticket 06 moved that moment off the board entirely — the buyer is
@@ -59,6 +60,8 @@ type ScreenValue = {
   setHighlight: (rect: Rect | null) => void;
   openBid: () => void;
   openMine: () => void;
+  /** Ticket 18: an address and a link sent to it. There is nothing else to sign in with. */
+  openSignIn: () => void;
   close: () => void;
 };
 
@@ -135,6 +138,7 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       setHighlight,
       openBid: replace({ kind: "bid" }),
       openMine: replace({ kind: "mine" }),
+      openSignIn: replace({ kind: "signin" }),
       close: replace({ kind: "none" }),
     };
   }, [flow, selection, dismissed, highlight, preview, dragging, hold, selectRect]);

@@ -1,59 +1,66 @@
 "use client";
 
-// ⚠️ The prototype's fake sign-in, on borrowed time.
+// Who is looking, and what they hold.
 //
-// [Ticket 18](../../../.scratch/200squares-v1/issues/18-build-accounts.md) builds
-// real accounts and deletes this whole file. It survives ticket 15 for one
-// reason: the dev sees nothing locally, so the only way to look at My squares
-// before ticket 18 lands is to have somebody to be.
+// ⚠️ The prototype's fake sign-in is gone (ticket 18). This is a real session:
+// Better Auth says whether there is one, and `owners.mine` says what the party
+// behind it owns. Neither question is asked on the server — the board's HTML is
+// the same for a stranger and for an owner, which is ticket 02's cheapest
+// defence and ticket 08's one discipline.
 //
-// It is safe because the owner it becomes comes from `owners.seedViewer`, which
-// returns null unless `SEED_ENABLED` is set on the Convex deployment. On
-// production there is nobody to sign in as, so the button does nothing.
+// Three states, and they are not two:
 //
-// It grants nothing. Every write that matters is still unbuilt, and when they
-// are built they go through `requireOwner(ctx, blockId)` on the server — not
-// through this.
+//   signed out          — `signedIn` false, `viewer` null.
+//   signed in, no row   — `signedIn` true, `viewer` null. Somebody made an
+//                         account before they ever bought anything. Normal.
+//   signed in, an owner — both set.
 
-import { createContext, useContext, useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { createContext, useContext, useMemo } from "react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@convex/api";
-import type { Id } from "@convex/dataModel";
+import { authClient } from "@/lib/auth-client";
 
 type Viewer = { id: string; name: string };
 
 type ViewerValue = {
-  /** null when nobody is signed in, which is every visitor on production. */
+  /** The owner behind the session. Null when signed out, and when there is no row. */
   viewer: Viewer | null;
-  /** What the fake sign-in can become, or null where there is nobody. */
-  available: Viewer | null;
-  signIn: () => void;
+  /** There is a session. Not the same as holding squares. */
+  signedIn: boolean;
+  /** The session is still being worked out. Neither state is settled yet. */
+  loading: boolean;
   signOut: () => void;
-  /** Everything the signed-in owner holds. null when nobody is signed in. */
+  /** Everything the signed-in owner holds. null when there is nobody. */
   mine: ReturnType<typeof useMine>;
 };
 
-function useMine(ownerId: string | null) {
-  return useQuery(api.owners.mine, ownerId ? { ownerId: ownerId as Id<"owners"> } : "skip");
+function useMine(enabled: boolean) {
+  // ⚠️ `"skip"` and not a query that returns null. A stranger opens no
+  // subscription at all, so the board costs what it cost before accounts
+  // existed.
+  return useQuery(api.owners.mine, enabled ? {} : "skip");
 }
 
 const ViewerContext = createContext<ViewerValue | null>(null);
 
 export function ViewerProvider({ children }: { children: React.ReactNode }) {
-  const available = useQuery(api.owners.seedViewer) ?? null;
-  const [signedIn, setSignedIn] = useState(false);
-  const viewer = signedIn ? available : null;
-  const mine = useMine(viewer?.id ?? null);
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const mine = useMine(isAuthenticated);
 
   const value = useMemo<ViewerValue>(
     () => ({
-      viewer,
-      available,
-      signIn: () => setSignedIn(true),
-      signOut: () => setSignedIn(false),
+      // An owner's name starts empty: it is the *company* name and the buyer
+      // supplies it on the thank-you page (ticket 16). Until then the panel
+      // needs something to be called.
+      viewer: mine ? { id: mine.id, name: mine.name || "My squares" } : null,
+      signedIn: isAuthenticated,
+      loading: isLoading,
+      signOut: () => {
+        void authClient.signOut();
+      },
       mine,
     }),
-    [viewer, available, mine],
+    [mine, isAuthenticated, isLoading],
   );
 
   return <ViewerContext.Provider value={value}>{children}</ViewerContext.Provider>;
