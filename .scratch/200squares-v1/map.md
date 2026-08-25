@@ -55,6 +55,16 @@ real backend, and then makes the copy true again.
   staging in Stripe test mode and screenshots every step. Run
   `node scripts/free-holds.mjs` first if a previous run stopped at Stripe — one visitor may
   hold one reservation and the VPS is one visitor.
+- **Driving a real bid**: `node scripts/bid.mjs <email> [amount] [prefix]` places one bid end
+  to end on staging in Stripe test mode. ⚠️ Give each run a **different address** — Stripe's
+  email is what makes an owner, and a bidder who raises their own bid has their earlier hold
+  released, so a one-address run can never build the ladder the close needs.
+- ⚠️ **The close cannot be tested by waiting for it.** It fires at 00:00 UTC, once a day.
+  `npx convex run seed:ageAuction` moves tomorrow's live bids back to today and clears the
+  day row, so the next `npx convex run auction:closeDue` closes it for real against Stripe
+  test mode. To force the case that matters — a **declined capture** — cancel the top
+  PaymentIntent at Stripe first and watch the runner-up be promoted for its own amount.
+  Built by [ticket 19](issues/19-build-auction.md); refuses without `SEED_ENABLED`.
 - ⚠️ **Being signed in is also a deployment command.** There is no inbox here either, so a
   magic link cannot be read out of mail. `npx convex run auth:devSignInLink '{"email":"…"}'`
   hands the link back instead of posting it, and `node scripts/signin.mjs '<url>'` follows
@@ -450,6 +460,29 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   `seed:adopt` and `scripts/signin.mjs` exist, all refusing without `SEED_ENABLED`.
   `requireOwner` and `requireAdmin` are built and **nothing calls them yet**.
 
+- [19 — Build: the auction on real card holds](issues/19-build-auction.md) — **the ladder
+  is real, and it cost the courtesy.** ⚠️ **Ticket 07 carried two rules that cannot both
+  hold**: *an outbid hold is cancelled at once* (inherited from charting) and *at the
+  close, promote the next bid that can be collected*. A runner-up with no hold cannot be
+  promoted. The dev chose the ladder, so **an outbid hold stays on the card until 00:00
+  UTC** and the mail and the panel say so — and a **bidder's own** earlier hold is still
+  released when they raise, because a second hold on the same card can never be the next
+  bid that can be collected. A bid is a Checkout Session with `capture_method: manual`,
+  cards only, priced inclusive; ⚠️ its session comes back **`payment_status: unpaid`** and
+  stays that way until the close, so the webhook reads the PaymentIntent instead. Opening
+  a bid is **two steps like a purchase** — Turnstile on Convex, then VIES and Stripe on
+  Vercel behind a bid id — because a bid has no reserve step and a single Vercel route
+  would be the most floodable thing on the site. ⚠️ Three things the platform refuses:
+  **`capture_before` cannot be read at the keyboard** on a hosted page, so the late-hold
+  refusal moved one screen to `/bid`; **lazy closing on read is unbuildable** — a query
+  cannot capture money and an unauthenticated close endpoint is a road a flood walks down
+  — so one **hourly** cron is both the 00:00 close and its own retry; and the remembered
+  ticket 03 fields stay **off `owners`**, which the board query reads whole, and come from
+  the bidder's last order instead. Proved on staging by cancelling the top hold at Stripe
+  by hand: `$150` failed, `$100` was captured **for its own amount**, and the day, the
+  order and the house ad all landed. `scripts/bid.mjs` and `seed:ageAuction` exist so the
+  close can be watched rather than waited for.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -462,10 +495,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   as each decision lands, not before. **Done** (2026-08-25):
   [26 — Strip the resale surface](issues/26-strip-resale.md),
   [15 — Build: the Convex schema and the live board](issues/15-build-schema.md),
-  [16 — Build: the checkout](issues/16-build-checkout.md) and
-  [18 — Build: accounts and signing in](issues/18-build-accounts.md).
+  [16 — Build: the checkout](issues/16-build-checkout.md),
+  [18 — Build: accounts and signing in](issues/18-build-accounts.md) and
+  [19 — Build: the auction on real card holds](issues/19-build-auction.md).
   **Still open**:
-  [19 — Build: the auction on real card holds](issues/19-build-auction.md),
   [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md),
   [21 — Build: counting clicks for real](issues/21-build-clicks.md),
   [22 — Build: the mail](issues/22-build-email.md),
@@ -487,6 +520,14 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   the provider, which needs a landing route to set it on the device that opens the mail.
   It is a cost decision under ticket 02's rule, and it wants measuring before it is made.
 
+- ⚠️ **Nobody tells a bidder their card was declined.** [Ticket 19](issues/19-build-auction.md)
+  built the ladder: a bidder who held the top spot all day and whose capture failed at
+  00:00 loses the banner and is told nothing. Ticket 13 fixed the list at **six** messages
+  and this is not one of them, so adding a seventh inside a build ticket would have been
+  deciding ticket 13's question somewhere it does not belong. It is a small question with a
+  real answer — the outbid mail is the wrong words for it — and it wants naming before
+  launch, because it is the one path where somebody loses something and hears nothing.
+
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
@@ -506,7 +547,13 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   back in means proving the payment to a person. `/privacy` must say that a **reservation
   keeps a salted hash of the visitor's address for fifteen minutes** — the price of *one hold per visitor*, and the
   first thing on the board path that is about a visitor at all — and that an **order keeps
-  the IP, the tick-box wording and the address for ten years**.
+  the IP, the tick-box wording and the address for ten years**. ⚠️ Ticket 19 adds three
+  more: `/terms` says *"The highest bid at 00:00 UTC wins and is charged"*, which is now
+  **false in the case the whole mechanism exists for** — it must say the banner goes to the
+  highest bid that **can be collected**, and that a hold stays on the card until the close;
+  `/terms` also still owes ticket 07's **mid-day pro-rata refund**, stated and never built;
+  and `/privacy` must say a **pending bid keeps the same salted address hash** a reservation
+  does, for the same fifteen minutes.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
   that a capture was declined, or that a webhook never arrived. It needs the cron and
   the captures to exist first.
