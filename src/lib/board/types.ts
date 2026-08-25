@@ -17,22 +17,11 @@ export type Artwork =
 
 /**
  * A window on an image, in fractions of the image. It exists because a block can
- * be split (ticket 11): the part the seller keeps holds the same artwork, cropped
- * to the smaller rectangle, so the picture does not stretch back out to fill it.
+ * be split: the part its owner keeps holds the same artwork, cropped to the
+ * smaller rectangle, so the picture does not stretch back out to fill it. Ticket
+ * 09 uses the same window for artwork that does not match a block's shape.
  */
 export type Crop = { x: number; y: number; w: number; h: number };
-
-/**
- * A block its owner offers for sale. It is not a state of a square: the squares
- * under it stay `taken`, because the block still covers them.
- *
- * `rect` is the part of the block on offer, and the buyer takes any rectangle
- * they like out of it — one square or all of it. So the price is **per square**,
- * the way the site's own price is, which also puts the two side by side for the
- * buyer to judge. The block is not split while the listing stands, only when it
- * sells, so until then this rect is a window on a block that is still whole.
- */
-export type Listing = { rect: Rect; pricePerSquare: number };
 
 /**
  * One party. It exists once, however many blocks it holds.
@@ -52,8 +41,6 @@ export type Block = {
   url: string;
   /** null means pending — paid for, artwork not supplied yet. */
   artwork: Artwork | null;
-  /** null means not for sale, which is every block until its owner says so. */
-  listing: Listing | null;
   /**
    * How often somebody followed this block to where it points. Ticket 14.
    *

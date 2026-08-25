@@ -36,8 +36,8 @@ export function Counter() {
         </h1>
         <p className="pt-4 text-[17px] leading-snug">
           {soldOut
-            ? "Owners sell theirs on, and the banner is auctioned every day."
-            : "$250 each, paid once. Some owners sell theirs on."}
+            ? "Every square is taken. The banner is still auctioned every day."
+            : "$250 each, paid once. Yours to keep."}
         </p>
         {/*
           The one public number, and the only place any count is public. It is

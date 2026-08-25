@@ -58,9 +58,11 @@ Undecided, and not to be invented:
 - What happens when squares get scarce, and what the last squares cost.
 - Auth provider, payment provider, image storage.
 
-A square can be sold on, through this site: the owner sets an asking price per square with a floor of $1, the site takes the payment and keeps 10%, and a sold block arrives without the seller's artwork or link. Listing is free. Ticket 11 decided it; the model is in `CONTEXT.md` under **Listing**, **Asking price** and **Resale**.
+**A square cannot be sold on. That is V1.1.** V1.0 launches without resale: a square is bought once and stays with its owner, and the site offers no way to hand it back. The prototype had resale and it was taken out again on 2026-08-25 — a smaller build, and scarcity gets to work before a second-hand market softens it. The vocabulary is kept in `CONTEXT.md` under **Not in V1.0**, and the research that priced it is ticket 01 on the V1.0 map.
 
-Out of scope for the current effort: real payment and invoicing (including escrow and payouts to sellers on a resale), real authentication, backend and database, the cron for the 00:00 UTC rollover, and moderation of uploaded artwork and links.
+The one place the plan appears to a visitor is a small line in the top bar, which promises resale *when all 199 squares are sold* and nowhere else. `/terms` states today only: no resale, no way back.
+
+Out of scope for V1.0: resale of any kind, a price that moves with scarcity, other currencies, other boards, an API and a mobile app.
 
 ## Brand Commitments
 

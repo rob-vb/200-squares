@@ -13,15 +13,9 @@
 //
 // Sign in stays a one-click toggle. A fake form would add nothing to the idea
 // being sold, and buying needs no sign-in at all.
-//
-// The For sale switch stands here too, on the board page only. It first sat
-// under the canvas, where a phone has no room: the height between the board and
-// the auction dock is spoken for, and the dock covered it. The bar is the one
-// strip of this screen that is never covered by anything.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ForSaleSwitch } from "./for-sale-switch";
 import { PAGES, useHref } from "./nav";
 import { useScreen } from "./panel/flow";
 import { useBoard } from "@/lib/board/state";
@@ -67,8 +61,6 @@ export function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-3 lg:gap-4">
-        {onBoard ? <ForSaleSwitch /> : null}
-
         {state.signedIn && viewer ? (
           <div className="flex items-center gap-3 lg:gap-4">
             {onBoard ? (

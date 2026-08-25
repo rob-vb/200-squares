@@ -75,13 +75,7 @@ const blocks = [
   makeBlock("blk_05", { r: 1, c: 12, w: 2, h: 1 }, brands.vb, { pending: true }),
   makeBlock("blk_06", { r: 2, c: 5, w: 2, h: 2 }, brands.slate, { clicks: 274 }),
   makeBlock("blk_07", { r: 2, c: 8, w: 1, h: 3 }, brands.tallboy, { clicks: 1205 }),
-  // Three listings, so the For sale switch does something before anyone signs
-  // in. Every price is per square, against the site's own $250: one whole block
-  // over it, one part of a big block well over it, and one whole block under it.
-  makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand, {
-    sell: { pricePerSquare: 140 },
-    clicks: 617,
-  }),
+  makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand, { clicks: 617 }),
   makeBlock("blk_09", { r: 2, c: 14, w: 1, h: 1 }, brands.dot, { clicks: 2470 }),
   // The viewer's quiet block: live, linked, and nobody has ever clicked it.
   makeBlock("blk_10", { r: 3, c: 14, w: 2, h: 2 }, brands.vb, { clicks: 0 }),
@@ -95,12 +89,7 @@ const blocks = [
   makeBlock("blk_16", { r: 5, c: 4, w: 3, h: 2 }, brands.bluespruce, { clicks: 733 }),
   makeBlock("blk_17", { r: 5, c: 8, w: 2, h: 2 }, brands.halcyon, { clicks: 1120 }),
   makeBlock("blk_18", { r: 5, c: 11, w: 1, h: 1 }, brands.tick, { clicks: 4 }),
-  makeBlock("blk_19", { r: 5, c: 12, w: 4, h: 3 }, brands.atlas, {
-    // The right-hand column only. The block stays whole and keeps its artwork
-    // until somebody buys into the strip.
-    sell: { pricePerSquare: 260, part: { r: 5, c: 15, w: 1, h: 3 } },
-    clicks: 2015,
-  }),
+  makeBlock("blk_19", { r: 5, c: 12, w: 4, h: 3 }, brands.atlas, { clicks: 2015 }),
   makeBlock("blk_20", { r: 6, c: 10, w: 2, h: 1 }, brands.verge, { clicks: 260 }),
   makeBlock("blk_21", { r: 7, c: 0, w: 3, h: 2 }, brands.redcap, { clicks: 1487 }),
   makeBlock("blk_22", { r: 7, c: 3, w: 1, h: 1 }, brands.nib, { clicks: 33 }),
@@ -109,15 +98,11 @@ const blocks = [
   makeBlock("blk_25", { r: 8, c: 12, w: 2, h: 2 }, brands.nomad, { clicks: 655 }),
   makeBlock("blk_26", { r: 9, c: 0, w: 2, h: 1 }, brands.hollow, { clicks: 71 }),
   makeBlock("blk_27", { r: 9, c: 3, w: 3, h: 2 }, brands.longshore, { clicks: 402 }),
-  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, {
-    sell: { pricePerSquare: 40 },
-    clicks: 214,
-  }),
+  makeBlock("blk_28", { r: 10, c: 0, w: 2, h: 2 }, brands.tide, { clicks: 214 }),
   makeBlock("blk_29", { r: 10, c: 7, w: 2, h: 2 }, brands.beacon, { pending: true }),
   makeBlock("blk_30", { r: 10, c: 14, w: 2, h: 2 }, brands.quarry, { clicks: 187 }),
-  // The viewer's big block. Without one, My squares can only ever offer a cut of
-  // depth 1: the seller side of the market is unreachable in the demo unless the
-  // visitor first buys something 4 wide. It is 4 x 2, which is the largest thing
+  // The viewer's big block, so My squares has more than a single square in it
+  // before the visitor buys anything. It is 4 x 2, which is the largest thing
   // the board still has room for.
   makeBlock("blk_38", { r: 10, c: 9, w: 4, h: 2 }, brands.vb, { clicks: 2140 }),
   makeBlock("blk_31", { r: 11, c: 3, w: 3, h: 2 }, brands.sable, { clicks: 921 }),

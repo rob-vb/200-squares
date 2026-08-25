@@ -18,8 +18,6 @@ import { BidFlow } from "./bid-flow";
 import { BoughtFlow, BuyFlow } from "./buy-flow";
 import { PANEL_WIDTH, useScreen } from "./flow";
 import { MySquares } from "./my-squares";
-import { ResaleFlow } from "./resale-flow";
-import { SellFlow } from "./sell-flow";
 
 function FlowBody() {
   const { flow, selection } = useScreen();
@@ -33,10 +31,6 @@ function FlowBody() {
       return <BidFlow />;
     case "mine":
       return <MySquares />;
-    case "sell":
-      return <SellFlow blockId={flow.blockId} />;
-    case "resale":
-      return <ResaleFlow blockId={flow.blockId} rect={flow.rect} />;
     case "none":
       return null;
   }

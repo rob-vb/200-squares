@@ -22,7 +22,7 @@ A block is the thing that is bought and owned. A square is never owned on its ow
 
 A block carries its own link. A click anywhere on it opens that address.
 
-A block can be **split**, and a split always produces blocks: rectangles, never an L. Selling one square out of a 2 x 2 leaves the seller a 1 x 2 and a 1 x 1 — two blocks, because one image cannot fill an L. Any rectangle taken out of a block leaves at most four blocks behind. Blocks never merge: two blocks side by side stay two blocks, however they were bought, because each holds its own artwork and its own link.
+A block can be **split**, and a split always produces blocks: rectangles, never an L. Taking one square out of a 2 x 2 leaves a 1 x 2 and a 1 x 1 — two blocks, because one image cannot fill an L. Any rectangle taken out of a block leaves at most four blocks behind. Blocks never merge: two blocks side by side stay two blocks, however they were bought, because each holds its own artwork and its own link.
 
 ## Owner
 
@@ -34,34 +34,14 @@ One party is one owner, however many blocks they hold. Nothing limits how many b
 
 The image an owner supplies for a block or for the banner. One image covers the whole block. A block without artwork is `pending`; artwork is what turns it `taken`.
 
-## Listing
-
-Part of a block, or all of it, offered for sale by its owner at a price per square. A listing is not a state of a square: the squares under it stay `taken`, because the block still covers them. It lasts until the owner withdraws it, and the offer and the price can both be changed while it stands.
-
-A buyer takes any rectangle out of a listing, so a listing can survive its own sale: whatever the buyer left is still offered, at the same price.
-
-The word is for the model. What a viewer reads is **For sale**.
-
-## Asking price
-
-What the owner of a Listing wants for one square of it. Per square, the way the site's own $250 is, so a buyer reads the two numbers side by side and judges. It is the seller's to set, whatever they set it to: the only floor is $1, which stops a price of nothing and nothing more. On a sale the site keeps 10% and the rest is the seller's.
-
-## Resale
-
-Squares moving from one owner to another through this site. The buyer drags the rectangle they want out of a Listing, exactly as they would drag on empty squares, and needs no account. What they buy arrives **empty**: the artwork and the link were the seller's and do not travel.
-
-The block splits at the moment of sale, never at the moment of listing. What the seller keeps becomes as many blocks as the shape needs, each holding the same artwork cropped to it.
-
-There is no way to hand a square back to the site. Selling it on is the only exit.
-
 ## Order
 
 The record of one purchase: what was bought, what was paid, and what the buyer told the
 site about themselves. It exists once and never changes.
 
 An order is not the same thing as ownership. The Block is what says a block is somebody's;
-the order says how it became theirs and what the invoice has to show. A refund, a removal
-or a resale changes the board and leaves the order alone.
+the order says how it became theirs and what the invoice has to show. A refund or a removal
+changes the board and leaves the order alone.
 
 ## Invoice
 
@@ -73,13 +53,6 @@ A consumer is owed no invoice; a business always is. The site issues its own, be
 VAT amount must appear in euros even when the sale is in dollars. An invoice is rendered
 from the Order and never recomputed — a rate that changes next year must not change last
 year's invoice.
-
-## Site credit
-
-What a Resale pays a seller in. It is not cash and it does not leave the site.
-
-Credit is a run of entries that never change, and a balance is their sum. Nothing is ever
-written over: money in, money out, and the history stays readable.
 
 ## Bid hold
 
@@ -130,7 +103,7 @@ A reservation is what makes a square `reserved`. It ends in one of two ways: a p
 
 ## Detail panel
 
-The single surface that shows detail and holds every flow: a right-hand column on desktop, a bottom sheet on mobile. Selecting squares, buying, bidding, selling, buying second-hand and My squares all use it, one flow at a time. Nothing else covers the canvas, and nothing ever covers the banner artwork. Opening the panel never resizes a square: on desktop the board keeps its scale and re-centres into the width beside the panel.
+The single surface that shows detail and holds every flow: a right-hand column on desktop, a bottom sheet on mobile. Selecting squares, buying, bidding and My squares all use it, one flow at a time. Nothing else covers the canvas, and nothing ever covers the banner artwork. Opening the panel never resizes a square: on desktop the board keeps its scale and re-centres into the width beside the panel.
 
 ## Dataset
 
@@ -149,12 +122,12 @@ because a click on it opens nothing.
 
 The count belongs to a block under one Owner. Artwork and link may change as
 often as the owner likes and the count runs on through every change. It returns
-to zero on one event only: the block changing hands. What a Resale buyer
-receives is empty of artwork, of link, and of clicks alike — the count measures
-what the seller put there, not the place.
+to zero on one event only: the block changing hands. A block that changes hands
+arrives empty of artwork, of link, and of clicks alike — the count measures what
+the last owner put there, not the place.
 
 An owner sees the count of each thing they hold, and nobody else does. Not the
-public, and not a buyer looking at a block that is For sale.
+public, and not another owner.
 
 The **site total** is one public number: every click on every block and every
 banner day, added up. It names no owner and no block, so it says the board
@@ -163,3 +136,38 @@ works without saying which square does.
 The site counts clicks, not people. Nothing about a visitor is kept, so the same
 person can raise a count more than once. It is a rough number and the site says
 so.
+
+---
+
+# Not in V1.0
+
+Resale is V1.1. These words describe nothing in the code today, and they are kept
+because they are the vocabulary V1.1 starts from — not because anything uses them.
+See ticket 12 on the V1.0 map, and ticket 01 for the money and the law under them.
+
+## Listing
+
+Part of a block, or all of it, offered for sale by its owner at a price per square. A listing is not a state of a square: the squares under it stay `taken`, because the block still covers them. It lasts until the owner withdraws it, and the offer and the price can both be changed while it stands.
+
+A buyer takes any rectangle out of a listing, so a listing can survive its own sale: whatever the buyer left is still offered, at the same price.
+
+The word is for the model. What a viewer reads is **For sale**.
+
+## Asking price
+
+What the owner of a Listing wants for one square of it. Per square, the way the site's own $250 is, so a buyer reads the two numbers side by side and judges. It is the seller's to set, whatever they set it to: the only floor is $1, which stops a price of nothing and nothing more. On a sale the site keeps 10% and the rest is the seller's.
+
+## Resale
+
+Squares moving from one owner to another through this site. The buyer drags the rectangle they want out of a Listing, exactly as they would drag on empty squares, and needs no account. What they buy arrives **empty**: the artwork and the link were the seller's and do not travel.
+
+The block splits at the moment of sale, never at the moment of listing. What the seller keeps becomes as many blocks as the shape needs, each holding the same artwork cropped to it.
+
+In V1.0 there is no exit at all: a square cannot be sold on and cannot be handed back.
+
+## Site credit
+
+What a Resale pays a seller in. It is not cash and it does not leave the site.
+
+Credit is a run of entries that never change, and a balance is their sum. Nothing is ever
+written over: money in, money out, and the history stays readable.

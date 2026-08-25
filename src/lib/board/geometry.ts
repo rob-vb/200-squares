@@ -68,8 +68,6 @@ export type BoardModel = {
   ownerById: Map<string, Owner>;
   /** Every square nobody has bought, ready to render one by one. */
   available: { r: number; c: number; n: number }[];
-  /** The blocks whose owner has put them up for sale. Drives the For sale switch. */
-  listed: Block[];
   stats: { total: number; taken: number; pending: number; available: number };
 };
 
@@ -110,7 +108,6 @@ export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
     blocks,
     ownerById: new Map(owners.map((o) => [o.id, o])),
     available,
-    listed: blocks.filter((b) => b.listing !== null),
     stats: { total: SQUARE_COUNT, taken, pending, available: available.length },
   };
 }
@@ -163,56 +160,10 @@ export function squareRange(rect: Rect): string {
 }
 
 // ---------------------------------------------------------------------------
-// Resale. Ticket 11: an owner may sell a block on, at a price they set, and the
-// site keeps a share of the sale.
-
-/** What a rectangle costs at a listing's price. The site's own price works the same. */
-export const askingFor = (pricePerSquare: number, rect: Rect) =>
-  cellCount(rect) * pricePerSquare;
-
-/**
- * The floor on an asking price per square, only there to stop a price of nothing.
- *
- * Ticket 11 put a floor on the whole block, to keep second-hand blocks from
- * undercutting the $250 the site charges for a square. A price per square does
- * that job on its own: the buyer reads "$140 a square" against the site's "$250
- * a square" and judges. So the floor has no work left beyond refusing zero.
- */
-export const MIN_ASKING = 1;
-/** The site's share of a completed sale, from the seller. Listing is free. */
-export const RESALE_FEE = 0.1;
-
-export const feeOn = (price: number) => Math.round(price * RESALE_FEE);
-export const sellerGets = (price: number) => price - feeOn(price);
-
-export const sameRect = (a: Rect, b: Rect) =>
-  a.r === b.r && a.c === b.c && a.w === b.w && a.h === b.h;
-
-/**
- * A rectangle drawn from anchor to head, kept inside `bound`.
- *
- * This is `rectFrom` for a drag that lives inside something smaller than the
- * grid — a buyer drawing inside a listing, an owner drawing inside their own
- * block. It needs no 4 x 4 clamp of its own: a block is already at most 4 x 4,
- * so anything inside one is too.
- */
-export function rectWithin(
-  anchor: { r: number; c: number },
-  head: { r: number; c: number },
-  bound: Rect,
-): Rect {
-  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
-  const r1 = clamp(anchor.r, bound.r, bound.r + bound.h - 1);
-  const r2 = clamp(head.r, bound.r, bound.r + bound.h - 1);
-  const c1 = clamp(anchor.c, bound.c, bound.c + bound.w - 1);
-  const c2 = clamp(head.c, bound.c, bound.c + bound.w - 1);
-  return {
-    r: Math.min(r1, r2),
-    c: Math.min(c1, c2),
-    w: Math.abs(c2 - c1) + 1,
-    h: Math.abs(r2 - r1) + 1,
-  };
-}
+// Cutting a block up. A block can be sold in part — one rectangle out of a
+// bigger one — and what is left over is not a rectangle, so it falls apart into
+// blocks that are. Resale is V1.1, but a part sale is not only resale: the
+// remainder is what the loser of a race for the same squares is offered instead.
 
 /** The overlap of two rectangles, or null where they do not touch. */
 export function intersect(a: Rect, b: Rect): Rect | null {

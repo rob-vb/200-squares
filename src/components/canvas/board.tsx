@@ -7,7 +7,7 @@
 // available square. A block is a single grid item, which is why the seams inside
 // a bought rectangle disappear on their own.
 
-import type { Artwork, BannerDay, Block, Rect } from "@/lib/board/types";
+import type { Artwork, BannerDay, Rect } from "@/lib/board/types";
 import {
   BANNER,
   COLS,
@@ -93,7 +93,6 @@ export function Board({
   hovered,
   preview,
   highlight,
-  forSale,
 }: {
   board: BoardModel;
   bannerToday: BannerDay | null;
@@ -107,14 +106,12 @@ export function Board({
   preview: string | null;
   /** A block My squares is pointing at. */
   highlight: Rect | null;
-  /** The market view. Everything not for sale dims; the listings stay lit. */
-  forSale: boolean;
 }) {
   const step = cell + SEAM;
   // A number below 34px rendered is unreadable, so below that a square is a tile.
   const showNumbers = cell * scale >= NUMBER_MIN_PX;
-  // Buying a listing has no selection — what is being bought is the highlight —
-  // so the artwork preview follows whichever of the two the flow put there.
+  // My squares points at a block with the highlight and has no selection, so the
+  // artwork preview follows whichever of the two the flow put there.
   const previewRect = selection ?? highlight;
 
   return (
@@ -186,21 +183,6 @@ export function Board({
         );
       })}
 
-      {forSale && (
-        // The market view is a layer, never a mark on the block. Ticket 11: a
-        // permanent for-sale badge paints over artwork the owner paid for, and
-        // owner artwork is the only colour this canvas has.
-        <>
-          <div
-            className="pointer-events-none absolute inset-0 z-[1]"
-            style={{ background: "color-mix(in srgb, var(--color-page) 82%, transparent)" }}
-          />
-          {board.listed.map((block) => (
-            <ListedPart key={block.id} block={block} cell={cell} scale={scale} />
-          ))}
-        </>
-      )}
-
       {previewRect && preview && (
         // The image lands on the board before anything is confirmed. This is the
         // moment the idea lands, so it happens on the canvas, not in the panel.
@@ -242,47 +224,6 @@ export function Board({
           }}
         />
       )}
-    </div>
-  );
-}
-
-/**
- * One listing, lit through the market view's dim layer.
- *
- * The part offered can be a strip of a block that is still whole, so the artwork
- * is drawn at the block's full size inside a window the size of the part. That is
- * the same picture the buyer will get, cropped the same way the split will crop it.
- */
-function ListedPart({ block, cell, scale }: { block: Block; cell: number; scale: number }) {
-  const part = block.listing!.rect;
-  const outer = boxOf(block.rect, cell);
-  const inner = boxOf(part, cell);
-  const art = block.artwork;
-
-  return (
-    <div
-      className="pointer-events-none absolute z-[2] overflow-hidden"
-      style={{
-        ...inner,
-        outline: `${2 / scale}px solid var(--color-accent)`,
-        outlineOffset: -1 / scale,
-        background: "var(--color-square)",
-      }}
-    >
-      {art ? (
-        <div
-          className="absolute flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight"
-          style={{
-            left: outer.left - inner.left,
-            top: outer.top - inner.top,
-            width: outer.width,
-            height: outer.height,
-            ...artStyle(art, outer.width, outer.height),
-          }}
-        >
-          {art.kind === "mock" ? art.label : null}
-        </div>
-      ) : null}
     </div>
   );
 }

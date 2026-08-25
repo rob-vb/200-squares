@@ -14,7 +14,7 @@ import { Contact } from "./contact";
 import { Counter } from "./counter";
 import { Footer } from "./footer";
 import { P, Section, Subhead } from "./section";
-import { BANNER, MAX_BLOCK, PRICE_PER_SQUARE, RESALE_FEE } from "@/lib/board/geometry";
+import { BANNER, MAX_BLOCK, PRICE_PER_SQUARE } from "@/lib/board/geometry";
 
 const STEPS: [string, string][] = [
   [
@@ -47,15 +47,15 @@ const FAQ: [string, string][] = [
   ],
   [
     "Can I sell my square to somebody else?",
-    `Yes. Put a price on it from My squares — per square, the way the site prices its own — and it appears on the board under the For sale switch. The buyer pays here and the site keeps ${RESALE_FEE * 100}%. Your image, your link and your click count do not go with it. Sell part of a block and you keep the rest as up to four blocks, with your image cropped to each and a grid line back through it.`,
+    "Not through this site. A square cannot be sold on here, and it cannot be handed back. What you buy is yours to keep.",
   ],
   [
     "Can I buy a square somebody already owns?",
-    `Sometimes. The For sale switch at the top of the board dims the grid and lights up whatever is on offer, each with its owner's price per square. Read that against the site's $${PRICE_PER_SQUARE} and judge. Drag out any rectangle you want, down to a single square. It arrives empty and at zero clicks: the seller's image, link and count stay with them.`,
+    "No. Every square the site still has is on the board, marked with its number. What is taken is taken.",
   ],
   [
     "What if every square sells?",
-    "Then the site has no more to sell — but squares change hands. Owners put theirs up for sale, and the For sale switch at the top of the board shows what is on offer. The banner is still auctioned every day.",
+    "Then the site has nothing left to sell. The banner is still auctioned every day.",
   ],
 ];
 
@@ -73,10 +73,6 @@ export function HowItWorks() {
           <P>
             Your square is permanent. It does not expire, and nobody takes it back, rents it out
             or sells it out from under you.
-          </P>
-          <P>
-            You may also sell it on, at your own price. That is your move to make, not the
-            site&rsquo;s.
           </P>
           <P>
             Buy up to {MAX_BLOCK * MAX_BLOCK} squares as one block, at most {MAX_BLOCK} wide and{" "}

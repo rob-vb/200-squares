@@ -24,10 +24,6 @@ export default async function Page(props: PageProps<"/privacy">) {
             image if you have one ready. To bid on the banner: the same, minus the image.
           </P>
           <P>
-            To sell a square on: an address to pay you at. It is not public, and it is used for that
-            payment only.
-          </P>
-          <P>
             The company name, the address and the image are what the grid shows. They are public the
             moment your block goes live — that is what you are buying.
           </P>
