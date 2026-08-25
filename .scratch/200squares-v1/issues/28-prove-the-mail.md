@@ -25,11 +25,11 @@ npx convex env set BUSINESS_VAT_ID NL...B..
 npx convex env set ADMIN_EMAILS you@example.com
 ```
 
-⚠️ **Which address goes in `BUSINESS_ADDRESS` is its own question**, and it is
-[ticket 29](29-invoice-address.md): the eenmanszaak is registered on the dev's home
-address, and ticket 17's write-once rule freezes whatever is set here into every document
-it issues. Setting the home address to test on staging costs nothing — a staging invoice is
-a test document. Setting it on **prod** is the choice ticket 29 is about.
+⚠️ **`BUSINESS_ADDRESS` is frozen into every document it issues** (ticket 17's write-once
+rule), so changing it later does not rewrite an invoice already written. On staging that
+costs nothing — a staging invoice is a test document. On **prod** it is a choice to make
+before the first real sale. The dev holds it; [ticket 29](29-invoice-address.md) records
+what the site does and does not show.
 
 ⚠️ **Your real values.** The four `BUSINESS_` ones are printed on a legal document and
 frozen into it at issue time, so a wrong VAT number is a real problem and not a typo — which

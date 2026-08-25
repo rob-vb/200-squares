@@ -1,7 +1,7 @@
 # 29 — Which address the invoice may carry
 
 Type: research
-Status: open
+Status: resolved
 Parent: ../map.md
 
 ## Question
@@ -52,3 +52,27 @@ link to anybody.
 Changing the document. If the answer is *a correspondentieadres is enough*, the change is
 one environment variable and no code at all — which is why ticket 23 put the identity in
 variables in the first place.
+
+## Answer
+
+**The dev holds the answer, and the ticket was asking the wrong question.**
+
+The dev's question was never *which address may I use* — they know that. It was **where
+does my address appear at all**. That has one answer:
+
+⚠️ **On the invoice, and nowhere else on the site.** `BUSINESS_ADDRESS` is read in exactly
+one place, `convex/lib/invoice.ts`, and the document it goes into is not public: a 32-hex
+random token, `private, no-store` at both ends, in no index, and the link goes only to the
+buyer's own mail and their own My squares. No page of 200squares.com prints it — `/terms`,
+`/privacy` and the contact block name `hello@200squares.com` and no address at all
+([tickets 11](11-admin-removal.md) and [13](13-email.md)).
+
+So the exposure is *every buyer, forever*, and not *the web*.
+
+The three research questions are dropped unasked. The dev knows what goes in the variable.
+
+The one thing worth keeping from this ticket, and it stays true whatever address is chosen:
+⚠️ **the address is frozen into each document at issue time** (ticket 17's write-once rule),
+so changing the variable later does not rewrite an invoice already issued. That makes it a
+choice to make before the first real sale, and it is recorded on
+[ticket 28](28-prove-the-mail.md) where the variables are set.

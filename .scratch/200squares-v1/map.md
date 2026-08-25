@@ -582,6 +582,19 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   the click counter already read. ⚠️ **`ADMIN_EMAILS` is unset**, so `/admin` admits nobody
   today, including the dev.
 
+- [29 — Which address the invoice may carry](issues/29-invoice-address.md) — **closed on
+  the dev's own answer, and it was asking the wrong question.** It was raised while setting
+  the `BUSINESS_` variables: the eenmanszaak is registered on the dev's home address. The
+  dev's question was not *which address may I use* — they know — but **where does my address
+  appear at all**, and that has one answer: ⚠️ **on the invoice, and nowhere else on the
+  site.** `BUSINESS_ADDRESS` is read in one file, the document sits behind a random token
+  with `private, no-store`, and no page prints an address — the site's public contact is
+  `hello@200squares.com`. The exposure is *every buyer, forever*, not *the web*. The three
+  research questions were dropped unasked. ⚠️ One line survives it: ticket 17's write-once
+  rule freezes the address into each document at issue time, so which address goes on prod
+  is a choice to make **before** the first real sale, and it is recorded on
+  [ticket 28](issues/28-prove-the-mail.md).
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -609,12 +622,7 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
-  real inbox and no document has been rendered on a deployment. ⚠️ Beside it,
-  [29 — Which address the invoice may carry](issues/29-invoice-address.md) came out of
-  setting those variables: the eenmanszaak is registered on the dev's **home address**, the
-  invoice carries *the address*, and ticket 17's write-once rule freezes it into every
-  document at issue time — so it is a decision to take before the first real sale, not
-  after.
+  real inbox and no document has been rendered on a deployment.
 - ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
   that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
   fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
