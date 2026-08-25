@@ -433,7 +433,7 @@ export function Canvas() {
         here unless Cloudflare actually wants an interaction — and the script is
         not even fetched until the first click on a link (`board/clicks.ts`).
       */}
-      <div ref={turnstileBox} className="absolute bottom-4 left-4" />
+      <div ref={turnstileBox} className="absolute top-4 left-4" />
 
       <ZoomControls
         inset={sidePanel && panelOpen ? PANEL_WIDTH : 0}

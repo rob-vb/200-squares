@@ -24,20 +24,47 @@ import { chromium } from "playwright";
 const BASE = "https://200-squares-git-staging-robs-projects-52973834.vercel.app";
 const out = process.argv[2] ?? "clicks";
 
-/** Every block row in My squares, as `{ url, clicks }`. */
-async function myBlocks(page) {
+// ⚠️ The panel is in the DOM **twice** — the side panel and the bottom sheet,
+// one hidden by CSS — so every locator here is filtered to what is on screen.
+// A script that reaches for the last of anything reaches into the copy nobody
+// can see.
+const visibleRows = (page) => page.locator("div.border-hairline.border-b").locator("visible=true");
+
+const openMine = async (page) => {
   await page.locator("header button").first().click();
   await page.waitForTimeout(2000);
-  const rows = await page.locator("div.border-hairline.border-b").allInnerTexts();
+};
+
+const closeMine = async (page) => {
   await page.keyboard.press("Escape");
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(800);
+};
+
+/** Every live block row in My squares, as `{ url, clicks }`. A row with no
+ *  artwork has never been clickable and says nothing about clicks at all. */
+async function myBlocks(page) {
+  await openMine(page);
+  const rows = await visibleRows(page).allInnerTexts();
+  await closeMine(page);
   return rows
     .map((text) => {
-      const url = text.split("\n").find((line) => /^[a-z0-9.-]+\.[a-z]{2,}/i.test(line.trim()));
       const clicks = text.match(/Live · ([\d,]+) click/);
-      return url && clicks ? { url: url.trim(), clicks: Number(clicks[1].replace(/,/g, "")) } : null;
+      if (!clicks) return null;
+      const url = text.split("\n").find((line) => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(line.trim()));
+      return { url: url?.trim() ?? "", clicks: Number(clicks[1].replace(/,/g, "")) };
     })
     .filter(Boolean);
+}
+
+/** A block with no address is not a link and cannot be clicked. Give it one. */
+async function setLink(page, url) {
+  await openMine(page);
+  const row = visibleRows(page).filter({ hasText: "Live ·" }).first();
+  await row.getByRole("button", { name: "Edit link" }).click();
+  await row.getByRole("textbox").fill(url);
+  await row.getByRole("button", { name: "Save" }).click();
+  await page.waitForTimeout(2000);
+  await closeMine(page);
 }
 
 const browser = await chromium.launch();
@@ -53,11 +80,16 @@ page.on("console", (m) => {
 await page.goto(BASE, { waitUntil: "networkidle", timeout: 60000 });
 await page.waitForTimeout(2500);
 
-const before = await myBlocks(page);
+let before = await myBlocks(page);
 if (before.length === 0) {
   console.error("No live block on this account. Run seed:adopt for this address first.");
   await browser.close();
   process.exit(1);
+}
+if (!before[0].url) {
+  console.log("the first live block has no address yet — setting one through the panel");
+  await setLink(page, "example.com");
+  before = await myBlocks(page);
 }
 const target = before[0];
 console.log(`target: ${target.url} · ${target.clicks} clicks before`);
@@ -81,17 +113,34 @@ await page.mouse.up();
 await page.waitForTimeout(1500);
 console.log(`tabs open after the drag: ${context.pages().length} (1 is right)`);
 
-// 1 — the click, and the tab it opens.
-const [opened] = await Promise.all([
-  context.waitForEvent("page", { timeout: 15000 }).catch(() => null),
-  link.click(),
-]);
-console.log("new tab:", opened ? opened.url() : "none — the link did not open");
-if (opened) await opened.close();
+/** Open the link the way `how` says, and report the tab it produced. */
+async function follow(how) {
+  const [opened] = await Promise.all([
+    context.waitForEvent("page", { timeout: 15000 }).catch(() => null),
+    how(),
+  ]);
+  console.log(`  ${opened ? opened.url() : "no tab — the link did not open"}`);
+  if (opened) await opened.close();
+  // The beacon is thrown after the navigation and nothing waits for it, so this
+  // wait is the script's and not the site's.
+  await page.waitForTimeout(2500);
+  return Boolean(opened);
+}
 
-// The beacon is thrown after the navigation and nothing waits for it, so this
-// wait is the script's, not the site's.
-await page.waitForTimeout(4000);
+// 1 — the click, and the tab it opens. Three times, three ways.
+//
+// The second is the permit doing its job: one Turnstile token is spent on the
+// first click and every click after it rides on the same permit. The third is
+// the keyboard, which reaches these links now that they are anchors — and which
+// produces a click with no gesture behind it, the one case the canvas must not
+// mistake for a stray drag.
+console.log("plain click:");
+const first = await follow(() => link.click());
+console.log("second click, same permit:");
+const second = await follow(() => link.click());
+console.log("keyboard, Enter on the focused link:");
+await link.focus();
+const third = await follow(() => page.keyboard.press("Enter"));
 
 // 2 — the count.
 const after = await myBlocks(page);
@@ -99,7 +148,7 @@ const now = after.find((b) => b.url === target.url);
 console.log(`${target.url}: ${target.clicks} → ${now ? now.clicks : "?"} clicks`);
 await page.screenshot({ path: `${out}-mine.png` });
 
-const ok = opened && now && now.clicks === target.clicks + 1;
-console.log(ok ? "OK — one click, one count." : "NOT OK — see above.");
+const ok = first && second && third && now && now.clicks === target.clicks + 3;
+console.log(ok ? "OK — three clicks, three counts, one drag counted for nothing." : "NOT OK — see above.");
 await browser.close();
 process.exit(ok ? 0 : 1);
