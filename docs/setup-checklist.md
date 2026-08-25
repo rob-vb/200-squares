@@ -12,10 +12,11 @@ the EU, which `/privacy` may want to say.
 | cloud | `https://proper-heron-683.eu-west-1.convex.cloud` | `https://energized-deer-345.eu-west-1.convex.cloud` |
 | site | `https://proper-heron-683.eu-west-1.convex.site` | `https://energized-deer-345.eu-west-1.convex.site` |
 
-⚠️ **There are two Vercel projects**: `200-squares` (this repo is linked to it) and
-`200squares` (made 15 days ago, already carrying a Convex build command). One of them is
-a leftover. Decide which before you attach the domain — moving a live domain between
-projects is a DNS problem you do not need.
+The Vercel project is **`200-squares`**. The duplicate `200squares` project was deleted —
+it had no custom domain, so only `*.vercel.app` preview URLs went with it.
+
+The long-lived test branch **`staging`** exists and is pushed. Work continues on it: it is
+the only branch with a stable URL, and there is no localhost to work on instead.
 
 ---
 
@@ -71,19 +72,28 @@ Convex dashboard → Settings → Billing.
 the overage. A card on the account silently turns *the site breaks* into *the site bills*.
 That is the rule the whole map rests on. No card.
 
-## 4. Domains
+## 4. Domains — **half done**
 
-Vercel → project **200-squares** → Settings → Domains.
+All three are attached to the project and ownership is verified. Two things are left.
 
-| Domain | Assign to |
-| --- | --- |
-| `200squares.com` | Production |
-| `www.200squares.com` | Production |
-| `staging.200squares.com` | git branch **`staging`** |
+**a. Three DNS records at Cloudflare** → 200squares.com → DNS → Records. All three are a
+CNAME to the same target:
 
-Vercel gives you DNS records. Add them at Cloudflare → 200squares.com → DNS.
-⚠️ **DNS only (grey cloud), never Proxied.** Ticket 02 keeps the whole zone unproxied
-because Vercel's firewall on Pro beats Cloudflare Free.
+| Type | Name | Target | Proxy |
+| --- | --- | --- | --- |
+| CNAME | `@` | `3d5247d07ec60ade.vercel-dns-017.com.` | **DNS only** |
+| CNAME | `www` | `3d5247d07ec60ade.vercel-dns-017.com.` | **DNS only** |
+| CNAME | `staging` | `3d5247d07ec60ade.vercel-dns-017.com.` | **DNS only** |
+
+⚠️ **Grey cloud, never orange.** Vercel's own API returns `disableProxy: true` on all
+three, which is the same answer ticket 02 reached from the cost side: Vercel's firewall on
+Pro beats Cloudflare Free, and proxying subtracts from it.
+
+Cloudflare flattens a CNAME at the apex, so `@` works there.
+
+**b. Point `staging.200squares.com` at the branch.** Settings → Domains →
+`staging.200squares.com` → assign it to the git branch **`staging`**. The CLI cannot do
+this one; it is a dropdown.
 
 ## 5. The build command — **done**
 
@@ -187,14 +197,10 @@ npx convex env set --prod STRIPE_WEBHOOK_SECRET whsec_...
 ⚠️ Test and live have **separate** signing secrets. Mixing them fails in the worst way:
 the signature check rejects every real payment, silently.
 
-## 11. The first real deploy
+## 11. The first real deploy — **half done**
 
-```sh
-git checkout -b staging
-git push -u origin staging
-```
-
-Open `https://staging.200squares.com` and check the board draws.
+The `staging` branch exists and is pushed, so Vercel has already built it. Once step 4 is
+finished, open `https://staging.200squares.com` and check the board draws.
 
 Nothing is connected to Convex yet — ticket 15 does that. This deploy proves the domain,
 the build command and the variables are right, while the site is still simple enough to
