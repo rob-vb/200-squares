@@ -79,6 +79,7 @@ These never reach the browser.
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` (test endpoint) | `whsec_…` (live endpoint) | One per endpoint. Never share them. |
 | `RESEND_API_KEY` | `re_…` | `re_…` | Two keys, so one can be revoked alone. |
 | `TURNSTILE_SECRET_KEY` | test key | live key | Ticket 16 checks the token in the mutation. |
+| `BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_KVK`, `BUSINESS_VAT_ID` | set | set | The eenmanszaak's identity on an invoice ([ticket 23](../.scratch/200squares-v1/issues/23-build-invoice.md)). Not secret, but not in git either — they change without a deploy, and an invoice freezes its own copy. |
 | `BOARD_LIVE` | `true` | `true` | The [ADR 0001](adr/0001-live-board-clicks-outside-it.md) kill switch. Set to `false` and the board falls back to a cached snapshot, with no deploy. |
 
 ### In the Vercel project
@@ -161,5 +162,7 @@ git config user.email hi@robvb.com
 4. Stripe test mode and Stripe live mode have separate webhook signing secrets.
 5. Secrets live in the Convex dashboard and the Vercel dashboard. Not in this repo, not
    in a ticket, not in a commit message.
-6. Mail comes from `hello@200squares.com` through the `send.` subdomain, and a **reply
+6. There is **no browser on the VPS**. `node scripts/shot.mjs [path] [out.png]` screenshots
+   the staging board with Playwright. Run it from the repo root.
+7. Mail comes from `hello@200squares.com` through the `send.` subdomain, and a **reply
    reaches the dev's own inbox** through Cloudflare Email Routing. Never `no-reply@`.

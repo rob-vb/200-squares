@@ -19,7 +19,16 @@ Nothing to decide. [Ticket 17](17-invoice-document.md) settled it. Read its answ
   date is what makes a weekend invoice defensible.
 - **The document** — trading name, address, KVK, BTW-identificatienummer, date of issue,
   the number, *advertising space on a web page*, the date of supply, the customer's name
-  and address. Then one of the three cases from ticket 17, with ⚠️ **the VAT amount in
+  and address.
+  ⚠️ **The business identity comes from Convex environment variables, not from code**:
+  `BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_KVK`, `BUSINESS_VAT_ID`. The dev sets them
+  the way they set the Stripe keys. The values never enter git, never enter a ticket, and
+  the address can change without a deploy. Build the template against the names; do not ask
+  for the values and never invent one — a wrong VAT number on an invoice is a real problem,
+  not a typo.
+  This is safe with ticket 17's "written once, never recomputed" rule, and it is why:
+  the values are **frozen into the stored document** at issue time, so changing the address
+  in 2029 does not rewrite an invoice from 2026, which is what the law wants. Then one of the three cases from ticket 17, with ⚠️ **the VAT amount in
   euros beside the USD total** for the Dutch-21% case.
 - **Stored, not rendered on demand** — HTML written once into Convex file storage. No PDF
   at V1.0.
