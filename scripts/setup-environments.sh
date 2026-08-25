@@ -175,6 +175,21 @@ step turnstile "10. Cloudflare Turnstile" \
 "that reaches a Convex write. Ticket 16 makes the reservation mutation demand a" \
 "token."
 
+# ────────────────────────────────────────────────────────── email routing ──
+step email-routing "10b. A reply must reach a person" \
+"Cloudflare dashboard → 200squares.com → Email → Email Routing." \
+"" \
+"  - Enable Email Routing." \
+"  - Add a custom address:  hello@200squares.com" \
+"  - Forward it to your own inbox, and confirm the verification mail." \
+"" \
+"Cloudflare adds its own MX records for the root domain. Resend's records are on" \
+"the send. subdomain, so the two do not collide." \
+"" \
+"⚠ Ticket 13 decided the site never sends from no-reply@. Ticket 08 made 'email" \
+"  the dev and prove the payment' the official way back into a locked-out account," \
+"  and a black hole on the other end would make that promise false."
+
 # ────────────────────────────────────────────────────────────────── vercel ──
 step vercel-pro "11. Vercel Pro" \
 "https://vercel.com → your team → Settings → Billing." \
@@ -231,8 +246,8 @@ step vercel-env "15. Vercel environment variables" \
 "  STRIPE_SECRET_KEY             sk_live_..." \
 "" \
 "Preview:" \
-"  NEXT_PUBLIC_CONVEX_URL        https://<dev>.convex.cloud" \
-"  NEXT_PUBLIC_CONVEX_SITE_URL   https://<dev>.convex.site" \
+"  NEXT_PUBLIC_CONVEX_URL        https://proper-heron-683.eu-west-1.convex.cloud" \
+"  NEXT_PUBLIC_CONVEX_SITE_URL   https://proper-heron-683.eu-west-1.convex.site" \
 "  NEXT_PUBLIC_SITE_URL          https://staging.200squares.com" \
 "  NEXT_PUBLIC_TURNSTILE_SITE_KEY  the Turnstile site key" \
 "  STRIPE_SECRET_KEY             sk_test_..." \
@@ -250,11 +265,8 @@ printf 'Do the dev deployment now? (y/n) '
 read -r do_convex_env
 
 if [ "$do_convex_env" = "y" ]; then
-  secret=$(openssl rand -base64 32)
-  printf '\n%sGenerated a Better Auth secret for dev.%s\n' "$DIM" "$R"
-  npx convex env set BETTER_AUTH_SECRET "$secret"
-  npx convex env set SITE_URL "https://staging.200squares.com"
-  npx convex env set BOARD_LIVE "true"
+  printf '\n%sBETTER_AUTH_SECRET, SITE_URL and BOARD_LIVE are already set on dev.%s\n' "$DIM" "$R"
+  printf '%sOnly the three keys you hold are left.%s\n\n' "$DIM" "$R"
 
   sk=$(ask "Stripe TEST secret key (sk_test_...):")
   [ -n "$sk" ] && npx convex env set STRIPE_SECRET_KEY "$sk"
@@ -272,7 +284,7 @@ fi
 step stripe-webhook-test "17. The Stripe webhook, test mode" \
 "Stripe → Test mode on → Developers → Webhooks → Add endpoint." \
 "" \
-"  Endpoint URL:  https://<dev>.convex.site/stripe/webhook" \
+"  Endpoint URL:  https://proper-heron-683.eu-west-1.convex.site/stripe/webhook" \
 "" \
 "  Events:  checkout.session.completed" \
 "           checkout.session.expired" \

@@ -10,8 +10,11 @@ Three environments, two Convex deployments, one Vercel project.
 | Environment | URL | Convex deployment | Stripe mode |
 | --- | --- | --- | --- |
 | Production | `200squares.com`, `www.200squares.com` | `prod` | live |
-| Staging | `staging.200squares.com` (git branch `staging`) | `dev` | test |
-| A working branch | `200-squares-git-<branch>-robs-projects-52973834.vercel.app` | `dev` | test |
+| Staging | `staging.200squares.com` (git branch `staging`) | `proper-heron-683` | test |
+| A working branch | `200-squares-git-<branch>-robs-projects-52973834.vercel.app` | `proper-heron-683` | test |
+
+The dev deployment is **`proper-heron-683`**, in the **`eu-west-1`** region. The region
+is worth knowing for `/privacy`: owner data and email addresses stay in the EU.
 
 **There is no local environment.** The dev works on a VPS and sees nothing in a
 browser there. Every visual check happens on a Vercel URL.
@@ -42,7 +45,7 @@ this, because it does not go to Vercel — see below.
 
 ## The Stripe webhook goes to Convex, not to Vercel
 
-`https://<deployment>.convex.site/stripe/webhook`
+`https://proper-heron-683.eu-west-1.convex.site/stripe/webhook`
 
 A Convex HTTP action, not a Next.js route. Four reasons:
 
@@ -81,8 +84,8 @@ Set per environment in **Settings → Environment Variables**.
 | Name | Production | Preview | Public? |
 | --- | --- | --- | --- |
 | `CONVEX_DEPLOY_KEY` | prod deploy key | *not set* | no |
-| `NEXT_PUBLIC_CONVEX_URL` | *set by the build* | `https://<dev>.convex.cloud` | yes |
-| `NEXT_PUBLIC_CONVEX_SITE_URL` | `https://<prod>.convex.site` | `https://<dev>.convex.site` | yes |
+| `NEXT_PUBLIC_CONVEX_URL` | *set by the build* | `https://proper-heron-683.eu-west-1.convex.cloud` | yes |
+| `NEXT_PUBLIC_CONVEX_SITE_URL` | `https://<prod>.convex.site` | `https://proper-heron-683.eu-west-1.convex.site` | yes |
 | `NEXT_PUBLIC_SITE_URL` | `https://200squares.com` | `https://staging.200squares.com` | yes |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | live site key | test site key | yes |
 | `STRIPE_SECRET_KEY` | `sk_live_…` | `sk_test_…` | **no** |
@@ -129,6 +132,10 @@ attack may take the site offline, but it may never make a bill.
 - **Convex** — stays on **Free**. Free has hard caps and no overage rate, so it refuses
   work instead of billing. That is the whole defence and it is why it is not upgraded.
 - **Resend** — Free, 3,000 mails a month. No card on the account.
+- ⚠️ **Convex Free is not Convex Starter.** Free has hard caps and stops the deployment;
+  Starter is pay-as-you-go and bills the overage. **Attaching a card converts the failure
+  mode from *breaks* to *bills*.** Found by
+  [ticket 09](../.scratch/200squares-v1/issues/09-artwork-storage.md).
 - **Cloudflare** — Free. DNS only, not proxied
   ([ticket 02](../.scratch/200squares-v1/issues/02-ddos-and-the-bill.md)).
 - **Stripe** — no ceiling to set; it only takes money in.
@@ -149,3 +156,5 @@ git config user.email hi@robvb.com
 4. Stripe test mode and Stripe live mode have separate webhook signing secrets.
 5. Secrets live in the Convex dashboard and the Vercel dashboard. Not in this repo, not
    in a ticket, not in a commit message.
+6. Mail comes from `hello@200squares.com` through the `send.` subdomain, and a **reply
+   reaches the dev's own inbox** through Cloudflare Email Routing. Never `no-reply@`.
