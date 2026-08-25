@@ -64,6 +64,32 @@ put three new things on this ticket's plate:
   can buy from was never considered. Turnstile in front of starting a checkout is the
   free control that reaches it.
 
+## Price change — 2026-08-25
+
+⚠️ **A square is now $250, not $100.** The dev raised the base price after this ticket
+was resolved. Every decision in the answer below stands unchanged — inclusive pricing,
+the order button on 200squares.com, Stripe Tax off, the webhook as the only writer. Only
+the amounts move, and they move proportionally:
+
+| Was | Is |
+| --- | --- |
+| $100 the buyer pays | **$250** |
+| $82.64 left by an EU consumer | **$206.61** |
+| a full board worth $16,446 to $19,900 | **$41,116 to $49,750** |
+| a country mismatch costs at most $17.36 | **$43.39** |
+| exclusive pricing would show $119-121 | **$297.50-302.50** |
+
+The live figures are in
+[ADR 0002](../../../docs/adr/0002-vat-inclusive-priced-and-computed-here.md), which was
+rewritten. The text below is left as it was written, because it is the record of what was
+decided and why.
+
+⚠️ One consequence is not proportional: the **€10,000 cross-border B2C threshold** now
+arrives two and a half times sooner. The map already carries a fog patch for watching it;
+that watch is more urgent than it was.
+
+---
+
 ## Answer
 
 **The order is placed on 200squares.com, $100 includes VAT, and only the webhook writes

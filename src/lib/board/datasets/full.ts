@@ -76,7 +76,7 @@ const blocks = [
   makeBlock("blk_06", { r: 2, c: 5, w: 2, h: 2 }, brands.slate, { clicks: 274 }),
   makeBlock("blk_07", { r: 2, c: 8, w: 1, h: 3 }, brands.tallboy, { clicks: 1205 }),
   // Three listings, so the For sale switch does something before anyone signs
-  // in. Every price is per square, against the site's own $100: one whole block
+  // in. Every price is per square, against the site's own $250: one whole block
   // over it, one part of a big block well over it, and one whole block under it.
   makeBlock("blk_08", { r: 2, c: 10, w: 3, h: 2 }, brands.grandstand, {
     sell: { pricePerSquare: 140 },

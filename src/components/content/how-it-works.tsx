@@ -4,7 +4,7 @@
 //
 // It began as the page under the canvas. It moved out because the board is the
 // product and a board with a document under it is two products — but the order
-// ticket 07 fixed is unchanged, because it is the order a $100 buyer asks in:
+// ticket 07 fixed is unchanged, because it is the order a $250 buyer asks in:
 // counter → what you get → how it works → the daily banner → FAQ → contact.
 //
 // Nobody speaks here. The product states facts, and one name appears at the end.
@@ -21,7 +21,7 @@ const STEPS: [string, string][] = [
     "Pick your squares",
     `Drag a rectangle on the grid, up to ${MAX_BLOCK} wide and ${MAX_BLOCK} high. The price follows your drag.`,
   ],
-  ["Pay $100 per square", "One payment. Three by two squares is $600."],
+  ["Pay $250 per square", "One payment. Three by two squares is $1,500."],
   [
     "Add your artwork and your link",
     "One image covers the whole block. You can add it later: your squares stay reserved until you do.",

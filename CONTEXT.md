@@ -8,7 +8,7 @@ The field of 16 x 14 cells that fills the first screen. It is one visual surface
 
 ## Square
 
-One cell of the canvas, sold for $100. There are 199 squares, numbered 1 to 199, reading left to right and top to bottom around the Banner. A square carries a state: `available`, `pending` or `taken`.
+One cell of the canvas, sold for $250. There are 199 squares, numbered 1 to 199, reading left to right and top to bottom around the Banner. A square carries a state: `available`, `pending` or `taken`.
 
 ## Banner
 
@@ -44,7 +44,7 @@ The word is for the model. What a viewer reads is **For sale**.
 
 ## Asking price
 
-What the owner of a Listing wants for one square of it. Per square, the way the site's own $100 is, so a buyer reads the two numbers side by side and judges. It is the seller's to set, whatever they set it to: the only floor is $1, which stops a price of nothing and nothing more. On a sale the site keeps 10% and the rest is the seller's.
+What the owner of a Listing wants for one square of it. Per square, the way the site's own $250 is, so a buyer reads the two numbers side by side and judges. It is the seller's to set, whatever they set it to: the only floor is $1, which stops a price of nothing and nothing more. On a sale the site keeps 10% and the rest is the seller's.
 
 ## Resale
 

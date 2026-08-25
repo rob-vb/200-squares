@@ -20,7 +20,7 @@ export default async function Page(props: PageProps<"/terms">) {
       >
         <Section title="What you buy">
           <P>
-            A square costs $100. You pay once, and the square is yours for as long as this site runs.
+            A square costs $250. You pay once, and the square is yours for as long as this site runs.
             There is no subscription, no renewal and no invoice after the first one.
           </P>
           <P>
@@ -104,7 +104,7 @@ export default async function Page(props: PageProps<"/terms">) {
           <P>
             Nobody can promise a website runs forever, and this page will not pretend otherwise. This
             is one project run by one person. If it stops, the squares stop with it, and that is
-            priced into the $100.
+            priced into the $250.
           </P>
           <P>
             The site counts clicks and shows you your own count. That is a record of what happened,

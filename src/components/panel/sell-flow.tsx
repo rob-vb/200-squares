@@ -7,7 +7,7 @@
 // no cut to choose, because what the owner offers no longer has to leave a
 // rectangle behind — the split handles that (see `remainderOf`).
 //
-// The price is per square, like the site's own $100. That is what makes a part
+// The price is per square, like the site's own $250. That is what makes a part
 // sale pricable at all, and it puts the two numbers side by side for the buyer.
 //
 // Nothing is split here. A listing is a window on a block that is still whole,

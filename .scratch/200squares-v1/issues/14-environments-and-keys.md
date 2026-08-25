@@ -1,7 +1,7 @@
 # 14 — Environments, keys and the first real deploy
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 02, 04
 Parent: ../map.md
 
@@ -26,3 +26,47 @@ blocks more than it looks like it does.
 
 Record in the answer where each key lives, what is set where, and what a new session
 has to know. Do not put a secret in the answer.
+
+## Progress — 2026-08-25
+
+The half an agent can do is done. The half that needs a browser and a card is not.
+
+### Done
+
+- **The packages are installed**: `convex`, `@convex-dev/better-auth`, `better-auth`,
+  `stripe`, `resend`. Nothing is wired up yet — that is tickets 15, 16 and 08.
+- **[`docs/environments.md`](../../../docs/environments.md)** — the whole layout, with
+  every variable, where it is set, and what a new session must know. No secrets, ever.
+- **[`scripts/setup-environments.sh`](../../../scripts/setup-environments.sh)** — a
+  wizard that walks the dev through the nineteen dashboard steps, one at a time. It
+  keeps its place in `.setup-state`, so it can be stopped and started again.
+
+### Three decisions this ticket had to make
+
+1. **Convex preview deployments are not used.** One `dev` deployment serves every
+   preview branch. A backend per branch would give every branch a new `.convex.site`
+   address, and Stripe, Better Auth, Resend and Turnstile each need one that does not
+   move. The cost is that branches share a database, which for a one-person project
+   is no cost at all.
+
+2. **`staging.200squares.com` is a custom domain on the git branch `staging`.** A
+   Vercel preview URL changes with the branch name; a Stripe redirect URL, a Better
+   Auth callback and a Turnstile hostname cannot. Deployment Protection stays **on** —
+   the dev is signed in to Vercel, so the site opens for them and for nobody else.
+
+3. ⚠️ **The Stripe webhook goes to Convex, not to Vercel** —
+   `https://<deployment>.convex.site/stripe/webhook`, a Convex HTTP action. The ticket
+   asked what works, given a webhook cannot follow a preview URL. This is the answer,
+   and it is better than a bypass secret: the address is stable and public, Convex is
+   the source of truth so the webhook writes where it must, it burns no Vercel
+   invocations (ticket 02's bill rule), and Better Auth already serves from the same
+   host. **[Ticket 16](16-build-checkout.md) must build the webhook there, not in a
+   Next.js route.**
+
+### Waiting on the dev
+
+Run `bash scripts/setup-environments.sh`. Accounts, keys, DNS, domains, the spend cap
+and the first deploy. Nothing after this ticket can be tested until it is done.
+
+This ticket stays **claimed**, not resolved, because the work is genuinely half
+finished. Say "ticket 14 is finished" when the wizard is through.

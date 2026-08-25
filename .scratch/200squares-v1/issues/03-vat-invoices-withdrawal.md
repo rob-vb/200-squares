@@ -43,6 +43,16 @@ Primary sources: Belastingdienst, the EU VAT rules, the consumer rights directiv
 and Stripe's own tax documentation. Capture the findings as a markdown file in the
 repo and link it from this ticket.
 
+## Price change — 2026-08-25
+
+⚠️ **A square is now $250, not $100.** Every legal finding below is unaffected — the
+classification, the fields the panel collects, the VIES check and the broken waiver all
+stand. Two amounts rescale: the theoretical open position on a full board becomes
+**$49,750** (was $19,900), and exclusive pricing would show **$297.50-302.50** (was
+$119-121).
+
+---
+
 ## Answer
 
 Findings: [`research/03-vat-invoices-withdrawal.md`](../research/03-vat-invoices-withdrawal.md),

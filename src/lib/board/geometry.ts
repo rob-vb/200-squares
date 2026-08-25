@@ -12,7 +12,7 @@ export const ROWS = 14;
 export const SEAM = 1;
 export const BANNER: Rect = { r: 0, c: 0, w: 5, h: 5 };
 export const MAX_BLOCK = 4;
-export const PRICE_PER_SQUARE = 100;
+export const PRICE_PER_SQUARE = 250;
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 4;
 /** Below this rendered square size a number is unreadable. Locked by ticket 05. */
@@ -173,9 +173,9 @@ export const askingFor = (pricePerSquare: number, rect: Rect) =>
 /**
  * The floor on an asking price per square, only there to stop a price of nothing.
  *
- * Ticket 11 put a $100 floor on the whole block, to keep second-hand blocks from
- * undercutting the $100 the site charges for a square. A price per square does
- * that job on its own: the buyer reads "$140 a square" against the site's "$100
+ * Ticket 11 put a floor on the whole block, to keep second-hand blocks from
+ * undercutting the $250 the site charges for a square. A price per square does
+ * that job on its own: the buyer reads "$140 a square" against the site's "$250
  * a square" and judges. So the floor has no work left beyond refusing zero.
  */
 export const MIN_ASKING = 1;

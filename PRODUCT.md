@@ -19,7 +19,7 @@ The buying situation is FOMO: the board fills, and what is taken is off the mark
 
 ## Product Purpose
 
-Sell 199 squares at $100 each on a fixed 16 × 14 canvas, plus one 5 × 5 banner that is never for sale and changes every day through an auction. Success is a full board — 199 squares sold — with a banner auction that has a winner most days.
+Sell 199 squares at $250 each on a fixed 16 × 14 canvas, plus one 5 × 5 banner that is never for sale and changes every day through an auction. Success is a full board — 199 squares sold — with a banner auction that has a winner most days.
 
 ## Positioning
 
@@ -42,7 +42,7 @@ The ancestor is the Million Dollar Homepage, which froze and filled with dead li
 Confirmed:
 
 - The canvas is 16 × 14 cells. The banner is a fixed 5 × 5 block in the top-left and is never for sale. 199 squares + 1 banner = 200, which names the product.
-- A square costs $100, flat. Prices are in USD.
+- A square costs $250, flat. Prices are in USD.
 - Squares are bought as a contiguous rectangle, at most 4 wide and 4 high. A block renders as one image; the grid lines inside it disappear.
 - A square carries one of three states: `available`, `pending`, `taken`. A `pending` square is paid for but has no artwork yet, and must never read as empty.
 - The banner auction runs through the day for **tomorrow's** banner and closes at 00:00 UTC. Bidding starts at $100. With no winner the banner shows a house ad.
@@ -58,7 +58,7 @@ Undecided, and not to be invented:
 - What happens when squares get scarce, and what the last squares cost.
 - Auth provider, payment provider, image storage.
 
-A square can be sold on, through this site: the owner sets an asking price with a floor of $100, the site takes the payment and keeps 10%, and a sold block arrives without the seller's artwork or link. Listing is free. Ticket 11 decided it; the model is in `CONTEXT.md` under **Listing**, **Asking price** and **Resale**.
+A square can be sold on, through this site: the owner sets an asking price per square with a floor of $1, the site takes the payment and keeps 10%, and a sold block arrives without the seller's artwork or link. Listing is free. Ticket 11 decided it; the model is in `CONTEXT.md` under **Listing**, **Asking price** and **Resale**.
 
 Out of scope for the current effort: real payment and invoicing (including escrow and payouts to sellers on a resale), real authentication, backend and database, the cron for the 00:00 UTC rollover, and moderation of uploaded artwork and links.
 

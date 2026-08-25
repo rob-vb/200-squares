@@ -1,7 +1,7 @@
-# $100 includes VAT, and the site computes it, not Stripe
+# $250 includes VAT, and the site computes it, not Stripe
 
-A square costs $100. That is what the buyer pays, whoever they are and wherever they
-are. Whatever VAT is due comes out of the $100, and the site works out how much —
+A square costs $250. That is what the buyer pays, whoever they are and wherever they
+are. Whatever VAT is due comes out of the $250, and the site works out how much —
 Stripe Tax is off.
 
 Two settings, one of them irreversible, decided together in
@@ -20,8 +20,8 @@ Stripe forces two choices on top of that.
 
 **`tax_behavior` is set once per price and cannot be changed.** Stripe's recommended
 "Automatic" resolves to *exclusive* for USD prices, which would turn the site's own
-copy — "$100 per square" — into $121 for an EU consumer at the last screen. Inclusive
-keeps the number the site has said everywhere, at the cost of $17.36 per EU consumer
+copy — "$250 per square" — into $302.50 for an EU consumer at the last screen. Inclusive
+keeps the number the site has said everywhere, at the cost of $43.39 per EU consumer
 sale.
 
 **Stripe Tax costs 0.5% per transaction in every country of registration**, and the fee
@@ -40,16 +40,16 @@ the amount into the `orders` row at the moment of sale.
 
 ## Consequences
 
-- **The price is honest and constant.** $100 is $100 on the board, in the panel, in the
+- **The price is honest and constant.** $250 is $250 on the board, in the panel, in the
   copy and on the card statement. Nothing appears at the last screen.
-- **Revenue depends on who buys.** An EU consumer leaves $82.64; a non-EU buyer or a
-  reverse-charged EU business leaves $100. A full board is worth between $16,446 and
-  $19,900, not a single number.
+- **Revenue depends on who buys.** An EU consumer leaves $206.61; a non-EU buyer or a
+  reverse-charged EU business leaves $250. A full board is worth between $41,116 and
+  $49,750, not a single number.
 - **A country mismatch stops being an emergency.** The card country arrives after
-  payment, when refusing would mean refunding. Because the buyer always pays $100, a
+  payment, when refusing would mean refunding. Because the buyer always pays $250, a
   disagreement between the declared country and the card country changes only what the
   site owes, never what the buyer paid. The site records both, flags the order, and
-  eats at most $17.36.
+  eats at most $43.39.
 - **The resale is priced the other way.**
   [Ticket 01](../../.scratch/200squares-v1/issues/01-resale-platform-cost.md) found that
   a VAT-inclusive EU resale loses $19, so resale is priced VAT-on-top. The first sale and
@@ -59,7 +59,9 @@ the amount into the `orders` row at the moment of sale.
 - **Crossing €10,000 of cross-border B2C is the trigger to revisit Stripe Tax.** Above
   the threshold the Unieregeling brings destination rates for 27 countries, and 0.5%
   starts to earn itself back. Below it, every EU consumer pays 21% and the arithmetic
-  is one line.
+  is one line. ⚠️ **At $250 the threshold arrives two and a half times sooner** than the
+  charting price of $100 — it is now a matter of tens of sales, not hundreds, so the
+  watch the map already calls for is nearer than it was.
 - **`tax_behavior` is per price, not per account.** The banner auction may still choose
   differently; that stays with
   [ticket 07](../../.scratch/200squares-v1/issues/07-auction-holds.md).

@@ -1,0 +1,151 @@
+# Environments, keys and deploys
+
+Written by [ticket 14](../.scratch/200squares-v1/issues/14-environments-and-keys.md).
+It says where everything lives. **It contains no secrets and never may.**
+
+## The shape
+
+Three environments, two Convex deployments, one Vercel project.
+
+| Environment | URL | Convex deployment | Stripe mode |
+| --- | --- | --- | --- |
+| Production | `200squares.com`, `www.200squares.com` | `prod` | live |
+| Staging | `staging.200squares.com` (git branch `staging`) | `dev` | test |
+| A working branch | `200-squares-git-<branch>-robs-projects-52973834.vercel.app` | `dev` | test |
+
+**There is no local environment.** The dev works on a VPS and sees nothing in a
+browser there. Every visual check happens on a Vercel URL.
+
+### Why Convex previews are not used
+
+Convex can make a fresh backend for every git branch. This project does not use that.
+One `dev` deployment serves every preview branch instead. The reasons:
+
+- Stripe, Better Auth, Resend and Turnstile each need a **fixed** URL. A backend per
+  branch gives each branch a new `.convex.cloud` and `.convex.site` address, so each
+  branch would need its own webhook endpoint and its own trusted origin.
+- The dev is the only person who uses staging. Shared preview data costs nothing here.
+- Convex Free counts deployments. Two is cheaper than many.
+
+The price is that two branches share one database. Accept it.
+
+### Why `staging.200squares.com` exists
+
+A Vercel preview URL changes with the branch name. Stripe redirect URLs, Better Auth
+callbacks, Resend links and Turnstile domains cannot follow that. So the branch
+`staging` gets a **custom domain**, and that domain is the fixed address for every
+service in test mode.
+
+Vercel Deployment Protection stays **on** for staging. The dev is signed in to Vercel,
+so the site opens for them and for nobody else. The Stripe webhook is not blocked by
+this, because it does not go to Vercel — see below.
+
+## The Stripe webhook goes to Convex, not to Vercel
+
+`https://<deployment>.convex.site/stripe/webhook`
+
+A Convex HTTP action, not a Next.js route. Four reasons:
+
+1. The address is **stable and public**. Vercel Deployment Protection never sees it, so
+   no bypass secret is needed.
+2. Convex is the source of truth ([ticket 05](../.scratch/200squares-v1/issues/05-convex-model.md)).
+   The webhook writes where it must write, with no hop between.
+3. It uses no Vercel function invocations, which is
+   [ticket 02](../.scratch/200squares-v1/issues/02-ddos-and-the-bill.md)'s bill rule.
+4. Better Auth already serves from `.convex.site`. One host for both.
+
+Two endpoints exist in the Stripe dashboard: one in test mode pointing at the `dev`
+deployment, one in live mode pointing at `prod`. Each has its **own** signing secret.
+
+## Variables
+
+### On the Convex deployment
+
+Set with `npx convex env set NAME value`, once per deployment (`dev` and `prod`).
+These never reach the browser.
+
+| Name | dev | prod | What it is |
+| --- | --- | --- | --- |
+| `BETTER_AUTH_SECRET` | own value | own value | `openssl rand -base64 32`. Different per deployment. |
+| `SITE_URL` | `https://staging.200squares.com` | `https://200squares.com` | Better Auth callbacks and mail links. |
+| `STRIPE_SECRET_KEY` | `sk_test_…` | `sk_live_…` | |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` (test endpoint) | `whsec_…` (live endpoint) | One per endpoint. Never share them. |
+| `RESEND_API_KEY` | `re_…` | `re_…` | Two keys, so one can be revoked alone. |
+| `TURNSTILE_SECRET_KEY` | test key | live key | Ticket 16 checks the token in the mutation. |
+| `BOARD_LIVE` | `true` | `true` | The [ADR 0001](adr/0001-live-board-clicks-outside-it.md) kill switch. Set to `false` and the board falls back to a cached snapshot, with no deploy. |
+
+### In the Vercel project
+
+Set per environment in **Settings → Environment Variables**.
+
+| Name | Production | Preview | Public? |
+| --- | --- | --- | --- |
+| `CONVEX_DEPLOY_KEY` | prod deploy key | *not set* | no |
+| `NEXT_PUBLIC_CONVEX_URL` | *set by the build* | `https://<dev>.convex.cloud` | yes |
+| `NEXT_PUBLIC_CONVEX_SITE_URL` | `https://<prod>.convex.site` | `https://<dev>.convex.site` | yes |
+| `NEXT_PUBLIC_SITE_URL` | `https://200squares.com` | `https://staging.200squares.com` | yes |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | live site key | test site key | yes |
+| `STRIPE_SECRET_KEY` | `sk_live_…` | `sk_test_…` | **no** |
+
+`NEXT_PUBLIC_` is a promise: the value is compiled into the browser bundle. A secret
+with that prefix is a leaked secret.
+
+`STRIPE_SECRET_KEY` is needed on Vercel as well as on Convex, because
+[ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md) creates the Checkout
+Session from the site (the order is placed on 200squares.com) while the webhook that
+finishes it runs on Convex.
+
+### On the VPS, in `.env.local`
+
+`npx convex dev` writes `CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL` and
+`NEXT_PUBLIC_CONVEX_SITE_URL` here by itself. `.env.local` is in `.gitignore` and
+stays there. It holds no live key, ever.
+
+## The build command
+
+One Vercel project, two behaviours. Production pushes Convex functions; a preview does
+not, because previews run against `dev`, which the VPS pushes to.
+
+Vercel → Settings → Build & Development Settings → Build Command, override with:
+
+```sh
+if [ "$VERCEL_ENV" = "production" ]; then npx convex deploy --cmd 'npm run build'; else npm run build; fi
+```
+
+`npx convex deploy` reads `CONVEX_DEPLOY_KEY`, sets `NEXT_PUBLIC_CONVEX_URL` itself,
+builds the site, and then pushes the functions. That order matters: the functions go
+live only if the build succeeds.
+
+Functions reach `dev` from the VPS, with `npx convex dev` running in a terminal.
+
+## Spend limits
+
+[Ticket 02](../.scratch/200squares-v1/issues/02-ddos-and-the-bill.md) sets the rule: an
+attack may take the site offline, but it may never make a bill.
+
+- **Vercel** — Settings → Billing → Spend Management: **$5**, with *Pause production
+  deployment* **on**. Vercel checks every few minutes, so it is a brake, not a wall.
+  Set it below what you are willing to pay.
+- **Convex** — stays on **Free**. Free has hard caps and no overage rate, so it refuses
+  work instead of billing. That is the whole defence and it is why it is not upgraded.
+- **Resend** — Free, 3,000 mails a month. No card on the account.
+- **Cloudflare** — Free. DNS only, not proxied
+  ([ticket 02](../.scratch/200squares-v1/issues/02-ddos-and-the-bill.md)).
+- **Stripe** — no ceiling to set; it only takes money in.
+
+## Commits
+
+**Commit as `hi@robvb.com`**, or Vercel refuses the deploy.
+
+```sh
+git config user.email hi@robvb.com
+```
+
+## What a new session must know
+
+1. There is no localhost. Push a branch and read the Vercel URL.
+2. `staging` is the long-lived test branch, and it owns `staging.200squares.com`.
+3. Preview and staging both talk to the Convex `dev` deployment. They share data.
+4. Stripe test mode and Stripe live mode have separate webhook signing secrets.
+5. Secrets live in the Convex dashboard and the Vercel dashboard. Not in this repo, not
+   in a ticket, not in a commit message.

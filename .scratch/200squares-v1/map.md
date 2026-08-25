@@ -68,7 +68,14 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   They do want to remove a block afterwards, with a reason.
 - **Removal refunds nothing by default**, and the dev decides per case. Otherwise
   breaking the rules becomes a way to get a refund.
-- **A square stays $100, flat**, however full the board is.
+- **A square costs $250, flat**, however full the board is. ⚠️ Charting fixed this at
+  $100; the dev raised it to **$250** on 2026-08-25, after tickets 03 and 06 were
+  resolved. The decisions in those tickets are untouched — only the amounts rescale, and
+  both tickets carry a dated note saying by how much.
+  [ADR 0002](../../docs/adr/0002-vat-inclusive-priced-and-computed-here.md), `PRODUCT.md`,
+  `CONTEXT.md`, the copy and `PRICE_PER_SQUARE` were all changed with it. The **banner
+  auction still opens at $100** — a banner is one day, a square is forever, and the two
+  numbers were never the same thing.
 - **The withdrawal right is waived at checkout** by an explicit tick box, the way
   outbid.lol does it for bids. Ticket 03 checks that this is actually allowed.
 - **A DDoS attack may take the site down. It may not run up a bill.** Offline is an
@@ -140,7 +147,7 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   Dutch 21%. ⚠️ **The waiver as charted does not work**: a square is a service, so only
   Art. 16(1)(a) applies and it needs **full performance** — a `pending`, permanent square
   never has it. Keep the box anyway, because without the Art. 6(1)(h) information the 14
-  days become 12 months and 14 days, worth **$19,900** on a full board. The banner is
+  days become 12 months and 14 days, worth **$49,750** on a full board. The banner is
   different and can be fully performed. ⚠️ And Stripe's button says "Buy": under
   *Fuhrmann-2* the order must be placed on 200squares.com, which cuts across "checkout is
   Stripe's hosted page".
@@ -170,15 +177,15 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   screen: company, link and artwork leave it, the ticket 03 fields take their place.
   ⚠️ **`tax_behavior: inclusive`, irreversible, and Stripe Tax off** — the site computes
   VAT itself and freezes it into the order, recorded as
-  [ADR 0002](../../docs/adr/0002-vat-inclusive-priced-and-computed-here.md). $100 stays
-  $100, and **revenue now depends on who buys**: a full board is worth $16,446 to $19,900,
+  [ADR 0002](../../docs/adr/0002-vat-inclusive-priced-and-computed-here.md). $250 stays
+  $250, and **revenue now depends on who buys**: a full board is worth $41,116 to $49,750,
   not one number. The first sale is therefore priced inclusive while ticket 01's resale is
   priced on top — deliberate, and ticket 12 must explain it. The late-webhook gap closes
   with a subscribing return page plus a 10-second server-side session retrieve, keyed on
   the session id so writing twice is impossible. The **reservation flood** that tickets 02
   and 05 both left open is answered by Turnstile plus one reservation per IP plus a 10%
   ceiling on the free squares. VIES failures never block an order; a country mismatch is
-  accepted and costs at most $17.36, which only inclusive pricing makes survivable. The
+  accepted and costs at most $43.39, which only inclusive pricing makes survivable. The
   buyer uploads artwork on the **thank-you page**, before any mail arrives. Orders are kept
   **10 years**, and `pending` has no deadline.
 
@@ -236,7 +243,7 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 
 ## Out of scope
 
-- **A price that moves with scarcity.** Fixed at $100 by charting. It is a product
+- **A price that moves with scarcity.** Fixed at $250. It is a product
   decision, not a build decision, and it may wait until scarcity is real.
 - **Marketing, launch and traffic.** The map ends at a site that can be launched.
 - **Other currencies, other boards, an API, a mobile app.**
