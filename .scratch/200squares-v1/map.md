@@ -42,6 +42,12 @@ real backend, and then makes the copy true again.
   cost to that person, not to a company.
 - **Nothing may be invented.** `PRODUCT.md` bans fabricated statistics, customers and
   proof. Real money does not lift that ban.
+- ⚠️ **The Convex project stays on Free, with no card on the account.** Convex has two
+  plans priced at zero: **Free has hard caps** and disables the deployment; **Starter is
+  pay-as-you-go** and bills the overage. Attaching a payment method silently converts the
+  site's failure mode from *breaks* to *bills* — the one thing the dev said must never
+  happen. Tickets 02, 05, 09 and 10 all rest on this. It is not a preference; it is the
+  enforcement. Found by [ticket 09](issues/09-artwork-storage.md).
 
 ### Fixed by charting (2026-08-24)
 
@@ -189,6 +195,80 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   buyer uploads artwork on the **thank-you page**, before any mail arrives. Orders are kept
   **10 years**, and `pending` has no deadline.
 
+- [08 — Accounts, signing in and access](issues/08-accounts.md) — **the webhook makes an
+  owner, not a user; Better Auth makes the user when the magic link is followed; and the
+  board never asks who is looking.** The two rows ticket 05 fixed are joined on the
+  normalised email, and an owner who never follows their link is an owner all the same —
+  the account is how you come back, not what makes you an owner. Next.js is full-stack, so
+  the handler sits at `app/api/auth/[...all]/route.ts` on 200squares.com and the
+  **`crossDomain` plugin is not used**. Magic Link is supported; the **`admin` plugin is
+  not**, so the admin is one `ADMIN_EMAILS` environment variable on the Convex deployment
+  and `requireAdmin(ctx)` beside the single `requireOwner(ctx, blockId)` guard. The link
+  lives **one hour**, not five minutes, because it arrives after a payment. ⚠️ The
+  mistyped address cannot be closed by machinery — it is a support case, repaired by hand
+  against the Stripe order, and the same route recovers a **dead inbox**, which `/terms`
+  must now answer out loud. ⚠️ **A finding nobody went looking for: the board is already
+  not cacheable.** Every page reads `props.searchParams` for `?data=`, so all five routes
+  build as dynamic today — ticket 02's cheapest defence was never switched on, and killing
+  `?data=` is now a cost requirement on ticket 15 rather than tidiness.
+  [18 — Build: accounts and signing in](issues/18-build-accounts.md) follows.
+
+- [07 — The auction on real card holds](issues/07-auction-holds.md) — **nothing is
+  released until somebody has paid.** One rule answers the declined capture, the runner-up
+  and the hostage attack at once: at 00:00 the site captures the top bid **first**, and
+  cancels the other holds only after that capture succeeds; on failure it walks down to
+  the next bid that can be collected, for that bidder's own amount. ⚠️ Charting said the
+  losing holds go at 00:00 — **they do not**, and the promotion is impossible if they do.
+  Being outbid during the day still releases at once. `capture_before` is read on every
+  bid and a hold that would die before the close is refused at the keyboard. The rollover
+  is a Convex cron **plus lazy closing on read**, ticket 05's own idiom, keyed on the date
+  with `closedAt` making a second run a no-op; a missed run shows the house ad and closes
+  late. Bidding needs no account and **makes** one, like buying — a bid is a relationship
+  over a day, so it wants a session but not a signup wall. ⚠️ The banner is priced
+  **VAT-inclusive**, which closes ticket 03's authorize-≠-capture warning for good: that
+  was a Stripe Tax problem, Stripe Tax is off, and a bid is captured for exactly the bid
+  amount. The sharp consequence is that **the highest bid is not always the most valuable
+  bid**, and the site takes it anyway. The winner gets **no preparation time**, so artwork
+  may ride along on a standing bid and the house ad covers a winner who brought none. The
+  withdrawal box here **actually works**, unlike a square's, because a banner day can be
+  fully performed — and a mid-day withdrawal is a pro-rata refund that `/terms` states and
+  nobody builds. Bidding still opens at $100 with a $10 raise.
+  [19 — Build: the auction on real card holds](issues/19-build-auction.md) follows.
+
+- [09 — Artwork: storage, limits and delivery](issues/09-artwork-storage.md) — **the
+  browser does the work, Convex keeps the file, and Vercel's edge serves it.** Files live
+  in Convex file storage (1 GB included, a full board costs ~88 MB) and
+  `generateUploadUrl()` answers ticket 06's visitor-with-no-session. ⚠️ But **Convex Free
+  includes only 1 GB of egress**, so artwork is **never served from Convex to a visitor**:
+  one route, `/art/<storageId>`, streams it through Vercel with an immutable
+  year-long cache, and Convex is read once per file per region. ⚠️ **Vercel Image
+  Optimization is switched off entirely** (`images.unoptimized: true`), which
+  **supersedes ticket 02's three image settings** — an optimizer that is never invoked
+  cannot be attacked through a varying query string. The browser crops and resizes to two
+  exact WebP sizes before upload, so no server ever decodes a hostile file and no 20 MB
+  camera JPEG lands. No animation. The site crops rather than refusing an odd ratio.
+  ⚠️ **A cut block's pieces share one file and carry a crop rectangle** — which
+  `geometry.ts` already draws — because the split happens in a webhook where there is no
+  browser to re-cut anything.
+  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) follows.
+
+- [10 — Counting clicks for real](issues/10-clicks-for-real.md) — **a real link, a
+  fire-and-forget mutation beside it, one counter row per block, and a public total an
+  hour old.** A native anchor with an un-awaited `onClick` mutation: no Vercel invocation,
+  no redirect in the visitor's path, and no blocked tab — ⚠️ awaiting anything first
+  breaks the user-gesture chain. `clickCounts` is one row per block, not a row per click,
+  because `/privacy` forbids the one field that would make those rows worth keeping.
+  ⚠️ **The fan-out bomb comes back on `/how-it-works`**, which holds a websocket by
+  design, so `siteClicks` is its own query against a cached row recomputed **hourly** and
+  never joins the board query. The privacy trap — every obvious rate limit is *something
+  kept about the visitor* — is answered by **invisible Turnstile**, one token per board
+  load spent over ~30 clicks, verified and thrown away. It stops a script and not a
+  determined person, so the rest is honest framing: **the count is a floor, not a
+  census**, an inflated number flatters exactly one owner, and the cost lands as function
+  calls against a plan that breaks rather than bills. A zero stays a **zero, bare** — the
+  most honest thing on the page. The part-sale tiebreak is the lowest square number.
+  [21 — Build: counting clicks for real](issues/21-build-clicks.md) follows.
+
 ## Not yet specified
 
 - **Site credit as a product.** Ticket 01 moved resale onto credit instead of cash, and
@@ -201,8 +281,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 - **The build tickets.** Every decision here is followed by building it, the way
   08-10, 12 and 15 followed their decisions on the prototype map. They are created
   as each decision lands, not before. So far:
-  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md) and
-  [16 — Build: the checkout](issues/16-build-checkout.md).
+  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md),
+  [16 — Build: the checkout](issues/16-build-checkout.md),
+  [18 — Build: accounts and signing in](issues/18-build-accounts.md),
+  [19 — Build: the auction on real card holds](issues/19-build-auction.md),
+  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) and
+  [21 — Build: counting clicks for real](issues/21-build-clicks.md).
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
@@ -219,7 +303,9 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 - **Removing the mock datasets.** `early`, `full`, `brands.ts` and `?data=` are
   scaffolding. Something must still let the dev see an empty board and a full one.
   Ticket 15 displaces the reducer they feed, so it may sharpen this question — it does
-  not settle it.
+  not settle it. ⚠️ Ticket 08 raised the stakes: `?data=` is a search parameter, which is
+  why every route builds dynamic, so whatever replaces it **may not be a search parameter
+  on the board route**. That part is no longer fog; it is a requirement on ticket 15.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
   that a capture was declined, or that a webhook never arrived. It needs the cron and
   the captures to exist first.
@@ -237,9 +323,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   price record the way the banner has one.
 - **An archive of past banner winners** older than the site shows today.
 - **SEO and share images.**
-- **Artwork rules per block size** — file size, aspect ratio, formats, animation.
-  Ticket 09 settles the technical half; whether there are rules the buyer must read
-  is a copy question that follows it.
+- **Artwork rules the buyer must read.** Ticket 09 settled the technical half — WebP,
+  400 KB, no animation, the site crops rather than refusing an odd ratio. What is left is
+  a copy question: where the buyer is told, and how much of it belongs before they pick a
+  file rather than after. It rides with **making the copy true again**.
 
 ## Out of scope
 
