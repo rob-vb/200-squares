@@ -2,7 +2,7 @@
 
 Type: task
 Status: open
-Blocked by: 09, 14, 15, 18 (15 done 2026-08-25)
+Blocked by: 09, 14, 15, 18 (all done 2026-08-25 — this is now on the frontier)
 Parent: ../map.md
 
 ## Question

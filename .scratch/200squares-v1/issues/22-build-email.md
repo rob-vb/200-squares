@@ -2,7 +2,7 @@
 
 Type: task
 Status: open
-Blocked by: 13, 14, 15, 18 (15 done 2026-08-25)
+Blocked by: 13, 14, 15, 18 (all done 2026-08-25 — this is now on the frontier)
 Parent: ../map.md
 
 ## Question
@@ -37,3 +37,13 @@ again; the requirement is recorded here.
 Test it by sending to a real inbox from the staging deployment. Ticket 13 cannot be
 verified any other way, and [ticket 14](14-environments-and-keys.md) step 9 is what makes
 it possible.
+
+## From resolved decisions
+
+[Ticket 18](18-build-accounts.md) built the **transport** and one of the six messages.
+`convex/lib/mail.ts` is a plain `fetch` to Resend with `sendMail({ to, subject, text })` and
+the magic link's words in it, sending from `200 squares <hello@200squares.com>`. Add the
+other five to it; do not build a second way out.
+
+⚠️ **Stripe's own receipts are still on.** Ticket 18 had no reason to touch them and did
+not. Switching them off, in test mode and in live mode, is this ticket's.

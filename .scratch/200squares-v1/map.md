@@ -55,6 +55,13 @@ real backend, and then makes the copy true again.
   staging in Stripe test mode and screenshots every step. Run
   `node scripts/free-holds.mjs` first if a previous run stopped at Stripe — one visitor may
   hold one reservation and the VPS is one visitor.
+- ⚠️ **Being signed in is also a deployment command.** There is no inbox here either, so a
+  magic link cannot be read out of mail. `npx convex run auth:devSignInLink '{"email":"…"}'`
+  hands the link back instead of posting it, and `node scripts/signin.mjs '<url>'` follows
+  it and leaves the session in `.auth.json` for the next script. A link is single use.
+  `npx convex run seed:adopt '{"email":"…"}'` gives that address a seeded owner's squares,
+  so My squares has something in it. All three refuse without `SEED_ENABLED`. Built by
+  [ticket 18](issues/18-build-accounts.md).
 - The dev speaks Dutch; write to them in Dutch, ASD-STE100 style. The product UI is
   English, prices in USD.
 - Vocabulary lives in `CONTEXT.md` at the repo root. Product truth lives in
@@ -426,6 +433,23 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [Ticket 23](issues/23-build-invoice.md) gains one rule — a refunded order takes no
   invoice number.
 
+- [18 — Build: accounts and signing in](issues/18-build-accounts.md) — **Better Auth runs on
+  Convex, the browser reaches it through 200squares.com, and the board HTML is byte-identical
+  signed in or out.** Magic link only, one hour, and ⚠️ the Next.js route is a **forwarder,
+  not an auth server** — which is what keeps the cookie first-party and why ticket 08 refused
+  `crossDomain`. Turnstile on sign-in is Better Auth's own `captcha` plugin scoped to that one
+  endpoint, and a POST without a token really does come back `400 MISSING_RESPONSE`.
+  ⚠️ **The join is not the trigger ticket 08 asked for**: wiring `authFunctions` makes the
+  component reference its own generated API and TypeScript refuses it, so `currentOwner`
+  joins on the address and `requireOwner` writes `owners.userId` as a shortcut — which
+  answers the other order, an account made before the first purchase, for free.
+  ⚠️ **And the finding that costs money: ticket 08's "hit on sign-in and never on a board
+  view" is false.** The provider calls `useSession()` unconditionally, so every board view is
+  now one Vercel invocation where it was none. Static survives; free does not. Recorded below.
+  ⚠️ The VPS could not sign in at all — no browser, no inbox — so `auth:devSignInLink`,
+  `seed:adopt` and `scripts/signin.mjs` exist, all refusing without `SEED_ENABLED`.
+  `requireOwner` and `requireAdmin` are built and **nothing calls them yet**.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -437,10 +461,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   08-10, 12 and 15 followed their decisions on the prototype map. They are created
   as each decision lands, not before. **Done** (2026-08-25):
   [26 — Strip the resale surface](issues/26-strip-resale.md),
-  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md) and
-  [16 — Build: the checkout](issues/16-build-checkout.md).
+  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md),
+  [16 — Build: the checkout](issues/16-build-checkout.md) and
+  [18 — Build: accounts and signing in](issues/18-build-accounts.md).
   **Still open**:
-  [18 — Build: accounts and signing in](issues/18-build-accounts.md),
   [19 — Build: the auction on real card holds](issues/19-build-auction.md),
   [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md),
   [21 — Build: counting clicks for real](issues/21-build-clicks.md),
@@ -452,6 +476,17 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   wants the dev in the room. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day.
+- ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
+  that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
+  fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
+  02's static front had none. The HTML is still byte-identical and still comes off the edge
+  cache, so *static* survives; *free* does not, and under a flood the invocations are what
+  Hobby pauses on. Two escapes, both with a price: a **Vercel edge rewrite** of `/api/auth/*`
+  straight to `.convex.site`, which moves the cost to Edge Requests but loses the header
+  fix-up the Next handler exists to do; or a **signed-in marker** in `localStorage` gating
+  the provider, which needs a landing route to set it on the device that opens the mail.
+  It is a cost decision under ticket 02's rule, and it wants measuring before it is made.
+
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
@@ -466,8 +501,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   describe a site that fakes everything. Real accounts, real payment, real refunds
   and a real removal policy all break lines that are true today. This is the same
   shape as 07 → 10, 11 → 13 and 14 → 16, and it comes last. ⚠️ Ticket 16 added two
-  specific debts: `/privacy` must say that a **reservation keeps a salted hash of the
-  visitor's address for fifteen minutes** — the price of *one hold per visitor*, and the
+  specific debts, and ticket 18 a third — ⚠️ `/terms` still owes ticket 08's three
+  sentences about a lost inbox: the email is the key, losing it is not the end, and getting
+  back in means proving the payment to a person. `/privacy` must say that a **reservation
+  keeps a salted hash of the visitor's address for fifteen minutes** — the price of *one hold per visitor*, and the
   first thing on the board path that is about a visitor at all — and that an **order keeps
   the IP, the tick-box wording and the address for ten years**.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
