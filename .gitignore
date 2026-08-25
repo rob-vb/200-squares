@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# The signed-in session scripts/signin.mjs leaves behind.
+.auth.json

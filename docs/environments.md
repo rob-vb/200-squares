@@ -81,6 +81,7 @@ These never reach the browser.
 | `TURNSTILE_SECRET_KEY` | ⚠️ Cloudflare's **dummy** always-passes key | the real secret | See *Turnstile on dev* below. |
 | `BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_KVK`, `BUSINESS_VAT_ID` | set | set | The eenmanszaak's identity on an invoice ([ticket 23](../.scratch/200squares-v1/issues/23-build-invoice.md)). Not secret, but not in git either — they change without a deploy, and an invoice freezes its own copy. |
 | `BOARD_LIVE` | `true` | `true` | The [ADR 0001](adr/0001-live-board-clicks-outside-it.md) kill switch. Set to `false` and the board falls back to a cached snapshot, with no deploy. |
+| `ADMIN_EMAILS` | optional | set | Comma-separated. `requireAdmin(ctx)` compares the session's address against it ([ticket 08](../.scratch/200squares-v1/issues/08-accounts.md)). ⚠️ Unset admits **nobody**, which is the safe way round — a deployment with no admin has no admin page. |
 | `RESERVATION_IP_SALT` | optional | optional | Salts the hash a reservation keeps instead of an IP ([ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md)'s *one hold per visitor*). Unset, `BETTER_AUTH_SECRET` is used instead, which is fine — it is a salt, not a key. |
 
 ### In the Vercel project
@@ -197,5 +198,10 @@ git config user.email hi@robvb.com
    in a ticket, not in a commit message.
 6. There is **no browser on the VPS**. `node scripts/shot.mjs [path] [out.png]` screenshots
    the staging board with Playwright. Run it from the repo root.
-7. Mail comes from `hello@200squares.com` through the `send.` subdomain, and a **reply
+7. There is **no inbox on the VPS either**, so a magic link cannot be read out of mail.
+   `npx convex run auth:devSignInLink '{"email":"you@example.com"}'` hands the link back
+   instead of posting it, and `node scripts/signin.mjs '<url>'` follows it, screenshots the
+   signed-in board and leaves the session in `.auth.json` for another script to reuse. Both
+   refuse without `SEED_ENABLED`, so neither exists on production. A link is single use.
+8. Mail comes from `hello@200squares.com` through the `send.` subdomain, and a **reply
    reaches the dev's own inbox** through Cloudflare Email Routing. Never `no-reply@`.

@@ -30,6 +30,8 @@ The party that bought a block or won the banner. An owner supplies artwork and a
 
 One party is one owner, however many blocks they hold. Nothing limits how many blocks one owner may hold: the 4 x 4 limit is about one **image**, not about one owner's share of the canvas. A square owner and a past banner winner can be the same owner. An owner has no link of their own: the link belongs to the block or the banner day, so one owner can send each of their blocks somewhere else.
 
+An owner is not an account. A Better Auth **user** is a row in the auth component's own table, made the first time somebody follows a magic link, and an owner may point at one. The payment is what makes somebody an owner; the account is only how they come back. An owner who never followed their link is an owner all the same.
+
 ## Artwork
 
 The image an owner supplies for a block or for the banner. One image covers the whole block. A block without artwork is `pending`; artwork is what turns it `taken`.

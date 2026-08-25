@@ -50,6 +50,15 @@ const trustedOrigins = siteUrl?.endsWith(".vercel.app") ? ["https://*.vercel.app
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
+/**
+ * Where `devSignInLink` catches a magic link instead of letting it be posted.
+ *
+ * Keyed on the ctx, so it is one entry per function call and two calls can never
+ * cross. It holds nothing between calls and it is empty on every path but that
+ * one — the mail is sent as normal for every other caller.
+ */
+const linkSink = new WeakMap<object, { url: string }>();
+
 export const createAuth = (ctx: GenericCtx<DataModel>) =>
   betterAuth({
     baseURL: siteUrl,
@@ -65,6 +74,15 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
         // arrives after a payment and may be opened that evening.
         expiresIn: 60 * 60,
         sendMagicLink: async ({ email, url }) => {
+          // ⚠️ Dev only, and it is the only way this site can be looked at
+          // signed in. There is no browser on the VPS and no inbox in the loop,
+          // so `devSignInLink` below asks for a link and reads it here instead
+          // of posting it. See the note on that function.
+          const sink = linkSink.get(ctx);
+          if (sink) {
+            sink.url = url;
+            return;
+          }
           const mail = magicLinkMail(url);
           await sendMail({ to: email, subject: mail.subject, text: mail.text });
         },
@@ -101,6 +119,37 @@ export const sendSignInLink = internalAction({
     // `Headers` object; an empty one is the truthful answer here.
     await auth.api.signInMagicLink({ body: { email, callbackURL: "/" }, headers: new Headers() });
     return null;
+  },
+});
+
+/**
+ * A magic link, handed back rather than posted. **Dev only.**
+ *
+ * ⚠️ It exists because of the VPS. There is no browser here and no inbox, so
+ * without this nothing on the site can ever be looked at signed in — not My
+ * squares, not the artwork upload ([ticket 20](../.scratch/200squares-v1/issues/20-build-artwork.md)),
+ * not a bid ([ticket 19](../.scratch/200squares-v1/issues/19-build-auction.md)).
+ * `scripts/signin.mjs` takes what it returns.
+ *
+ *   npx convex run auth:devSignInLink '{"email":"you@example.com"}'
+ *
+ * It refuses without `SEED_ENABLED`, like everything in `seed.ts` and for the
+ * same reason: it hands whoever runs it a working session for any address, so it
+ * may exist on the dev deployment and nowhere else. It is internal as well, so
+ * no browser can reach it at all.
+ */
+export const devSignInLink = internalAction({
+  args: { email: v.string() },
+  returns: v.string(),
+  handler: async (ctx, { email }) => {
+    if (!process.env.SEED_ENABLED) {
+      throw new ConvexError("Sign-in links are only handed out where SEED_ENABLED is set.");
+    }
+    const sink = { url: "" };
+    linkSink.set(ctx, sink);
+    const auth = createAuth(ctx);
+    await auth.api.signInMagicLink({ body: { email, callbackURL: "/" }, headers: new Headers() });
+    return sink.url;
   },
 });
 
