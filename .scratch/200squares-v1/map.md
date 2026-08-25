@@ -123,9 +123,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   websocket protection** — firewalling `*.convex.cloud` needs a Convex custom domain at
   Convex Pro, so $20 + $25 = $45 — and even then Cloudflare inspects only the 101
   upgrade. The board page must be cached, cookie-free and open **no websocket for an
-  anonymous visitor**, because a subscription rerun is a billed function call. The
-  failure the rule never covered: a script can freeze the board with fake 15-minute
-  reservations, for free.
+  anonymous visitor**, because a subscription rerun is a billed function call.
+  ⚠️ **[Ticket 05](issues/05-convex-model.md) overturned that last recommendation**: the
+  board is live for everyone, because Free cannot bill and the board is cold. Cookie-free
+  stands; the no-websocket rule does not. The failure the rule never covered: a script can
+  freeze the board with fake 15-minute reservations, for free.
 
 - [03 — VAT, invoices and the right of withdrawal](issues/03-vat-invoices-withdrawal.md)
   — a square is **advertising space on a web page**, named in those words by Annex I(3)(h)
@@ -143,22 +145,44 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   *Fuhrmann-2* the order must be placed on 200squares.com, which cuts across "checkout is
   Stripe's hosted page".
 
+- [05 — The data model in Convex](issues/05-convex-model.md) — **blocks stay the only
+  record, the board goes live for everyone, and everything written often or worth money
+  is kept out of the board query.** ⚠️ The live board **contradicts ticket 02 on purpose**:
+  Convex Free cannot bill (hard caps, no overage rate), so an overrun breaks the site
+  instead of invoicing it — the dev's own rule, enforced by the platform — and the board
+  is cold, at most 199 sales in its whole life. Clicks are the real fan-out bomb, so they
+  get their own table the board never reads, and the public total is summed in a cached
+  query rather than held in one hot row. Recorded as
+  [ADR 0001](../../docs/adr/0001-live-board-clicks-outside-it.md), with an
+  environment-variable kill switch back to a cached snapshot. `reserved` becomes a fourth
+  square state; a reservation is its own table and **identifies nobody** — the Stripe
+  session metadata carries it back, so the board stays cookie-free. Convex is the source
+  of truth, not Stripe. Owner and Better Auth user stay two rows. The webhook beats a
+  late expiry whenever the squares are still free, and refunds automatically when they
+  are not. ⚠️ The reservation flood from ticket 02 is now a **quota** attack as well as a
+  board freeze, and it stays open for ticket 06.
+
 ## Not yet specified
 
 - **Site credit as a product.** Ticket 01 moved resale onto credit instead of cash, and
-  that creates a thing the site never had: a balance a person holds. What it can be
-  spent on, whether it expires, what happens to it if the site closes, and whether it is
-  a single- or multi-purpose voucher — which decides when VAT falls. Ticket 12 builds the
-  ledger; this is the product question beside it.
+  that creates a thing the site never had: a balance a person holds. Ticket 05 fixed its
+  **shape** — a ledger of entries that never change, never a balance field — and nothing
+  else. What it can be spent on, whether it expires, what happens to it if the site
+  closes, and whether it is a single- or multi-purpose voucher — which decides when VAT
+  falls — are all still open. Ticket 12 builds the ledger; this is the product question
+  beside it.
 - **The build tickets.** Every decision here is followed by building it, the way
   08-10, 12 and 15 followed their decisions on the prototype map. They are created
-  as each decision lands, not before.
+  as each decision lands, not before. The first is
+  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md).
 - **Making the copy true again.** `/how-it-works`, `/terms`, `/privacy` and the FAQ
   describe a site that fakes everything. Real accounts, real payment, real refunds
   and a real removal policy all break lines that are true today. This is the same
   shape as 07 → 10, 11 → 13 and 14 → 16, and it comes last.
 - **Removing the mock datasets.** `early`, `full`, `brands.ts` and `?data=` are
   scaffolding. Something must still let the dev see an empty board and a full one.
+  Ticket 15 displaces the reducer they feed, so it may sharpen this question — it does
+  not settle it.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
   that a capture was declined, or that a webhook never arrived. It needs the cron and
   the captures to exist first.

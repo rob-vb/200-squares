@@ -54,6 +54,30 @@ The block splits at the moment of sale, never at the moment of listing. What the
 
 There is no way to hand a square back to the site. Selling it on is the only exit.
 
+## Order
+
+The record of one purchase: what was bought, what was paid, and what the buyer told the
+site about themselves. It exists once and never changes.
+
+An order is not the same thing as ownership. The Block is what says a block is somebody's;
+the order says how it became theirs and what the invoice has to show. A refund, a removal
+or a resale changes the board and leaves the order alone.
+
+## Site credit
+
+What a Resale pays a seller in. It is not cash and it does not leave the site.
+
+Credit is a run of entries that never change, and a balance is their sum. Nothing is ever
+written over: money in, money out, and the history stays readable.
+
+## Bid hold
+
+The card authorization behind a Bid. Placing a bid holds the money without taking it.
+At 00:00 UTC the winner's hold is captured and every other hold is released.
+
+A hold is not a payment. A released hold leaves no trace on the board and costs the bidder
+nothing.
+
 ## Auction
 
 The daily contest for the Banner. Bidding runs through the day for **tomorrow's** banner and closes at 00:00 UTC. Bidding starts at $100.
@@ -81,8 +105,17 @@ What the Banner shows when nobody has won it: a message inviting the first bid, 
 ## Square states
 
 - `available` — for sale. Shows its number.
+- `reserved` — held while a checkout runs. Nobody owns it yet and it may go back to `available` on its own. The viewer is not told the difference between this and `taken`: both read as unavailable.
 - `pending` — paid for, artwork not supplied yet. Not the same as empty: an unmarked pending square reads as a bug.
 - `taken` — artwork and link in place.
+
+`reserved` is the only state a square leaves without anybody acting.
+
+## Reservation
+
+The claim a visitor holds on a rectangle while they are away paying. It lasts 15 minutes and then expires by itself. It is not a Block: nothing is owned, no artwork exists, and no owner is attached — a stranger with no account can hold one.
+
+A reservation is what makes a square `reserved`. It ends in one of two ways: a payment arrives and a Block replaces it, or the time runs out and the squares are `available` again.
 
 ## Detail panel
 
