@@ -37,9 +37,14 @@ The half an agent can do is done. The half that needs a browser and a card is no
   `stripe`, `resend`. Nothing is wired up yet — that is tickets 15, 16 and 08.
 - **[`docs/environments.md`](../../../docs/environments.md)** — the whole layout, with
   every variable, where it is set, and what a new session must know. No secrets, ever.
-- **[`scripts/setup-environments.sh`](../../../scripts/setup-environments.sh)** — a
-  wizard that walks the dev through the nineteen dashboard steps, one at a time. It
-  keeps its place in `.setup-state`, so it can be stopped and started again.
+- **[`docs/setup-checklist.md`](../../../docs/setup-checklist.md)** — the eleven steps
+  left, with the real deployment URLs filled in.
+
+⚠️ There was a wizard, `scripts/setup-environments.sh`. It is **deleted**. It exited at
+step 11 twice, because `"Pro is $20 a month"` in a double-quoted line made bash read `$2`
+as a positional parameter under `set -u`. The dev asked for a plain list instead, and a
+plain list is the right shape for work that is entirely dashboards. It is in the git
+history if anyone wants it back.
 
 ### Three decisions this ticket had to make
 
@@ -65,8 +70,14 @@ The half an agent can do is done. The half that needs a browser and a card is no
 
 ### Waiting on the dev
 
-Run `bash scripts/setup-environments.sh`. Accounts, keys, DNS, domains, the spend cap
-and the first deploy. Nothing after this ticket can be tested until it is done.
+Work through [`docs/setup-checklist.md`](../../../docs/setup-checklist.md). Vercel Pro,
+the spend cap, the domains, the build command, the variables, the Stripe webhook and the
+first deploy. Nothing after this ticket can be tested until it is done.
+
+Done so far: the Convex dev deployment is **`proper-heron-683`** in **`eu-west-1`** (owner
+data and email addresses stay in the EU, which `/privacy` may want to say); both Convex
+deployments exist; Stripe, Resend, Turnstile and Cloudflare Email Routing are set up; and
+`BETTER_AUTH_SECRET`, `SITE_URL` and `BOARD_LIVE` are set on dev.
 
 This ticket stays **claimed**, not resolved, because the work is genuinely half
 finished. Say "ticket 14 is finished" when the wizard is through.

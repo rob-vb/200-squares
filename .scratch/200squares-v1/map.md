@@ -302,6 +302,29 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   document is different law and sits with ticket 12.
   [23 — Build: the invoice document](issues/23-build-invoice.md) follows.
 
+- [11 — Managing the board: removing a block](issues/11-admin-removal.md) — **strip the
+  artwork, keep the square, count the strike; three strikes in twelve months freezes the
+  block, and nothing is ever refunded.** ⚠️ **The ticket's premise was stale**: `/terms`
+  already carries the content rules, already says the square stays yours, already says the
+  owner is told which rule, and already says the banner's bid is not returned — so *what
+  removal does to the squares* was decided in writing and this ticket did not reopen it.
+  What `/terms` never answered is the **loop**: strip it, they upload again, nightly. Hence
+  the freeze — ⚠️ **strikes count on the owner** (per-block counting hands a four-block
+  owner twelve of them) but the third **freezes only the block that caused it**; a strike
+  **expires after twelve months**, because the rule is for a pattern that runs over days;
+  the dev can unfreeze, unadvertised; and the owner sees *strike 2 of 3* in the mail and in
+  My squares, because freezing a surprise is the complaint worth designing out. The money
+  line is flat — *nothing is refunded* — since "we may make an exception" invites every
+  removed owner to ask for it. Appeals are a reply to the mail and nothing more. ⚠️
+  **Nothing watches the links, and `/terms` says so out loud**; a report to
+  `hello@200squares.com` is then the only signal the site will ever get about a
+  destination. A `removals` table keeps ten years — about an **owner**, not a visitor, so
+  `/privacy` is untouched — and without it the strike rule is unbuildable. One small admin
+  page does all four writes in one press, because the Convex dashboard would ask the dev to
+  edit three tables by hand at midnight. A banner winner takes a strike like anybody else,
+  or the banner is a free practice ground with no memory.
+  [24 — Build: the admin page and removal](issues/24-build-removal.md) follows.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -325,17 +348,19 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [19 — Build: the auction on real card holds](issues/19-build-auction.md),
   [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md),
   [21 — Build: counting clicks for real](issues/21-build-clicks.md),
-  [22 — Build: the mail](issues/22-build-email.md) and
-  [23 — Build: the invoice document](issues/23-build-invoice.md).
+  [22 — Build: the mail](issues/22-build-email.md),
+  [23 — Build: the invoice document](issues/23-build-invoice.md) and
+  [24 — Build: the admin page and removal](issues/24-build-removal.md).
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
   rate. Something has to tell the dev the crossing is coming *before* it happens. It
   belongs with monitoring, and it needs real sales first.
 - **Who reads the flagged orders.** Ticket 06 accepts a country mismatch and flags the
-  order rather than refusing it. Nothing yet looks at those flags, and there is no admin
-  surface to look at them from. Ticket 11 builds one for removal; whether it grows this
-  too is open.
+  order rather than refusing it. Nothing yet looks at those flags. Ticket 11 has now given
+  the site **an admin page** ([ticket 24](issues/24-build-removal.md)), so the surface
+  exists — what is left is whether the flags get a list on it, and what the dev does when
+  they read one.
 - **Making the copy true again.** `/how-it-works`, `/terms`, `/privacy` and the FAQ
   describe a site that fakes everything. Real accounts, real payment, real refunds
   and a real removal policy all break lines that are true today. This is the same
