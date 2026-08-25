@@ -3,8 +3,9 @@
 // ⚠️ PROTOTYPE — ticket 27. Throwaway.
 //
 // The floating bar that flips between variants. Deliberately ugly: it must not
-// read as part of the design it is standing in front of. It never renders in a
-// production build.
+// read as part of the design it is standing in front of. It has no NODE_ENV
+// gate: a preview build *is* a production build, and the preview is the only
+// place the dev can see any of this.
 
 import { useCallback, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -58,7 +59,9 @@ export function PrototypeSwitcher({
     return () => window.removeEventListener("keydown", onKey);
   }, [go, sold, step, variant]);
 
-  if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_PROTOTYPE) return null;
+  // No production gate: the whole route is a prototype and never ships. A gate
+  // on NODE_ENV would only hide the switcher on the preview build, which is the
+  // one place the dev can see any of this.
 
   return (
     <div className="pointer-events-auto fixed bottom-3 left-1/2 z-[9999] -translate-x-1/2">
