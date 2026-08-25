@@ -294,6 +294,10 @@ export function BuyFlow({ rect }: { rect: Rect }) {
           </SecondaryButton>
         ) : null}
 
+        {/* Not before both fields are answered: the VAT case is decided by
+            buyer type and country, and a line that guesses at it is a price
+            that changes while you look at it. */}
+        {buyerType && country ? (
         <p className="text-faint text-[12px] leading-snug">
           {vat.vatCase === "nl21"
             ? `${money(totalCents)} includes ${NL_VAT_BPS / 100}% Dutch VAT (${money(vat.vatCents)}).`
@@ -301,6 +305,7 @@ export function BuyFlow({ rect }: { rect: Rect }) {
               ? `${money(totalCents)}, VAT reverse-charged. We check the number before you pay.`
               : `${money(totalCents)}. No VAT is charged outside the EU.`}
         </p>
+        ) : null}
 
         {buyerType === "consumer" ? (
           <div className="border-hairline border-t pt-3">
@@ -319,8 +324,12 @@ export function BuyFlow({ rect }: { rect: Rect }) {
 
         <p className="text-faint text-[12px] leading-snug">{INVOICE_TEXT}</p>
 
-        {/* Turnstile. Empty unless Cloudflare wants something. */}
-        <div ref={box} className="empty:hidden" />
+        {/* ⚠️ Turnstile, and it may not be hidden. An `empty:hidden` here made
+            the container `display:none` before the widget was rendered into it,
+            and Cloudflare refuses to run a widget it cannot see — so every order
+            press waited ten seconds for a token that was never coming. An empty
+            div takes no room; that is enough. */}
+        <div ref={box} />
 
         {notice ? <p className="text-accent text-[13px] leading-snug">{notice}</p> : null}
 

@@ -9,10 +9,12 @@
 // when the buy screen opens, so the token is usually waiting by the time the
 // visitor has finished typing.
 //
-// ⚠️ The widget is rendered into a real, visible box rather than hidden. An
-// invisible site key shows nothing in it, and a key that does want a click can
-// then show one — hiding the widget would break that silently, and the failure
-// would be *nobody can buy anything*.
+// ⚠️ The widget is rendered into a real, **visible** box rather than a hidden
+// one. Cloudflare refuses to run a widget inside a `display:none` container, and
+// it refuses quietly: the callback simply never fires, the order press waits its
+// ten seconds and the visitor is told the check did not finish. An invisible
+// site key puts nothing in the box, so leaving it visible costs nothing — and a
+// key that does want a click can then show one.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
