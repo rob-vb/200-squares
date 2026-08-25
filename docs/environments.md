@@ -10,7 +10,7 @@ Three environments, two Convex deployments, one Vercel project.
 | Environment | URL | Convex deployment | Stripe mode |
 | --- | --- | --- | --- |
 | Production | `200squares.com`, `www.200squares.com` | `prod` | live |
-| Staging | `staging.200squares.com` (git branch `staging`) | `proper-heron-683` | test |
+| Staging | `https://200-squares-git-staging-robs-projects-52973834.vercel.app` (git branch `staging`) | `proper-heron-683` | test |
 | A working branch | `200-squares-git-<branch>-robs-projects-52973834.vercel.app` | `proper-heron-683` | test |
 
 The dev deployment is **`proper-heron-683`**, in the **`eu-west-1`** region. The region
@@ -32,12 +32,16 @@ One `dev` deployment serves every preview branch instead. The reasons:
 
 The price is that two branches share one database. Accept it.
 
-### Why `staging.200squares.com` exists
+### Why the staging address is a branch URL
 
-A Vercel preview URL changes with the branch name. Stripe redirect URLs, Better Auth
-callbacks, Resend links and Turnstile domains cannot follow that. So the branch
-`staging` gets a **custom domain**, and that domain is the fixed address for every
-service in test mode.
+Stripe redirect URLs, Better Auth callbacks, Resend links and Turnstile hostnames all need
+an address that does not move. ⚠️ Charting assumed that meant a custom domain on the
+branch — but **assigning a domain to a git branch is a Vercel Pro feature**, and Pro is
+deferred until the site can take money.
+
+Vercel's own branch URL is already stable: it changes only if the branch is renamed. That
+is enough. The custom domain buys prettiness and nothing else, so it waits for
+[ticket 25](../.scratch/200squares-v1/issues/25-launch.md).
 
 Vercel Deployment Protection stays **on** for staging. The dev is signed in to Vercel,
 so the site opens for them and for nobody else. The Stripe webhook is not blocked by
@@ -70,7 +74,7 @@ These never reach the browser.
 | Name | dev | prod | What it is |
 | --- | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | own value | own value | `openssl rand -base64 32`. Different per deployment. |
-| `SITE_URL` | `https://staging.200squares.com` | `https://200squares.com` | Better Auth callbacks and mail links. |
+| `SITE_URL` | the staging branch URL | `https://200squares.com` | Better Auth callbacks and mail links. |
 | `STRIPE_SECRET_KEY` | `sk_test_…` | `sk_live_…` | |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` (test endpoint) | `whsec_…` (live endpoint) | One per endpoint. Never share them. |
 | `RESEND_API_KEY` | `re_…` | `re_…` | Two keys, so one can be revoked alone. |
@@ -86,7 +90,7 @@ Set per environment in **Settings → Environment Variables**.
 | `CONVEX_DEPLOY_KEY` | prod deploy key | *not set* | no |
 | `NEXT_PUBLIC_CONVEX_URL` | *set by the build* | `https://proper-heron-683.eu-west-1.convex.cloud` | yes |
 | `NEXT_PUBLIC_CONVEX_SITE_URL` | `https://<prod>.convex.site` | `https://proper-heron-683.eu-west-1.convex.site` | yes |
-| `NEXT_PUBLIC_SITE_URL` | `https://200squares.com` | `https://staging.200squares.com` | yes |
+| `NEXT_PUBLIC_SITE_URL` | `https://200squares.com` | the staging branch URL | yes |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | live site key | test site key | yes |
 | `STRIPE_SECRET_KEY` | `sk_live_…` | `sk_test_…` | **no** |
 
@@ -151,7 +155,8 @@ git config user.email hi@robvb.com
 ## What a new session must know
 
 1. There is no localhost. Push a branch and read the Vercel URL.
-2. `staging` is the long-lived test branch, and it owns `staging.200squares.com`.
+2. `staging` is the long-lived test branch. Its address is the Vercel branch URL, and
+   renaming the branch changes that address.
 3. Preview and staging both talk to the Convex `dev` deployment. They share data.
 4. Stripe test mode and Stripe live mode have separate webhook signing secrets.
 5. Secrets live in the Convex dashboard and the Vercel dashboard. Not in this repo, not

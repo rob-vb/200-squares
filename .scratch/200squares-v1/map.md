@@ -31,7 +31,8 @@ real backend, and then makes the copy true again.
   `mattpocock-skills:domain-modeling`, `mattpocock-skills:research`,
   `mattpocock-skills:codebase-design`, `frontend-design` only where UI changes.
 - The dev works on a VPS, so nothing can be viewed locally. Every visual check
-  happens on a Vercel preview URL: `200-squares-git-<branch>-robs-projects-52973834.vercel.app`.
+  happens on a Vercel preview URL. The long-lived one is the `staging` branch:
+  `https://200-squares-git-staging-robs-projects-52973834.vercel.app`.
 - **Commit as `hi@robvb.com` or the Vercel deploy is blocked.**
 - The dev speaks Dutch; write to them in Dutch, ASD-STE100 style. The product UI is
   English, prices in USD.
@@ -329,6 +330,26 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   or the banner is a free practice ground with no memory.
   [24 — Build: the admin page and removal](issues/24-build-removal.md) follows.
 
+- [14 — Environments, keys and the first real deploy](issues/14-environments-and-keys.md)
+  — **two Convex deployments, one Vercel project, and the branch URL as the staging
+  address.** Convex dev is `proper-heron-683` and prod `energized-deer-345`, ⚠️ **both in
+  `eu-west-1`** — owner rows and email addresses stay in the EU, which `/privacy` may want
+  to say. No Convex preview deployments: one `dev` serves every branch, because a backend
+  per branch moves the `.convex.site` address that Stripe, Better Auth, Resend and
+  Turnstile all need fixed. ⚠️ **The Stripe webhook goes to Convex, not Vercel** — stable,
+  public, invisible to Deployment Protection, no Vercel invocations, same host as Better
+  Auth; **ticket 16 must build it there**. ⚠️ **Charting's `staging.200squares.com` is
+  dropped**: a branch-assigned domain is a **Pro feature**, and Vercel's own branch URL is
+  already stable, so the custom domain buys only prettiness. The build command lives in
+  `vercel.json`, not a dashboard override. ⚠️ Vercel now **refuses a `NEXT_PUBLIC_`
+  variable with secret visibility**. A duplicate Vercel project was found and deleted, and
+  the setup wizard was deleted too — it exited on a `$20` read as `$2` under `set -u`, and
+  dashboard work wants a list, not a program. ⚠️ **This ticket resolves with work
+  outstanding on purpose**: Pro, the spend cap, DNS and every production key are **launch**
+  work, not environment work, and holding them here would block six build tickets behind a
+  card the dev should not add yet. They move to
+  [25 — The launch switches](issues/25-launch.md). **Ticket 15 can start now.**
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -354,7 +375,9 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [21 — Build: counting clicks for real](issues/21-build-clicks.md),
   [22 — Build: the mail](issues/22-build-email.md),
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
-  [24 — Build: the admin page and removal](issues/24-build-removal.md).
+  [24 — Build: the admin page and removal](issues/24-build-removal.md). Beside them,
+  [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
+  the day.
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB

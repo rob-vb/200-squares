@@ -1,7 +1,7 @@
 # 14 — Environments, keys and the first real deploy
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 02, 04
 Parent: ../map.md
 
@@ -81,3 +81,90 @@ deployments exist; Stripe, Resend, Turnstile and Cloudflare Email Routing are se
 
 This ticket stays **claimed**, not resolved, because the work is genuinely half
 finished. Say "ticket 14 is finished" when the wizard is through.
+
+## Answer
+
+**Two Convex deployments, one Vercel project, and the branch URL as the staging address.
+The launch half is [ticket 25](25-launch.md).**
+
+### The shape
+
+| | |
+| --- | --- |
+| Convex dev | `proper-heron-683`, `eu-west-1` |
+| Convex prod | `energized-deer-345`, `eu-west-1` |
+| Vercel project | `200-squares` |
+| Staging | `https://200-squares-git-staging-robs-projects-52973834.vercel.app` |
+| Production | `200squares.com`, attached and verified, no DNS yet |
+
+⚠️ **Both Convex deployments are in `eu-west-1`.** Owner rows and email addresses stay in
+the EU. `/privacy` may want to say so, and it is a fact this map never chose — it fell out
+of where the dev created the project.
+
+### Three decisions
+
+1. **No Convex preview deployments.** One `dev` deployment serves every preview branch. A
+   backend per branch gives each branch a new `.convex.site` address, and Stripe, Better
+   Auth, Resend and Turnstile each need one that does not move. The price is that branches
+   share a database, which for one person is no price at all.
+
+2. ⚠️ **The Stripe webhook goes to Convex, not to Vercel** —
+   `https://proper-heron-683.eu-west-1.convex.site/stripe/webhook`, a Convex HTTP action.
+   The ticket asked what works when a webhook cannot follow a preview URL. This is better
+   than the bypass secret it was fishing for: the address is stable and public, Vercel's
+   Deployment Protection never sees it, Convex is the source of truth so the webhook writes
+   where it must, it burns no Vercel invocations, and Better Auth already serves from the
+   same host. **[Ticket 16](16-build-checkout.md) must build it there, not in a Next.js
+   route.**
+
+3. ⚠️ **The staging address is Vercel's branch URL, not `staging.200squares.com`.**
+   Charting assumed a custom domain; assigning one to a git branch is a **Pro feature**, and
+   Pro is deferred (see the dated note on [ticket 02](02-ddos-and-the-bill.md)). The branch
+   URL is stable for as long as the branch is called `staging`, which is all any of these
+   services need. The custom domain returns at launch, or never — it buys nothing but
+   prettiness.
+
+**The build command lives in `vercel.json`**, not in a dashboard override, so it is
+versioned and reviewable:
+
+```sh
+if [ "$VERCEL_ENV" = "production" ]; then npx convex deploy --cmd 'npm run build'; else npm run build; fi
+```
+
+Production pushes the Convex functions as part of the build; a preview does not, because
+previews run against `dev`, which the VPS pushes to with `npx convex dev`.
+
+### What is set, and where
+
+Full tables in [`docs/environments.md`](../../../docs/environments.md) and
+[`docs/setup-checklist.md`](../../../docs/setup-checklist.md). Neither holds a secret and
+neither ever may.
+
+The rule worth repeating here: **`NEXT_PUBLIC_` is a promise that the value is compiled
+into the browser bundle.** ⚠️ Vercel now refuses such a variable with secret visibility —
+they must be set `--visibility config --no-sensitive`, or the build fails.
+
+### ⚠️ Why this ticket resolves with work outstanding
+
+The remaining items — Vercel Pro, the spend cap, DNS, the production variables, the live
+Stripe webhook — are **launch work, not environment work**. None of them is needed to build
+or test anything. Keeping ticket 14 open would block
+[15](15-build-schema.md), [18](18-build-accounts.md), [20](20-build-artwork.md),
+[21](21-build-clicks.md), [22](22-build-email.md) and [24](24-build-removal.md) on a card
+the dev should not add yet.
+
+They move to **[ticket 25 — The launch switches](25-launch.md)**, which sits at the end of
+the map where the destination puts it: *the map is finished when the dev can decide to
+launch, not when the launch happens.*
+
+**Ticket 15 needs nothing from this list.** It can start now.
+
+### Two things found on the way
+
+- **A duplicate Vercel project**, `200squares`, fifteen days old and already carrying a
+  Convex build command. Deleted with the dev's agreement; it held no custom domain, so only
+  `*.vercel.app` URLs went with it.
+- **The wizard was a mistake.** `scripts/setup-environments.sh` exited at step 11 twice,
+  because `"Pro is $20 a month"` in a double-quoted line made bash read `$2` as a positional
+  parameter under `set -u`. It is deleted. Work that is entirely dashboards wants a list,
+  not a program — the dev said so and they were right.

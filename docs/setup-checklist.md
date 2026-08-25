@@ -1,142 +1,40 @@
-# Setup checklist — ticket 14
+# Setup checklist
 
-Replaces the wizard, which is gone. Work top to bottom. Nothing here can be done by an
-agent: every line is a dashboard, a login or a key.
+The staging address is:
 
-Both Convex deployments live in **`eu-west-1`** — owner data and email addresses stay in
-the EU, which `/privacy` may want to say.
+```
+https://200-squares-git-staging-robs-projects-52973834.vercel.app
+```
+
+⚠️ **Not `staging.200squares.com`.** Assigning a custom domain to a git branch is a Vercel
+Pro feature, and Pro is deferred until the site can take money
+([ticket 02](../.scratch/200squares-v1/issues/02-ddos-and-the-bill.md)). Vercel's own
+branch URL is stable for as long as the branch is called `staging`, which is all that
+Stripe, Better Auth and Turnstile need.
 
 | | dev | prod |
 | --- | --- | --- |
-| name | `proper-heron-683` | `energized-deer-345` |
+| Convex | `proper-heron-683` | `energized-deer-345` |
 | cloud | `https://proper-heron-683.eu-west-1.convex.cloud` | `https://energized-deer-345.eu-west-1.convex.cloud` |
 | site | `https://proper-heron-683.eu-west-1.convex.site` | `https://energized-deer-345.eu-west-1.convex.site` |
 
-The Vercel project is **`200-squares`**. The duplicate `200squares` project was deleted —
-it had no custom domain, so only `*.vercel.app` preview URLs went with it.
-
-The long-lived test branch **`staging`** exists and is pushed. Work continues on it: it is
-the only branch with a stable URL, and there is no localhost to work on instead.
-
 ---
 
-## Already done
+# Part 1 — now
 
-- git commit address is `hi@robvb.com`
-- Convex dev and prod deployments exist
-- Stripe account, test keys, live keys
-- Resend account, two API keys, `send.200squares.com` verified
-- Cloudflare Turnstile widget
-- Cloudflare Email Routing for `hello@200squares.com`
-- On Convex **dev**: `BETTER_AUTH_SECRET`, `SITE_URL`, `BOARD_LIVE`
-- **The build command**, in `vercel.json` at the repo root — versioned, not a dashboard
-  setting. Ignore step 5 below; it is done.
-- **Five Vercel variables**, the ones that need no key from you:
+Six things. Everything else waits for launch.
 
-  | Environment | Name |
-  | --- | --- |
-  | Preview | `NEXT_PUBLIC_CONVEX_URL` |
-  | Preview | `NEXT_PUBLIC_CONVEX_SITE_URL` |
-  | Preview | `NEXT_PUBLIC_SITE_URL` |
-  | Production | `NEXT_PUBLIC_CONVEX_SITE_URL` |
-  | Production | `NEXT_PUBLIC_SITE_URL` |
+## 1. Convex: no card
 
-  ⚠️ Vercel now refuses a `NEXT_PUBLIC_` variable with secret visibility. They are set as
-  `--visibility config --no-sensitive`. If you add one by hand in the dashboard, pick the
-  non-sensitive option or the build fails.
+Convex dashboard → Settings → Billing. Confirm the plan is **Free** and no payment method
+is attached.
 
----
+⚠️ **Free** stops the deployment at its caps. **Starter** bills the overage. A card
+silently turns *the site breaks* into *the site bills*.
 
-## 1 & 2. Vercel Pro and the spend cap — **deferred, on purpose**
+## 2. Three keys on Convex dev
 
-**Stay on Hobby for now.** Both steps wait.
-
-⚠️ Hobby **pauses instead of billing**: exceed a limit and the feature stops for 30 days.
-That is a wall. Pro plus Spend Management is a **brake** — Vercel checks every few minutes
-and can overshoot. For a site under construction, Hobby enforces ticket 02's rule better
-than Pro does, and costs $0 instead of $20.
-
-Hobby also carries 3 WAF custom rules, 3 IP blocks, DDoS mitigation on by default, Attack
-Mode, and Vercel Authentication on previews. Less than Pro, but not nothing.
-
-### ⚠️ The trigger to upgrade
-
-**Commercial use is forbidden on Hobby.** Right now the site sells nothing, so the rule
-does not bite. It bites the moment the site can take real money.
-
-**Upgrade to Pro before step 10 — before a live Stripe key goes into the Production
-environment.** Set Spend Management ($5, *Pause production deployment* ON) in the same
-sitting.
-
-## 3. Check Convex has no card
-
-Convex dashboard → Settings → Billing.
-
-⚠️ **Free** has hard caps and stops the deployment. **Starter** is pay-as-you-go and bills
-the overage. A card on the account silently turns *the site breaks* into *the site bills*.
-That is the rule the whole map rests on. No card.
-
-## 4. Domains — **half done**
-
-All three are attached to the project and ownership is verified. Two things are left.
-
-**a. Three DNS records at Cloudflare** → 200squares.com → DNS → Records. All three are a
-CNAME to the same target:
-
-| Type | Name | Target | Proxy |
-| --- | --- | --- | --- |
-| CNAME | `@` | `3d5247d07ec60ade.vercel-dns-017.com.` | **DNS only** |
-| CNAME | `www` | `3d5247d07ec60ade.vercel-dns-017.com.` | **DNS only** |
-| CNAME | `staging` | `3d5247d07ec60ade.vercel-dns-017.com.` | **DNS only** |
-
-⚠️ **Grey cloud, never orange.** Vercel's own API returns `disableProxy: true` on all
-three, which is the same answer ticket 02 reached from the cost side: Vercel's firewall on
-Pro beats Cloudflare Free, and proxying subtracts from it.
-
-Cloudflare flattens a CNAME at the apex, so `@` works there.
-
-**b. Point `staging.200squares.com` at the branch.** Settings → Domains →
-`staging.200squares.com` → assign it to the git branch **`staging`**. The CLI cannot do
-this one; it is a dropdown.
-
-## 5. The build command — **done**
-
-It lives in `vercel.json` at the repo root, so it is reviewed and versioned like the rest.
-
-⚠️ If a Build Command override is also set in the dashboard, clear it. `vercel.json` and a
-dashboard override disagreeing is a bad afternoon.
-
-## 6. Vercel environment variables
-
-Settings → Environment Variables.
-
-Five are already set. **Four are left**, and all four need a key only you have.
-
-**Production**
-
-| Name | Value |
-| --- | --- |
-| `CONVEX_DEPLOY_KEY` | Convex dashboard → **energized-deer-345** → Settings → Deploy keys |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key — mark it **non-sensitive** |
-| `STRIPE_SECRET_KEY` | `sk_live_…` — ⚠️ **this is the line that needs Pro first** |
-
-**Preview**
-
-| Name | Value |
-| --- | --- |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key — mark it **non-sensitive** |
-| `STRIPE_SECRET_KEY` | `sk_test_…` |
-
-⚠️ **Do not set `CONVEX_DEPLOY_KEY` on Preview.** A preview must never push functions.
-⚠️ `NEXT_PUBLIC_` means the value is compiled into the browser bundle. A secret with that
-prefix is a leaked secret.
-
-`NEXT_PUBLIC_CONVEX_URL` is **not** set on Production — `npx convex deploy` sets it during
-the build.
-
-## 7. Three keys on Convex dev
-
-Run these on the VPS, with your own keys pasted in.
+On the VPS, with your own keys pasted in:
 
 ```sh
 npx convex env set STRIPE_SECRET_KEY sk_test_...
@@ -144,9 +42,11 @@ npx convex env set RESEND_API_KEY re_...
 npx convex env set TURNSTILE_SECRET_KEY ...
 ```
 
-## 8. The Stripe webhook, test mode
+## 3. The Stripe webhook, test mode
 
 Stripe → **Test mode ON** → Developers → Webhooks → Add endpoint.
+
+URL:
 
 ```
 https://proper-heron-683.eu-west-1.convex.site/stripe/webhook
@@ -155,61 +55,106 @@ https://proper-heron-683.eu-west-1.convex.site/stripe/webhook
 Events: `checkout.session.completed`, `checkout.session.expired`, `charge.refunded`,
 `payment_intent.payment_failed`
 
-Then take the signing secret:
+Then, on the VPS:
 
 ```sh
 npx convex env set STRIPE_WEBHOOK_SECRET whsec_...
 ```
 
 ⚠️ The endpoint does not exist in the code yet — ticket 16 builds it. Stripe will get
-errors until then, which is fine.
+errors until then. That is expected.
 
-The webhook goes to **Convex, not Vercel**: the address never changes with a branch,
-Vercel's deployment protection never sees it, and it burns no Vercel invocations.
+## 4. Stripe: turn its own receipts off
 
-## 9. Turn Stripe's own receipts OFF
+Stripe → Settings → Customer emails. **Off**, in test mode and in live mode.
 
-Stripe → Settings → Customer emails. Off in **both** test and live mode.
+The site issues the invoice ([ticket 17](../.scratch/200squares-v1/issues/17-invoice-document.md)).
+A Stripe receipt is not a VAT invoice.
 
-Ticket 13: the site issues the invoice. A Stripe receipt is not a VAT invoice, and two
-documents where the prettier one is invalid is worse than either alone.
+## 5. Turnstile: add the staging hostname
 
-## 10. The same on Convex prod
-
-```sh
-npx convex env set --prod BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
-npx convex env set --prod SITE_URL https://200squares.com
-npx convex env set --prod BOARD_LIVE true
-npx convex env set --prod STRIPE_SECRET_KEY sk_live_...
-npx convex env set --prod RESEND_API_KEY re_...
-npx convex env set --prod TURNSTILE_SECRET_KEY ...
-```
-
-Then add the **live** webhook endpoint in Stripe with Test mode OFF, pointing at
+Cloudflare → Turnstile → your widget → Hostnames. Add:
 
 ```
-https://energized-deer-345.eu-west-1.convex.site/stripe/webhook
+200-squares-git-staging-robs-projects-52973834.vercel.app
 ```
 
-and set its own secret:
+## 6. Two Vercel variables
 
-```sh
-npx convex env set --prod STRIPE_WEBHOOK_SECRET whsec_...
-```
+Vercel → **200-squares** → Settings → Environment Variables. Both on **Preview** only.
 
-⚠️ `BETTER_AUTH_SECRET` must be a **different** value from dev.
-⚠️ Test and live have **separate** signing secrets. Mixing them fails in the worst way:
-the signature check rejects every real payment, silently.
+| Name | Value | Note |
+| --- | --- | --- |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | your Turnstile **site** key | ⚠️ mark **non-sensitive** |
+| `STRIPE_SECRET_KEY` | `sk_test_…` | leave sensitive |
 
-## 11. The first real deploy — **half done**
-
-The `staging` branch exists and is pushed, so Vercel has already built it. Once step 4 is
-finished, open `https://staging.200squares.com` and check the board draws.
-
-Nothing is connected to Convex yet — ticket 15 does that. This deploy proves the domain,
-the build command and the variables are right, while the site is still simple enough to
-see what broke.
+⚠️ Vercel refuses a `NEXT_PUBLIC_` variable with secret visibility. Pick the non-sensitive
+option or the build fails.
 
 ---
 
-When this is done, say **"ticket 14 is klaar"**. Nine build tickets are waiting on it.
+# Part 2 — at launch
+
+None of this is needed to build. Do it in one sitting, in this order, when the site is
+ready to take money.
+
+1. **Vercel Pro.** ⚠️ Commercial use is forbidden on Hobby, and a live Stripe key is where
+   commercial use begins. Pro comes first, not after.
+2. **Spend Management**: $5, *Pause production deployment* ON.
+3. **Three DNS records** at Cloudflare → 200squares.com → DNS. All three CNAME, all three
+   **DNS only (grey cloud)**:
+
+   | Type | Name | Target |
+   | --- | --- | --- |
+   | CNAME | `@` | `3d5247d07ec60ade.vercel-dns-017.com.` |
+   | CNAME | `www` | `3d5247d07ec60ade.vercel-dns-017.com.` |
+   | CNAME | `staging` | `3d5247d07ec60ade.vercel-dns-017.com.` |
+
+   The apex and `www` are already attached to the project. `staging` only works once Pro
+   allows a branch-assigned domain; until then it is unused.
+4. **Vercel Production variables**:
+
+   | Name | Value |
+   | --- | --- |
+   | `CONVEX_DEPLOY_KEY` | Convex → **energized-deer-345** → Settings → Deploy keys |
+   | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key — **non-sensitive** |
+   | `STRIPE_SECRET_KEY` | `sk_live_…` |
+
+5. **Convex prod variables**:
+
+   ```sh
+   npx convex env set --prod BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
+   npx convex env set --prod SITE_URL https://200squares.com
+   npx convex env set --prod BOARD_LIVE true
+   npx convex env set --prod STRIPE_SECRET_KEY sk_live_...
+   npx convex env set --prod RESEND_API_KEY re_...
+   npx convex env set --prod TURNSTILE_SECRET_KEY ...
+   ```
+
+   ⚠️ `BETTER_AUTH_SECRET` must differ from dev.
+
+6. **The live Stripe webhook**, Test mode OFF, pointing at
+
+   ```
+   https://energized-deer-345.eu-west-1.convex.site/stripe/webhook
+   ```
+
+   ```sh
+   npx convex env set --prod STRIPE_WEBHOOK_SECRET whsec_...
+   ```
+
+   ⚠️ Test and live have **separate** signing secrets. Mixing them makes the signature
+   check reject every real payment, silently.
+
+7. **Turnstile**: add `200squares.com` and `www.200squares.com` to the hostnames.
+
+---
+
+## Already done
+
+Convex dev and prod exist. Stripe, Resend, Turnstile and Cloudflare Email Routing are set
+up. `send.200squares.com` is verified. The `staging` branch is pushed and building. The
+build command is in `vercel.json`. On Convex dev: `BETTER_AUTH_SECRET`, `SITE_URL`,
+`BOARD_LIVE`. On Vercel Preview: `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`,
+`NEXT_PUBLIC_SITE_URL`. On Vercel Production: `NEXT_PUBLIC_CONVEX_SITE_URL`,
+`NEXT_PUBLIC_SITE_URL`.
