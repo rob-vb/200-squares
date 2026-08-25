@@ -37,6 +37,13 @@ real backend, and then makes the copy true again.
   happens on a Vercel preview URL. The long-lived one is the `staging` branch:
   `https://200-squares-git-staging-robs-projects-52973834.vercel.app`.
 - **Commit as `hi@robvb.com` or the Vercel deploy is blocked.**
+- **Seeing a board is a deployment command, not a URL.** `npx convex run seed:full`,
+  `seed:early` or `seed:clear` against the dev deployment. ⚠️ `?data=` is gone: it was a
+  search parameter, and reading one is what made every route build dynamic (ticket 08).
+  Nothing may put one back on the board route. The seed refuses without `SEED_ENABLED`.
+- ⚠️ **Do not poll the staging URL with `curl`.** It trips Vercel's bot challenge, which
+  then blocks Playwright too and there is no other way to see the site. Use
+  `node scripts/shot.mjs` from the repo root and leave time between runs.
 - The dev speaks Dutch; write to them in Dutch, ASD-STE100 style. The product UI is
   English, prices in USD.
 - Vocabulary lives in `CONTEXT.md` at the repo root. Product truth lives in
@@ -355,6 +362,38 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   card the dev should not add yet. They move to
   [25 — The launch switches](issues/25-launch.md). **Ticket 15 can start now.**
 
+- [26 — Strip the resale surface](issues/26-strip-resale.md) — **resale is out of the
+  repo, and `/terms` now says there is no exit at all.** Pure deletion: two panel flows,
+  the For sale switch, the market view and its dim layer on the canvas, `Listing`, the
+  asking price and the fee, the listings in the mock data, and every mention of selling on
+  in the copy. ⚠️ `/terms` lost *"Selling your square on"* and gained **"There is no way
+  out"**, and it does **not** promise V1.1 — that promise lives only in the top bar
+  ([ticket 27](issues/27-label-and-sellout.md)), which is not written yet, so today the
+  site says no resale and nothing else. `intersect`, `remainderOf` and the crop stayed on
+  purpose: a part sale is not only resale, and ticket 15's write path owes the loser of a
+  race exactly that remainder. `CONTEXT.md` keeps the vocabulary under **Not in V1.0** —
+  plus **Site credit**, which the ticket did not name but which describes nothing in V1.0
+  either. ⚠️ A stale price was found on the way: `/about` still said **$100 a square**.
+
+- [15 — Build: the Convex schema and the live board](issues/15-build-schema.md) — **the
+  reducer is gone, the board is really live, and all five routes build static.** The
+  schema is ticket 05's plus `invoices` and `cached`; money in whole cents, absolute UTC ms
+  everywhere, and `clickCounts` with no time field at all, which is where `/privacy`'s
+  promise is actually kept. ⚠️ **ADR 0001 is amended**: the board query carries the block's
+  `url` and its owner's name, because ticket 10 made a click a **native anchor** and an
+  anchor needs its `href` at render — a `/go/<id>` route would undo that whole answer. The
+  write path is the point: `reserve` reads and writes in one serialisable mutation, and the
+  loser gets `largestFreePart` of their drag rather than an error, verified against the
+  deployment. The kill switch is `BOARD_MODE=snapshot`, a cached row a cron rewrites
+  **every two minutes whether or not the switch is thrown**, because a snapshot built under
+  the load is no escape from it. ⚠️ **`?data=` is dead and every route is now
+  `○ (Static)`** — ticket 08's finding closed, and ticket 02's cheapest defence switched on
+  for the first time. Seeing a board is now `npx convex run seed:full`, guarded by
+  `SEED_ENABLED`. ⚠️ An `artwork` union arm nobody asked for — **seeded artwork**, colour
+  and a wordmark with no file — exists because 37 invented logos as real WebP files is not
+  a thing to build. Every unbuilt seam says out loud which ticket owns it, and
+  `owners.seedViewer` is the fake sign-in on borrowed time until ticket 18.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -364,22 +403,23 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 
 - **The build tickets.** Every decision here is followed by building it, the way
   08-10, 12 and 15 followed their decisions on the prototype map. They are created
-  as each decision lands, not before. So far:
-  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md),
+  as each decision lands, not before. **Done** (2026-08-25):
+  [26 — Strip the resale surface](issues/26-strip-resale.md) and
+  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md).
+  **Still open**:
   [16 — Build: the checkout](issues/16-build-checkout.md),
   [18 — Build: accounts and signing in](issues/18-build-accounts.md),
   [19 — Build: the auction on real card holds](issues/19-build-auction.md),
   [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md),
   [21 — Build: counting clicks for real](issues/21-build-clicks.md),
   [22 — Build: the mail](issues/22-build-email.md),
-  [23 — Build: the invoice document](issues/23-build-invoice.md) and
-  [24 — Build: the admin page and removal](issues/24-build-removal.md). Beside them,
-  [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day. ⚠️ Resale leaving added two more:
-  [26 — Strip the resale surface](issues/26-strip-resale.md), which must run **before**
-  ticket 15 because it is pure deletion in the same files, and
+  [23 — Build: the invoice document](issues/23-build-invoice.md),
+  [24 — Build: the admin page and removal](issues/24-build-removal.md) and
   [27 — The resale label, and the day the board sells out](issues/27-label-and-sellout.md),
-  which graduated the sold-out fog.
+  which graduated the sold-out fog and is the one **prototype** ticket in the set — it
+  wants the dev in the room. Beside them,
+  [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
+  the day.
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
@@ -394,12 +434,6 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   describe a site that fakes everything. Real accounts, real payment, real refunds
   and a real removal policy all break lines that are true today. This is the same
   shape as 07 → 10, 11 → 13 and 14 → 16, and it comes last.
-- **Removing the mock datasets.** `early`, `full`, `brands.ts` and `?data=` are
-  scaffolding. Something must still let the dev see an empty board and a full one.
-  Ticket 15 displaces the reducer they feed, so it may sharpen this question — it does
-  not settle it. ⚠️ Ticket 08 raised the stakes: `?data=` is a search parameter, which is
-  why every route builds dynamic, so whatever replaces it **may not be a search parameter
-  on the board route**. That part is no longer fog; it is a requirement on ticket 15.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
   that a capture was declined, or that a webhook never arrived. It needs the cron and
   the captures to exist first.

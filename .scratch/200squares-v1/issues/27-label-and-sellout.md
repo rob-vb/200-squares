@@ -2,7 +2,7 @@
 
 Type: prototype
 Status: open
-Blocked by: 12, 26
+Blocked by: 12, 26 (26 done 2026-08-25 — this is now on the frontier)
 Parent: ../map.md
 
 ## Question

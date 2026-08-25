@@ -105,13 +105,27 @@ A reservation is what makes a square `reserved`. It ends in one of two ways: a p
 
 The single surface that shows detail and holds every flow: a right-hand column on desktop, a bottom sheet on mobile. Selecting squares, buying, bidding and My squares all use it, one flow at a time. Nothing else covers the canvas, and nothing ever covers the banner artwork. Opening the panel never resizes a square: on desktop the board keeps its scale and re-centres into the width beside the panel.
 
-## Dataset
+## Seed
 
-One complete mock board the prototype runs on. There are two: **early**, a nearly empty board with an unsold banner, and **full**, a board about 70% sold with a banner winner and past winners. A dataset is never real: it holds no real sale, no real owner and no real winner.
+A whole board written into a Convex deployment so it can be looked at. There are three: **full**, about 70% sold with a banner winner and a live auction; **early**, day one with ten squares gone and no banner; and **clear**, an empty board. A seed is never real — it holds no real sale, no real owner and no real winner — and it refuses to run unless `SEED_ENABLED` is set, so it can never reach production.
+
+It replaces the prototype's **Dataset**, which was two mock boards in the browser selected with `?data=`. That search parameter is what made every route render dynamically, so the switch moved off the URL and into the deployment.
+
+## Seeded artwork
+
+Colour plus a wordmark, with no file behind it. The only artwork a Seed can write, because a full board of real uploads would mean inventing 37 companies' logos as image files. Real artwork is two WebP files in Convex file storage and a crop.
+
+## Cached row
+
+A row that exists only to be read cheaply, rewritten by a cron. It is the escape from fan-out: a live query reruns for every subscriber on every write it depends on, while a query that reads a cached row reruns only when the cron rewrites it, so cost stops following writes. Two exist — the board snapshot behind the kill switch, and the public click total.
+
+## Frozen
+
+What a Block becomes on its owner's third live strike. Still owned and still on the board, but no artwork and no link may be set on it. It renders exactly like a Block waiting for artwork.
 
 ## Viewer
 
-The person looking at the board. Signed out, the viewer is a stranger. The fake sign-in makes the viewer one of the owners in the dataset, which is what fills My squares.
+The person looking at the board. Signed out, the viewer is a stranger, which is every visitor until they follow a magic link. Nothing on the board path asks who is looking: a signed-in owner is served the same HTML as a stranger.
 
 ## Clicks
 

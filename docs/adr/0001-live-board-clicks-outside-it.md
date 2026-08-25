@@ -28,10 +28,30 @@ The board query is live for everyone, and two things are kept out of it:
 - **Clicks** live in their own table that the board query never reads. The public site
   total is summed in a cached query, not held in one hot row that every click would
   contend on.
-- **Money and identity** — orders, VAT details, links, owner names — are never in the
-  board query. The board carries only what the canvas draws.
+- **Money and identity** — orders, VAT details, buyer names and addresses, the whole of
+  `orders` — are never in the board query. The board carries only what the canvas draws.
 
-An environment variable can fall the board back to a cached snapshot without a deploy.
+An environment variable can fall the board back to a cached snapshot without a deploy:
+`BOARD_MODE=snapshot` on the Convex deployment moves `board.state` off the tables and onto
+one cached row a cron rewrites every two minutes. The websocket stays open; what stops is
+the fan-out, because a block write no longer reruns anybody's query.
+
+## Amended 2026-08-25, building ticket 15
+
+**The board query does carry the block's `url` and its owner's name.** This decision as
+first written said it would carry neither, and two later answers need both on the client:
+
+- [Ticket 10](../../.scratch/200squares-v1/issues/10-clicks-for-real.md) made a click a
+  **native anchor** with an un-awaited mutation beside it — no redirect in the visitor's
+  path, no Vercel invocation, no blocked tab. An anchor needs its `href` at render, so the
+  address has to be in this payload. A `/go/<id>` route would put it back on the server and
+  undo that whole answer.
+- The board's tooltip has always named the owner, and the company name is public the moment
+  the block goes live — `/privacy` says so in those words.
+
+The cost is real and small: about 199 blocks with a short name and a bare host is a payload
+in the tens of kilobytes. Nothing else moved, and the rule the rest of this ADR states is
+unchanged — a field in the board query is a cost decision, not a convenience.
 
 ## Consequences
 
