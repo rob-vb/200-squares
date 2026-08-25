@@ -43,6 +43,12 @@ An order is not the same thing as ownership. The Block is what says a block is s
 the order says how it became theirs and what the invoice has to show. A refund or a removal
 changes the board and leaves the order alone.
 
+An order is **placed on 200squares.com**, under a button that says *Order now — obliges you
+to pay*, and it is the site's own screen that concludes the contract. Stripe's page executes
+the payment for an order that already exists; it does not make one. Only the
+signature-verified webhook writes the order row, keyed on the Stripe session id, so a
+payment can never produce two.
+
 ## Invoice
 
 The document that says what VAT was owed on an Order and to whom. It is not the receipt
@@ -99,7 +105,9 @@ What the Banner shows when nobody has won it: a message inviting the first bid, 
 
 The claim a visitor holds on a rectangle while they are away paying. It lasts 15 minutes and then expires by itself. It is not a Block: nothing is owned, no artwork exists, and no owner is attached — a stranger with no account can hold one.
 
-A reservation is what makes a square `reserved`. It ends in one of two ways: a payment arrives and a Block replaces it, or the time runs out and the squares are `available` again.
+A reservation is what makes a square `reserved`. It ends in one of three ways: a payment arrives and a Block replaces it, the visitor gives it back through Stripe's own back link, or the time runs out and the squares are `available` again.
+
+At most one reservation stands per visitor, and at most a tenth of the free squares are in reservation at any moment. Both limits exist because a reservation is free to take and would otherwise be a way to freeze the board for nothing.
 
 ## Detail panel
 

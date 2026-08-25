@@ -1,7 +1,7 @@
 # 16 — Build: the checkout
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 06, 14, 15 (15 done 2026-08-25)
 Parent: ../map.md
 

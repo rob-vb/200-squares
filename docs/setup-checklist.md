@@ -61,8 +61,9 @@ Then, on the VPS:
 npx convex env set STRIPE_WEBHOOK_SECRET whsec_...
 ```
 
-⚠️ The endpoint does not exist in the code yet — ticket 16 builds it. Stripe will get
-errors until then. That is expected.
+The endpoint exists — [ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md)
+built it. It answers 400 to anything without a valid signature, and 200 to every event
+type it does not handle, because a non-2xx makes Stripe retry.
 
 ## 4. Stripe: turn its own receipts off
 

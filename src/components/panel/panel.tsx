@@ -15,7 +15,7 @@
 
 import { useEffect } from "react";
 import { BidFlow } from "./bid-flow";
-import { BoughtFlow, BuyFlow } from "./buy-flow";
+import { BuyFlow } from "./buy-flow";
 import { PANEL_WIDTH, useScreen } from "./flow";
 import { MySquares } from "./my-squares";
 
@@ -25,8 +25,6 @@ function FlowBody() {
   switch (flow.kind) {
     case "buy":
       return selection ? <BuyFlow rect={selection} /> : null;
-    case "bought":
-      return <BoughtFlow rect={flow.rect} hasArtwork={flow.hasArtwork} />;
     case "bid":
       return <BidFlow />;
     case "mine":

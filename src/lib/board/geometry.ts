@@ -13,6 +13,8 @@ export const SEAM = 1;
 export const BANNER: Rect = { r: 0, c: 0, w: 5, h: 5 };
 export const MAX_BLOCK = 4;
 export const PRICE_PER_SQUARE = 250;
+/** The same number in whole cents. Money is an integer everywhere it is money. */
+export const PRICE_PER_SQUARE_CENTS = PRICE_PER_SQUARE * 100;
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 4;
 /** Below this rendered square size a number is unreadable. Locked by ticket 05. */
@@ -28,6 +30,9 @@ export const isBanner = (r: number, c: number) => covers(BANNER, r, c);
 export const cellCount = (rect: Rect) => rect.w * rect.h;
 
 export const priceOf = (rect: Rect) => cellCount(rect) * PRICE_PER_SQUARE;
+
+/** What the card is actually charged. VAT-inclusive, always (ADR 0002). */
+export const priceCentsOf = (rect: Rect) => cellCount(rect) * PRICE_PER_SQUARE_CENTS;
 
 /** Squares are numbered 1..199, left to right and top to bottom, around the banner. */
 const NUMBERS: (number | null)[][] = (() => {

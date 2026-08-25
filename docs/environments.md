@@ -81,6 +81,7 @@ These never reach the browser.
 | `TURNSTILE_SECRET_KEY` | test key | live key | Ticket 16 checks the token in the mutation. |
 | `BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_KVK`, `BUSINESS_VAT_ID` | set | set | The eenmanszaak's identity on an invoice ([ticket 23](../.scratch/200squares-v1/issues/23-build-invoice.md)). Not secret, but not in git either — they change without a deploy, and an invoice freezes its own copy. |
 | `BOARD_LIVE` | `true` | `true` | The [ADR 0001](adr/0001-live-board-clicks-outside-it.md) kill switch. Set to `false` and the board falls back to a cached snapshot, with no deploy. |
+| `RESERVATION_IP_SALT` | optional | optional | Salts the hash a reservation keeps instead of an IP ([ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md)'s *one hold per visitor*). Unset, `BETTER_AUTH_SECRET` is used instead, which is fine — it is a salt, not a key. |
 
 ### In the Vercel project
 
@@ -94,6 +95,7 @@ Set per environment in **Settings → Environment Variables**.
 | `NEXT_PUBLIC_SITE_URL` | `https://200squares.com` | the staging branch URL | yes |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | live site key | test site key | yes |
 | `STRIPE_SECRET_KEY` | `sk_live_…` | `sk_test_…` | **no** |
+| `BUSINESS_VAT_ID` | set | set | no |
 
 `NEXT_PUBLIC_` is a promise: the value is compiled into the browser bundle. A secret
 with that prefix is a leaked secret.
@@ -102,6 +104,11 @@ with that prefix is a leaked secret.
 [ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md) creates the Checkout
 Session from the site (the order is placed on 200squares.com) while the webhook that
 finishes it runs on Convex.
+
+⚠️ `BUSINESS_VAT_ID` is needed on **Vercel** too, and for a different reason than the
+invoice: the VIES check runs beside the Checkout Session, and VIES only returns a
+`requestIdentifier` — the consultation reference art. 18(1)(a) evidence rests on — when
+the caller identifies itself. Without it the check still works and the proof is not kept.
 
 ### On the VPS, in `.env.local`
 

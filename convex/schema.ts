@@ -160,6 +160,14 @@ export default defineSchema({
     rect,
     /** Absolute UTC ms. 15 minutes from creation (fixed by charting). */
     expiresAt: v.number(),
+    /**
+     * ⚠️ The one thing here that is about the visitor, and it is the price of
+     * ticket 06's flood control: *one live reservation per IP*. It is a salted
+     * hash and never the address itself, it is only ever compared for equality,
+     * and it dies with the row an hour after the hold expires. Optional, because
+     * a row written before ticket 16 has none and the sweep will take it.
+     */
+    ipHash: v.optional(v.string()),
     /** Set once the Checkout Session exists. Ticket 16 fills it in. */
     stripeSessionId: v.optional(v.string()),
     /**
@@ -183,6 +191,8 @@ export default defineSchema({
   orders: defineTable({
     /** The key against double processing. Unique — one session, one order. */
     stripeSessionId: v.string(),
+    /** What to refund against, and what a chargeback will name. */
+    paymentIntentId: v.optional(v.string()),
     /** A square purchase, or one day of the banner. */
     kind: v.union(v.literal("squares"), v.literal("banner")),
     ownerId: v.id("owners"),
@@ -205,6 +215,15 @@ export default defineSchema({
     /** VIES gave this back. Stored, and never printed on the invoice. */
     viesRequestIdentifier: v.optional(v.string()),
     withdrawalWaived: v.boolean(),
+    /**
+     * ⚠️ The exact words the buyer was shown, as words. Ticket 03 asked for the
+     * wording and not a version number, so that it stays readable in 2036
+     * without the code of the day it was shown.
+     */
+    withdrawalText: v.string(),
+    invoiceText: v.string(),
+    /** The client IP when the order was placed. Evidence, and nothing else. */
+    ip: v.string(),
 
     // Money. Whole cents, USD.
     /** What the buyer paid, VAT included. This is the number on the card. */
@@ -227,6 +246,18 @@ export default defineSchema({
     /** ⚠️ The date the rate was published. Without it a weekend invoice is unprovable. */
     fxRateDate: v.optional(v.string()),
     fxSource: v.optional(v.string()),
+
+    /**
+     * ⚠️ Set where the squares had gone by the time the webhook arrived. Ticket
+     * 05: the webhook wins whenever the squares are still free, and refunds in
+     * full automatically when they are not. The order is still written, because
+     * money moved and then moved back and both belong in the ten-year record —
+     * but there are no blocks behind it and
+     * [ticket 23](../.scratch/200squares-v1/issues/23-build-invoice.md) must not
+     * give it an invoice number.
+     */
+    refundedAt: v.optional(v.number()),
+    refundReason: v.optional(v.string()),
 
     createdAt: v.number(),
   }).index("by_session", ["stripeSessionId"]),
