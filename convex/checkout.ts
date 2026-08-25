@@ -74,6 +74,13 @@ export const fulfil = internalMutation({
   returns: v.object({
     status: v.union(v.literal("already"), v.literal("written"), v.literal("refunded")),
     paymentIntentId: v.string(),
+    /**
+     * ⚠️ Set on every outcome that has an order behind it, including `refunded`.
+     * The refund itself is taken by the caller — a mutation cannot reach Stripe —
+     * and the mail that says so may only be sent once the money is actually on
+     * its way back (ticket 22), so the caller needs to know which order it is.
+     */
+    orderId: v.union(v.id("orders"), v.null()),
   }),
   handler: async (ctx, args) => {
     const { declared: d } = args;
@@ -91,6 +98,7 @@ export const fulfil = internalMutation({
       return {
         status: existing.refundedAt ? ("refunded" as const) : ("already" as const),
         paymentIntentId: existing.paymentIntentId ?? args.paymentIntentId,
+        orderId: existing._id,
       };
     }
 
@@ -158,7 +166,7 @@ export const fulfil = internalMutation({
     if (row && !row.releasedAt) await ctx.db.patch(row._id, { releasedAt: now });
 
     if (clash) {
-      return { status: "refunded" as const, paymentIntentId: args.paymentIntentId };
+      return { status: "refunded" as const, paymentIntentId: args.paymentIntentId, orderId };
     }
 
     await ctx.db.insert("blocks", {
@@ -183,7 +191,25 @@ export const fulfil = internalMutation({
       await ctx.scheduler.runAfter(0, internal.auth.sendSignInLink, { email: args.email });
     }
 
-    return { status: "written" as const, paymentIntentId: args.paymentIntentId };
+    // ⚠️ The mail a buyer keeps, and it carries the invoice
+    // ([tickets 22](../.scratch/200squares-v1/issues/22-build-email.md) and
+    // [23](../.scratch/200squares-v1/issues/23-build-invoice.md)). Scheduled for
+    // the same reason the magic link is: the block is written, and neither
+    // Resend nor a rendered document may be able to undo that.
+    await ctx.scheduler.runAfter(0, internal.mail.orderConfirmed, { orderId });
+
+    // The artwork reminders ticket 06 fixed, booked now rather than swept for
+    // later. Each one looks at the block before it sends, so a square that gets
+    // its picture tomorrow simply never hears from us again — which is why no
+    // column has to remember what was sent.
+    for (const day of [1, 7, 30] as const) {
+      await ctx.scheduler.runAfter(day * 24 * 60 * 60 * 1000, internal.mail.artworkReminder, {
+        orderId,
+        day,
+      });
+    }
+
+    return { status: "written" as const, paymentIntentId: args.paymentIntentId, orderId };
   },
 });
 

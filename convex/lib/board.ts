@@ -102,3 +102,30 @@ export function largestFreePart(rect: Rect, taken: Rect[]): Rect | null {
     null,
   );
 }
+
+/**
+ * "84" for one square, "84–89" for a block. Numbering runs along a row, so a
+ * block two rows tall covers a span with other people's squares inside it.
+ *
+ * ⚠️ A copy of the same function in `src/lib/board/geometry.ts`, under this
+ * file's own rule: a Convex function may not import from the Next.js app. The
+ * invoice ([ticket 23](../../.scratch/200squares-v1/issues/23-build-invoice.md))
+ * names the squares the buyer was shown on Stripe's own page, so the two
+ * numberings have to be one numbering. If one changes, both change.
+ */
+export function squareRange(rect: Rect): string {
+  let n = 0;
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (covers(BANNER, r, c)) continue;
+      n++;
+      if (!covers(rect, r, c)) continue;
+      lo = Math.min(lo, n);
+      hi = Math.max(hi, n);
+    }
+  }
+  if (lo === Infinity) return "";
+  return lo === hi ? String(lo) : `${lo}–${hi}`;
+}

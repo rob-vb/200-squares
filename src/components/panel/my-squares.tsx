@@ -52,6 +52,8 @@ export function MySquares() {
   const squares = blocks.reduce((n, b) => n + cellCount(b.rect), 0);
   const viewerBannerDays = mine?.bannerDays ?? [];
   const myBids = mine?.bids ?? [];
+  const invoices = mine?.invoices ?? [];
+  const strikes = mine?.strikes ?? 0;
 
   return (
     <>
@@ -64,6 +66,19 @@ export function MySquares() {
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
+        {/*
+          ⚠️ The strike count, and it is here because ticket 11 made the warning
+          part of the rule: three in twelve months freeze a block, and freezing
+          somebody who never knew they were at two is the exact complaint worth
+          designing out. It says nothing at all at nought — a counter at zero on
+          a page about your own squares reads as an accusation.
+        */}
+        {strikes > 0 ? (
+          <div className="border-hairline text-accent border-b px-4 py-3 text-[13px] font-semibold">
+            Strike {strikes} of 3. Three strikes in twelve months freeze a block.
+          </div>
+        ) : null}
+
         {blocks.map((block) => (
           <BlockRow
             key={block.id}
@@ -99,6 +114,38 @@ export function MySquares() {
                 <span className="text-faint">{clicksLabel(day.clicks)}</span>
                 <span className="font-display text-[15px]" data-numeric>
                   {usd(day.wonWithCents)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/*
+          ⚠️ The second place an invoice is delivered (ticket 17). The first is
+          the order-confirmed mail, and a mail is lost more easily than an
+          account. The link is the permanent token URL, so it can be handed to a
+          bookkeeper without handing over the account with it.
+        */}
+        {invoices.length > 0 ? (
+          <div className="border-hairline border-t px-4 py-3">
+            <div className="text-faint pb-2 text-[13px]">Your invoices</div>
+            {invoices.map((invoice) => (
+              <div
+                key={invoice.number}
+                className="flex items-baseline justify-between gap-3 py-1 text-[13px]"
+              >
+                <a
+                  href={invoice.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent font-mono text-[12px] underline"
+                  data-numeric
+                >
+                  {invoice.number}
+                </a>
+                <span className="text-faint min-w-0 truncate">{invoice.what}</span>
+                <span className="font-display text-[15px]" data-numeric>
+                  {usd(invoice.totalCents)}
                 </span>
               </div>
             ))}

@@ -709,7 +709,7 @@ export const recordWin = internalMutation({
     stripeCountry: v.string(),
     declared: declaredBanner,
   },
-  returns: v.object({ email: v.string(), hasArtwork: v.boolean() }),
+  returns: v.object({ email: v.string(), hasArtwork: v.boolean(), orderId: v.id("orders") }),
   handler: async (ctx, args) => {
     const bid = await ctx.db.get(args.bidId);
     if (!bid || !bid.ownerId) throw new Error("The winning bid has no owner.");
@@ -764,7 +764,7 @@ export const recordWin = internalMutation({
     if (existing) await ctx.db.patch(existing._id, fields);
     else await ctx.db.insert("bannerDays", fields);
 
-    return { email: owner?.email ?? "", hasArtwork: Boolean(bid.artwork) };
+    return { email: owner?.email ?? "", hasArtwork: Boolean(bid.artwork), orderId };
   },
 });
 
@@ -929,6 +929,20 @@ async function closeOne(ctx: ActionCtx, date: string) {
       } catch {
         // Nothing to do here. The day is written and the board already shows it.
       }
+    }
+
+    // ⚠️ After the won mail, never before it, and for the same reason it is here
+    // rather than scheduled from `recordWin`: `wonMail` ends *your invoice
+    // follows*, so an invoice that overtakes it makes the site's own copy read
+    // backwards. It issues the document and sends the second message
+    // ([tickets 22](../.scratch/200squares-v1/issues/22-build-email.md) and
+    // [23](../.scratch/200squares-v1/issues/23-build-invoice.md)).
+    try {
+      await ctx.runAction(internal.mail.orderConfirmed, { orderId: winner.orderId });
+    } catch {
+      // The same rule as the mail above: a banner day that is won, collected and
+      // on the board is not undone by a document that can be written again.
+      // `invoices.sweepMissing` picks it up within the day.
     }
     break;
   }

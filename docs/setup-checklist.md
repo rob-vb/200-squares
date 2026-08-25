@@ -22,7 +22,7 @@ Stripe, Better Auth and Turnstile need.
 
 # Part 1 — now
 
-Six things. Everything else waits for launch.
+Eight things. Everything else waits for launch.
 
 ## 1. Convex: no card
 
@@ -91,6 +91,36 @@ Vercel → **200-squares** → Settings → Environment Variables. Both on **Pre
 
 ⚠️ Vercel refuses a `NEXT_PUBLIC_` variable with secret visibility. Pick the non-sensitive
 option or the build fails.
+
+## 7. Five more on Convex dev
+
+The invoice and the admin page cannot run without these
+([tickets 23](../.scratch/200squares-v1/issues/23-build-invoice.md) and
+[24](../.scratch/200squares-v1/issues/24-build-removal.md)).
+
+```sh
+npx convex env set BUSINESS_NAME "..."
+npx convex env set BUSINESS_ADDRESS "..."
+npx convex env set BUSINESS_KVK ...
+npx convex env set BUSINESS_VAT_ID NL...B..
+npx convex env set ADMIN_EMAILS you@example.com
+```
+
+⚠️ **Your real values, and nobody else may put them in.** The four `BUSINESS_` ones are
+printed on a legal document and frozen into it at the moment it is issued, so a wrong VAT
+number is a real problem and not a typo. An invoice issued before they are set keeps its
+number and its token, and `finish unwritten invoices` renders the document the night after
+you set them.
+
+⚠️ **`ADMIN_EMAILS` unset admits nobody**, which is the safe way round: `/admin` renders
+*that is not your page* for everybody, including you.
+
+## 8. Two rows to look at, once
+
+Nothing to set. After a test payment on staging, check that the mail arrived at a real
+inbox and that the invoice link in it opens — [ticket 13](../.scratch/200squares-v1/issues/13-email.md)
+cannot be verified any other way, and the invoice is the one document on this site that
+the law reads.
 
 ---
 

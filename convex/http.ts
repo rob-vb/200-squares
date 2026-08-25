@@ -374,6 +374,38 @@ const art = httpAction(async (ctx, request) => {
 });
 
 // ---------------------------------------------------------------------------
+// The invoice, out.
+
+/**
+ * One stored invoice, by its token. **Not for a visitor directly** — for the
+ * route on 200squares.com that streams it, exactly as `/art` is.
+ *
+ * ⚠️ The token is the whole guard (ticket 17). It is random and permanent, it is
+ * never the invoice number, and what it opens carries a name and an address — so
+ * a wrong or unknown token is a plain 404 and never a hint that a real one would
+ * look different.
+ */
+const invoice = httpAction(async (ctx, request) => {
+  const token = new URL(request.url).searchParams.get("token") ?? "";
+  const missing = new Response("No such invoice.", { status: 404 });
+  if (!/^[0-9a-f]{32}$/.test(token)) return missing;
+
+  const storageId = await ctx.runQuery(internal.invoices.fileByToken, { token });
+  if (!storageId) return missing;
+  const blob = await ctx.storage.get(storageId).catch(() => null);
+  if (!blob) return missing;
+
+  return new Response(blob, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      // ⚠️ Never a shared cache. The document has somebody's name and address on
+      // it, and the edge in front of this serves everybody.
+      "Cache-Control": "private, no-store",
+    },
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Stripe.
 
 /** Pull the buyer's own declarations back out of the session they travelled in. */
@@ -514,6 +546,14 @@ async function settle(ctx: Parameters<Parameters<typeof httpAction>[0]>[0], sess
         payment_intent: result.paymentIntentId,
         reason: "requested_by_customer",
       });
+      // ⚠️ Inside the success branch, and that placement is the whole design of
+      // this mail (ticket 22). It tells the buyer the money is on its way back,
+      // which the site may not say until Stripe has taken the refund — and a
+      // webhook retry lands in the `catch` below with `charge_already_refunded`,
+      // so nobody is told twice.
+      if (result.orderId) {
+        await ctx.runAction(internal.mail.refunded, { orderId: result.orderId });
+      }
     } catch (error) {
       // Already refunded is the expected answer on a retry, and it is a success:
       // the money is back. Anything else is thrown on, so the endpoint answers
@@ -598,6 +638,7 @@ http.route({ path: "/clicks/permit", method: "OPTIONS", handler: preflight });
 http.route({ path: "/clicks", method: "POST", handler: click });
 http.route({ path: "/clicks", method: "OPTIONS", handler: preflight });
 http.route({ path: "/art", method: "GET", handler: art });
+http.route({ path: "/invoice", method: "GET", handler: invoice });
 http.route({ path: "/stripe/webhook", method: "POST", handler: webhook });
 http.route({ path: "/stripe/reconcile", method: "POST", handler: reconcile });
 http.route({ path: "/stripe/reconcile", method: "OPTIONS", handler: preflight });

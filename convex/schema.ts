@@ -285,8 +285,22 @@ export default defineSchema({
     year: v.number(),
     /** ⚠️ Keyed on a random token, never on the number: an invoice carries a name. */
     token: v.string(),
-    /** The rendered HTML, written once. */
-    storageId: v.id("_storage"),
+    /**
+     * The rendered HTML, written once and never recomputed.
+     *
+     * ⚠️ Optional, and the reason is the number. Ticket 17 puts the allocation
+     * **inside the mutation that writes the invoice**, so no number is ever
+     * spent on something that then fails — but the number is printed *in* the
+     * document, so the row has to exist before the file can be rendered. A
+     * mutation cannot write a file (that is an action's), so the row lands
+     * first and the file is patched on a moment later.
+     *
+     * A row with no file is therefore an invoice that is still being written,
+     * and never a gap in the series. `sweepMissing` finishes one whose action
+     * died: the number, the token and every frozen field are already fixed, so
+     * a re-render produces the same document byte for byte.
+     */
+    storageId: v.optional(v.id("_storage")),
     issuedAt: v.number(),
   })
     .index("by_order", ["orderId"])
@@ -442,9 +456,16 @@ export default defineSchema({
    *                  That page holds a websocket by design, so a live total
    *                  would rerun it for every viewer on every click anywhere
    *                  (ticket 10).
+   *   `fx`         — the last ECB daily reference rate, with the date the ECB
+   *                  published it. ⚠️ Not a cache in the fan-out sense: it is
+   *                  here because an invoice is written in a mutation and the
+   *                  ECB is on the network. The **date** is the load-bearing
+   *                  half — the ECB publishes on working days only, so a
+   *                  Saturday invoice quotes Friday's rate and has to be able
+   *                  to say so (ticket 17).
    */
   cached: defineTable({
-    key: v.union(v.literal("board"), v.literal("siteClicks")),
+    key: v.union(v.literal("board"), v.literal("siteClicks"), v.literal("fx")),
     /** Whatever the reader expects. Shape is the reader's business. */
     value: v.any(),
     builtAt: v.number(),

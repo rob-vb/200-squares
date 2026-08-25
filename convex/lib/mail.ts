@@ -119,3 +119,167 @@ export const wonMail = (input: { amount: number; date: string; hasArtwork: boole
 
 /** Whole cents to `$1,250`. Money is never a float, not even in a sentence. */
 const usd = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+
+/** Whole cents to `$1,250.00`. What a receipt says, beside a card statement. */
+const usdExact = (cents: number) =>
+  `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/**
+ * Order confirmed, with the invoice.
+ *
+ * ⚠️ [Ticket 13](../../.scratch/200squares-v1/issues/13-email.md) merged the
+ * receipt and the confirmation into **one** mail, and switched Stripe's own
+ * receipts off to keep it one: a Stripe receipt is not a VAT invoice, and two
+ * documents where the prettier one is invalid is the worst of the three
+ * options. So this is the mail a buyer keeps.
+ *
+ * Three things and no more: what was bought, where the invoice is, and the way
+ * back to the artwork. That last link is ticket 06's grant — the Stripe session
+ * id — and it works with no account, because the buyer was never asked to make
+ * one.
+ */
+export const orderConfirmedMail = (input: {
+  what: string;
+  squares: number;
+  totalCents: number;
+  invoiceUrl: string;
+  artworkUrl: string;
+}) => ({
+  subject: "Your squares on 200 squares",
+  text: [
+    `You bought ${input.what} — ${input.squares} ${input.squares === 1 ? "square" : "squares"} on 200squares.com.`,
+    `You paid ${usdExact(input.totalCents)}.`,
+    "",
+    `Your invoice: ${input.invoiceUrl}`,
+    "",
+    "Put your picture and your link on the square here:",
+    input.artworkUrl,
+    "",
+    "That address needs no account and it keeps working. Until you use it the",
+    "square stays empty, and there is no deadline on it.",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/**
+ * The banner's half of the same mail.
+ *
+ * The winner has already had `wonMail`, which said the day was theirs and
+ * whether their image was up. That one ends *your invoice follows*; this is it,
+ * and it says nothing the other one already said.
+ */
+export const bannerInvoiceMail = (input: {
+  date: string;
+  totalCents: number;
+  invoiceUrl: string;
+}) => ({
+  subject: `Your invoice for the 200 squares banner on ${input.date}`,
+  text: [
+    `The banner on ${input.date} cost ${usdExact(input.totalCents)}.`,
+    "",
+    `Your invoice: ${input.invoiceUrl}`,
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/**
+ * We refunded you in full.
+ *
+ * ⚠️ Ticket 05's race, and the mail that makes it survivable: two payments
+ * landed on the same squares and the second one gets every cent back,
+ * automatically, without being asked. The money is already on its way when this
+ * is sent — the refund is made first — so it states what happened rather than
+ * what will happen.
+ */
+export const refundedMail = (input: { totalCents: number }) => ({
+  subject: "We have refunded your payment for 200 squares",
+  text: [
+    "Somebody else paid for the same squares a moment before you did, so we could",
+    "not give you the ones you chose.",
+    "",
+    `We have refunded ${usdExact(input.totalCents)} in full to the card you paid with. Your bank`,
+    "may take some days to show it. Nothing is needed from you.",
+    "",
+    "The board has other squares, and they are on 200squares.com.",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/**
+ * Your block was removed.
+ *
+ * ⚠️ It carries the strike count, and that is
+ * [ticket 11](../../.scratch/200squares-v1/issues/11-admin-removal.md)'s
+ * decision rather than a courtesy: freezing somebody who never knew they were
+ * at two is the exact complaint worth designing out. Deterring is better than
+ * punishing.
+ *
+ * The reason goes out **as the admin wrote it**. It is one person writing to
+ * another about their own square, and softening it in transit would make the
+ * record and the message two different things.
+ *
+ * There is no appeal address and no status page: a reply to this mail is the
+ * whole of it. `hello@` reaches a person, which is why ticket 13 refused a
+ * `no-reply@`.
+ */
+export const removedMail = (input: {
+  what: string;
+  rule: string;
+  reason: string;
+  strikes: number;
+  frozen: boolean;
+}) => ({
+  subject: `Your ${input.what} on 200 squares was emptied`,
+  text: [
+    `We took the artwork and the link off your ${input.what}.`,
+    "",
+    `The rule: ${input.rule}`,
+    `What we saw: ${input.reason}`,
+    "",
+    input.frozen
+      ? [
+          "That is strike 3 of 3 in twelve months, so this block is now frozen. It is",
+          "still yours and it stays on the board, but no artwork and no link can be set",
+          "on it. Reply to this message if you want to talk about it.",
+        ].join("\n")
+      : [
+          `That is strike ${input.strikes} of 3. The square stays yours: put something else on it.`,
+          "Three strikes in twelve months freeze a block — it stays yours and stays on",
+          "the board, but nothing new can be put on it.",
+        ].join("\n"),
+    "",
+    "Nothing is refunded.",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/**
+ * The artwork reminders, at 1, 7 and 30 days.
+ *
+ * ⚠️ **The thirtieth says it is the last one**, which is
+ * [ticket 06](../../.scratch/200squares-v1/issues/06-buying-for-real.md)'s rule:
+ * `pending` has no deadline, the square is paid for and stays paid for, so a
+ * fourth reminder would be the site nagging somebody about their own property.
+ */
+export const artworkReminderMail = (input: { day: 1 | 7 | 30; artworkUrl: string }) => ({
+  subject: "Your square on 200 squares has no picture yet",
+  text: [
+    input.day === 1
+      ? "You bought a square yesterday and it is still empty."
+      : `You bought a square ${input.day} days ago and it is still empty.`,
+    "",
+    "Put your picture and your link on it here:",
+    input.artworkUrl,
+    "",
+    "The square is yours whether you do or not, and there is no deadline.",
+    input.day === 30 ? "This is the last reminder we send." : "",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ]
+    .filter((line, i, all) => !(line === "" && all[i - 1] === ""))
+    .join("\n"),
+});

@@ -11,6 +11,8 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { currentOwner } from "./auth";
 import { artwork, rect } from "./schema";
+import { squareRange } from "./lib/board";
+import { invoiceUrl } from "./invoices";
 import { nextDate, todayUtc, STRIKE_MS } from "./lib/time";
 
 /**
@@ -42,6 +44,24 @@ export const mine = query({
       ),
       bannerDays: v.array(
         v.object({ date: v.string(), wonWithCents: v.number(), clicks: v.number() }),
+      ),
+      /**
+       * Every invoice this owner has, newest first.
+       *
+       * ⚠️ The second of the two places ticket 17 delivers a document — the
+       * order-confirmed mail is the first. It is here because a mail is lost more
+       * easily than an account, and the link is permanent: the token is the whole
+       * address, so an owner can hand it to their own bookkeeper without handing
+       * over the account.
+       */
+      invoices: v.array(
+        v.object({
+          number: v.string(),
+          issuedAt: v.number(),
+          url: v.string(),
+          what: v.string(),
+          totalCents: v.number(),
+        }),
       ),
       bids: v.array(
         v.object({
@@ -107,6 +127,35 @@ export const mine = query({
       });
     }
 
+    // Bounded at fifty orders: this is a panel, not the ten-year record, and an
+    // owner with more than fifty of them has a bookkeeper rather than a scroll.
+    const invoices = [];
+    for (const order of await ctx.db
+      .query("orders")
+      .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
+      .order("desc")
+      .take(50)) {
+      if (order.refundedAt) continue;
+      const invoice = await ctx.db
+        .query("invoices")
+        .withIndex("by_order", (q) => q.eq("orderId", order._id))
+        .unique();
+      // An invoice whose file is still being written has nothing to link to yet.
+      if (!invoice?.storageId) continue;
+      invoices.push({
+        number: invoice.number,
+        issuedAt: invoice.issuedAt,
+        url: invoiceUrl(invoice.token),
+        what:
+          order.kind === "banner"
+            ? `Banner ${order.bannerDate ?? ""}`
+            : order.rect
+              ? `Square ${squareRange(order.rect)}`
+              : "",
+        totalCents: order.totalCents,
+      });
+    }
+
     const bids = (
       await ctx.db
         .query("bids")
@@ -128,6 +177,7 @@ export const mine = query({
       strikes: liveStrikes(owner.strikeAt, now),
       blocks,
       bannerDays,
+      invoices,
       bids,
     };
   },

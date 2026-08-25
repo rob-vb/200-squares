@@ -67,13 +67,19 @@ async function accept(
 /**
  * Delete what a row has stopped pointing at, unless something else still does.
  *
+ * ⚠️ Exported for the admin
+ * ([ticket 24](../.scratch/200squares-v1/issues/24-build-removal.md)), and that
+ * is the point of it being one function: stripping a block is not only setting
+ * the field to null. The two files would stay in Convex until the daily orphan
+ * sweep noticed, so removal calls this and the picture is gone with the press.
+ *
  * ⚠️ The guard is not decoration. Ticket 09 lets the pieces of a cut block share
  * one file and window it with a crop, so a piece whose owner replaces their
  * artwork must not take the other pieces' picture with it. Nothing cuts a block
  * in V1.0 — resale is out of scope — and the rule is written here because the
  * day it comes back is not the day to remember it.
  */
-async function release(ctx: MutationCtx, old: Doc<"blocks">["artwork"] | undefined) {
+export async function release(ctx: MutationCtx, old: Doc<"blocks">["artwork"] | undefined) {
   if (!old || old.kind !== "upload") return;
   const stillUsed = new Set<string>();
   const note = (art: { kind: string; small?: unknown; large?: unknown } | null | undefined) => {

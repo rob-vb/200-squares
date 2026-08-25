@@ -42,4 +42,19 @@ crons.hourly("close the banner auction", { minuteUTC: 0 }, internal.auction.clos
 // kilobytes of the free plan's gigabyte and nothing else.
 crons.daily("sweep orphan files", { hourUTC: 3, minuteUTC: 30 }, internal.art.sweepOrphans);
 
+// ⚠️ The ECB daily reference rate, and the reason it is pulled rather than
+// fetched when an invoice needs it: an invoice is written in a **mutation**, and
+// a mutation cannot reach the network. 17:00 UTC is after the ECB's own ~16:00
+// CET publication in winter and in summer alike. It publishes on working days
+// only, so a run that finds nothing new simply leaves Friday's rate — with the
+// date the ECB stamped it, which is what makes a weekend invoice defensible
+// (ticket 17).
+crons.daily("pull the ECB rate", { hourUTC: 17, minuteUTC: 0 }, internal.invoices.pullFxRate);
+
+// Invoices whose file never arrived. The number and the token are already fixed
+// in the row, so a re-render produces the same document — this is the retry for
+// the ordinary ways the issuing action can die, and it is the reason a missing
+// file is never a gap in the series.
+crons.daily("finish unwritten invoices", { hourUTC: 4, minuteUTC: 0 }, internal.invoices.sweepMissing);
+
 export default crons;

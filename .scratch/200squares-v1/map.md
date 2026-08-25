@@ -538,6 +538,50 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   with resale — see **Out of scope**. Driven on staging by `scripts/clicks.mjs`, which reads
   the count out of My squares, clicks three ways, drags once, and reads it again.
 
+- [22 — Build: the mail](issues/22-build-email.md) — **the six messages are complete.**
+  Five added to ticket 18's transport: order confirmed with the invoice, refunded in full,
+  block removed, and the artwork reminders at 1, 7 and 30 days. Every send is an action and
+  every caller schedules it, because a mutation cannot reach the network and a Resend outage
+  must not undo a landed payment. Three decisions the build had to make: the **refund mail
+  sits inside the success branch of `refunds.create`**, so the site never says the money is
+  on its way before Stripe has taken it and a retry's `charge_already_refunded` sends
+  nothing twice; the **reminders are scheduled, not swept**, each one checking the block
+  before it sends, which is why no `remindedAt` column exists; and the **banner's invoice
+  mail goes after `wonMail`**, which ends *your invoice follows*. ⚠️ **Stripe's own receipts
+  are still on** — there is no API for it, it is a dashboard switch per mode, and it stays
+  step 4 of the checklist. ⚠️ **Nothing has been sent to a real inbox yet**; that is
+  [ticket 28](issues/28-prove-the-mail.md).
+
+- [23 — Build: the invoice document](issues/23-build-invoice.md) — **built: the number is
+  taken in the mutation, the file is written by the action a moment later.** Ticket 17 asked
+  for the number to be allocated where the invoice row is written *and* printed inside the
+  document, and a Convex mutation cannot write a file — so `allocate` → `issue` → `attach`,
+  and ⚠️ **`invoices.storageId` is optional**, which is the one departure from the ticket as
+  written. A row without a file is an invoice still being written and never a gap in the
+  series: the number and the token are fixed and every field is frozen, so the nightly
+  re-render is the same document. `2026-0001` off the `by_year` index rather than a counter
+  row; refunded orders take no number; the **ECB rate** is pulled daily into the `fx` cached
+  row and frozen onto the order with its publication date (verified live: 1.1662, dated
+  2026-08-25). All four money cases were rendered and read, including ⚠️ the **VAT-on-top**
+  one, which is the ticket's own warning answered: the net is `total − vat` from two stored
+  numbers, never recomputed from a rate. Served at `/invoice/<32 hex>`, `private, no-store`
+  at both ends — the opposite of `/art`, because this carries a name and an address.
+  ⚠️ **The four `BUSINESS_` variables were not invented and not asked for**, so no document
+  has been rendered on a deployment yet.
+
+- [24 — Build: the admin page and removal](issues/24-build-removal.md) — **one page, one
+  press, four writes in one transaction.** `/admin` behind `requireAdmin`: a search, today's
+  banner, every block, the last fifty removals. Ugly, one column, works on a phone.
+  `admin.strip` strips artwork **and** link, pushes the strike, writes the `removals` row
+  and books the mail together — and calls ⚠️ **`release(ctx, old)`**, now exported from
+  `art.ts`, because stripping is not only setting the field to null and what was reported
+  would otherwise stay reachable at its `/art` URL. The strike rule as ticket 11 wrote it:
+  counted on the owner, twelve-month window, the third freezes **only** the block that
+  caused it, visible to the owner in the removal mail and in My squares — and silent at
+  nought. The banner goes through the same door and sets `removedAt`, which the board and
+  the click counter already read. ⚠️ **`ADMIN_EMAILS` is unset**, so `/admin` admits nobody
+  today, including the dev.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -554,16 +598,18 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [18 — Build: accounts and signing in](issues/18-build-accounts.md),
   [19 — Build: the auction on real card holds](issues/19-build-auction.md) and
   [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) and
-  [21 — Build: counting clicks for real](issues/21-build-clicks.md).
-  **Still open**:
+  [21 — Build: counting clicks for real](issues/21-build-clicks.md),
   [22 — Build: the mail](issues/22-build-email.md),
-  [23 — Build: the invoice document](issues/23-build-invoice.md),
-  [24 — Build: the admin page and removal](issues/24-build-removal.md) and
+  [23 — Build: the invoice document](issues/23-build-invoice.md) and
+  [24 — Build: the admin page and removal](issues/24-build-removal.md).
+  **Still open**:
   [27 — The resale label, and the day the board sells out](issues/27-label-and-sellout.md),
   which graduated the sold-out fog and is the one **prototype** ticket in the set — it
   wants the dev in the room. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day.
+  the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
+  is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
+  real inbox and no document has been rendered on a deployment.
 - ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
   that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
   fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
@@ -619,7 +665,13 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   not audited, a **floor** and not a census, which ticket 10 named and left to the copy; and
   `/privacy`'s *Who else sees it* names the payment provider and Vercel but not **Cloudflare**,
   which a visitor who only clicks a block now loads a script from. Buying and bidding were
-  always deliberate acts; clicking is not.
+  always deliberate acts; clicking is not. ⚠️ Tickets 22 and 24 add the last of them:
+  `/privacy` must say that **Resend is a processor** and that the **address is now a key**
+  and not only a contact — plus the one sentence that keeps both promises true at once, that
+  an email address belongs to an **owner** while the clicks promise is about a **visitor**;
+  and `/terms` owes four lines — *nothing is refunded*, the freeze rule and what frozen
+  means, *the site does not check where a link goes*, and `hello@200squares.com` as the
+  place to report a block.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
   that a capture was declined, or that a webhook never arrived. It needs the cron and
   the captures to exist first.
