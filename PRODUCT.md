@@ -45,18 +45,17 @@ Confirmed:
 - A square costs $250, flat. Prices are in USD.
 - Squares are bought as a contiguous rectangle, at most 4 wide and 4 high. A block renders as one image; the grid lines inside it disappear.
 - A square carries one of three states: `available`, `pending`, `taken`. A `pending` square is paid for but has no artwork yet, and must never read as empty.
-- The banner auction runs through the day for **tomorrow's** banner and closes at 00:00 UTC. Bidding starts at $100. With no winner the banner shows a house ad.
+- The banner auction runs through the day for **tomorrow's** banner and closes **hard** at 00:00 UTC: no extension window, and the minimum raise is $10 over the top bid. Bidding starts at $100. With no winner the banner shows a house ad.
 - Clicking a taken block or the banner opens the owner's website in a new tab.
 - The product UI is English.
+- **Artwork**: the buyer may hand over PNG, JPEG, WebP or GIF, up to 10 MB. The site stores WebP only, at the size the board draws. **Nothing animates** — a GIF keeps its first frame. Any shape is accepted and the site crops to the block, centred, with a drag to reposition; refusing one of sixteen shapes would be hostile.
+- **The stack**: Better Auth for accounts, Stripe for payment, Convex file storage for images, served through 200squares.com and never straight from Convex.
 
 Undecided, and not to be invented:
 
 - **How long a square is held** — forever, or a term. Ticket 07 settles the terms copy.
 - **Whether owner links are followed or nofollowed.** Buyers say they want a link to their site, so this is a product promise, not a technical detail.
-- Anti-snipe rules for the auction: extension window, minimum increment above the $100 floor.
-- Artwork requirements: file size, aspect ratio per block size, formats, animation.
 - What happens when squares get scarce, and what the last squares cost.
-- Auth provider, payment provider, image storage.
 
 **A square cannot be sold on. That is V1.1.** V1.0 launches without resale: a square is bought once and stays with its owner, and the site offers no way to hand it back. The prototype had resale and it was taken out again on 2026-08-25 — a smaller build, and scarcity gets to work before a second-hand market softens it. The vocabulary is kept in `CONTEXT.md` under **Not in V1.0**, and the research that priced it is ticket 01 on the V1.0 map.
 

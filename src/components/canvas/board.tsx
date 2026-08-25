@@ -28,11 +28,22 @@ function labelSize(label: string, wpx: number, hpx: number) {
 }
 
 /**
+ * *Sold, artwork coming.* It says that at every size, and it never shows a number.
+ */
+const HATCH =
+  "repeating-linear-gradient(-45deg, var(--color-square) 0 3px, color-mix(in srgb, var(--color-accent) 35%, transparent) 3px 5px)";
+
+/**
  * How artwork paints its box.
  *
  * An upload may carry a crop, because a block that was split keeps the same file
  * windowed to the part it still is. Seeded artwork has nothing to crop: a
  * wordmark simply re-fits, which is what a wordmark does anyway.
+ *
+ * ⚠️ The hatch is painted **under** the picture, not instead of it. Ticket 09: a
+ * block whose file is missing renders `pending`, never broken. A background
+ * image that 404s paints nothing at all, so without a layer beneath it a lost
+ * file would read as an empty square — which on this board means *for sale*.
  */
 function artStyle(
   art: Artwork,
@@ -44,7 +55,13 @@ function artStyle(
   if (art.kind === "seed") {
     return { background: art.bg, color: art.fg, fontSize: labelSize(art.label, wpx, hpx) };
   }
-  return { backgroundImage: `url(${artSrc(art, scale, onScreen)})`, ...cropStyle(art.crop) };
+  const crop = cropStyle(art.crop);
+  return {
+    backgroundImage: `url(${artSrc(art, scale, onScreen)}), ${HATCH}`,
+    backgroundSize: `${crop.backgroundSize}, auto`,
+    backgroundPosition: `${crop.backgroundPosition}, 0 0`,
+    backgroundRepeat: "no-repeat, repeat",
+  };
 }
 
 /** Two rectangles share at least one cell. `null` means "everything counts". */
@@ -104,10 +121,7 @@ function BannerCell({
         ...gridArea(BANNER),
         ...(art.kind === "seed"
           ? { background: art.bg, color: art.fg }
-          : {
-              backgroundImage: `url(${artSrc(art, scale, touches(inView, BANNER))})`,
-              ...cropStyle(art.crop),
-            }),
+          : artStyle(art, wpx, BANNER.h * step - SEAM, scale, touches(inView, BANNER))),
       }}
     >
       {art.kind === "seed" ? (
@@ -180,11 +194,7 @@ export function Board({
           return (
             <div
               key={block.id}
-              style={{
-                ...gridArea(block.rect),
-                background:
-                  "repeating-linear-gradient(-45deg, var(--color-square) 0 3px, color-mix(in srgb, var(--color-accent) 35%, transparent) 3px 5px)",
-              }}
+              style={{ ...gridArea(block.rect), background: HATCH }}
             />
           );
         }

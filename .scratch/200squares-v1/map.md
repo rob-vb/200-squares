@@ -37,6 +37,9 @@ real backend, and then makes the copy true again.
   happens on a Vercel preview URL. The long-lived one is the `staging` branch:
   `https://200-squares-git-staging-robs-projects-52973834.vercel.app`.
 - **Commit as `hi@robvb.com` or the Vercel deploy is blocked.**
+- ⚠️ **The scripts write their screenshots to the repo root, and `git add -A` will take
+  them.** It did, twice, on ticket 20. `/*.png` is in `.gitignore` from 2026-08-25 — check
+  `git status` before committing all the same.
 - **Seeing a board is a deployment command, not a URL.** `npx convex run seed:full`,
   `seed:early` or `seed:clear` against the dev deployment. ⚠️ `?data=` is gone: it was a
   search parameter, and reading one is what made every route build dynamic (ticket 08).
@@ -55,6 +58,14 @@ real backend, and then makes the copy true again.
   staging in Stripe test mode and screenshots every step. Run
   `node scripts/free-holds.mjs` first if a previous run stopped at Stripe — one visitor may
   hold one reservation and the VPS is one visitor.
+- **Driving an upload**: `node scripts/artwork.mjs [prefix]` starts from the session
+  `scripts/signin.mjs` leaves in `.auth.json`, makes a source image on the spot, and puts a
+  picture on the first block in My squares — then asks `/art/<id>` for what it stored and
+  prints the cache header. `node scripts/flow.mjs` now uploads on the thank-you page as
+  part of the purchase, which is the one grant a buyer with no account holds. Built by
+  [ticket 20](issues/20-build-artwork.md). ⚠️ **The panel is in the DOM twice** — the side
+  panel and the bottom sheet, one hidden by CSS — so a script that reaches for the *last*
+  file input reaches into the copy nobody can see.
 - **Driving a real bid**: `node scripts/bid.mjs <email> [amount] [prefix]` places one bid end
   to end on staging in Stripe test mode. ⚠️ Give each run a **different address** — Stripe's
   email is what makes an owner, and a bidder who raises their own bid has their earlier hold
@@ -483,6 +494,24 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   order and the house ad all landed. `scripts/bid.mjs` and `seed:ageAuction` exist so the
   close can be watched rather than waited for.
 
+- [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) — **the
+  browser makes the picture, Convex keeps it, and Vercel's edge hands it out.** Three doors
+  on one rule — the Stripe session id on `/thanks`, `requireOwner` in My squares, a standing
+  bid in the bid panel — each handing out two short-lived upload URLs and checking the caller
+  again when the ids come back. The server's whole check is content type and byte size, and
+  it **deletes a refused pair before it throws**, or rejection would be the cheapest way to
+  fill the free plan's gigabyte. ⚠️ Three things ticket 09 did not price: **`s-maxage`**,
+  without which Vercel's edge caches nothing and every request stays on the function;
+  **`ART_CELL = 80`**, because "exactly the size the board draws" does not exist — `cell` is
+  whatever the viewport allows, from 23px to 150px; and **the `4x` set costs 80 MB** unless
+  it is given only to blocks in view, since a background image has no `loading="lazy"` and
+  one zoom gesture would otherwise fetch all 199. Replacement deletes what it replaced unless
+  something else still points at it, and a daily cron sweeps the rest — ⚠️ with
+  `invoices.storageId` on the referenced list, because that file is bookkeeping and is kept
+  ten years. Proved on staging four ways: a buyer with no account uploaded from `/thanks`, an
+  owner replaced a picture and both old files went to 404, a $1,000 bid was dressed and won
+  the banner through a real close, and the file came back `x-vercel-cache: HIT`.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -496,10 +525,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [26 — Strip the resale surface](issues/26-strip-resale.md),
   [15 — Build: the Convex schema and the live board](issues/15-build-schema.md),
   [16 — Build: the checkout](issues/16-build-checkout.md),
-  [18 — Build: accounts and signing in](issues/18-build-accounts.md) and
-  [19 — Build: the auction on real card holds](issues/19-build-auction.md).
+  [18 — Build: accounts and signing in](issues/18-build-accounts.md),
+  [19 — Build: the auction on real card holds](issues/19-build-auction.md) and
+  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md).
   **Still open**:
-  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md),
   [21 — Build: counting clicks for real](issues/21-build-clicks.md),
   [22 — Build: the mail](issues/22-build-email.md),
   [23 — Build: the invoice document](issues/23-build-invoice.md),
@@ -519,6 +548,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   fix-up the Next handler exists to do; or a **signed-in marker** in `localStorage` gating
   the provider, which needs a landing route to set it on the device that opens the mail.
   It is a cost decision under ticket 02's rule, and it wants measuring before it is made.
+  ⚠️ [Ticket 20](issues/20-build-artwork.md) adds a **second** invocation source to the same
+  decision: `/art/<storageId>` is a Vercel function on a cache miss, and an id that does not
+  exist misses every time. The regex turns obvious rubbish away without a fetch, and the
+  cache absorbs every real file after the first request per region — but a flood of
+  plausible-looking ids is invocations, which is what Hobby pauses on. The two belong in one
+  answer: whatever protects `/api/auth/*` protects this.
 
 - ⚠️ **Nobody tells a bidder their card was declined.** [Ticket 19](issues/19-build-auction.md)
   built the ladder: a bidder who held the top spot all day and whose capture failed at
@@ -565,10 +600,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   promises that no time is written down.
 - **An archive of past banner winners** older than the site shows today.
 - **SEO and share images.**
-- **Artwork rules the buyer must read.** Ticket 09 settled the technical half — WebP,
-  400 KB, no animation, the site crops rather than refusing an odd ratio. What is left is
-  a copy question: where the buyer is told, and how much of it belongs before they pick a
-  file rather than after. It rides with **making the copy true again**.
+- **Artwork rules on the public pages.** ⚠️ Half of this is **done**: ticket 20 put the
+  rules beside the picker, in all three places a picture is chosen and *before* a file is
+  picked — which is where ticket 09 said no-animation had to be said. What is left is the
+  public half: `/how-it-works` and the FAQ describe artwork to somebody who has not bought
+  anything yet, and they say nothing about WebP, 10 MB or the crop. It rides with
+  **making the copy true again**.
 
 ## Out of scope
 

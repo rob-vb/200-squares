@@ -36,6 +36,12 @@ An owner is not an account. A Better Auth **user** is a row in the auth componen
 
 The image an owner supplies for a block or for the banner. One image covers the whole block. A block without artwork is `pending`; artwork is what turns it `taken`.
 
+Artwork is **two files, not one**: a `1x` set and a `4x` set, both WebP, both produced by the browser at exactly the pixel size the board draws before anything is uploaded. The board reads the small one at fit scale and the large one only above a 2x zoom, and only for blocks in view. The original file is never uploaded and never stored, and no server ever decodes an image.
+
+A **crop** is a window on the file, in fractions of it. A fresh upload has none — the browser already cropped to the block's shape — and one appears when a block is split: the pieces keep the file they had and narrow the window instead, because the split happens where there is no browser to re-cut anything.
+
+Artwork is served from `/art/<storageId>` on 200squares.com and **never from Convex to a visitor**. A new file is a new id is a new URL, so the answer is cacheable for a year and nothing is ever busted.
+
 ## Order
 
 The record of one purchase: what was bought, what was paid, and what the buyer told the

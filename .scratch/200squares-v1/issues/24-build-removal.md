@@ -15,6 +15,11 @@ Nothing to decide. [Ticket 11](11-admin-removal.md) settled it. Read its answer 
 - ⚠️ **One press does four things atomically**: strip artwork and link, write the strike,
   write the `removals` row, send the mail. Four separate hand edits at midnight is how the
   wrong row gets touched.
+  ⚠️ *Stripping artwork is not only setting the field to null.* The two files stay in Convex
+  until something deletes them, and [ticket 20](20-build-artwork.md) left the deleter:
+  `release(ctx, old)` in `convex/art.ts` takes what a row stopped pointing at, unless
+  something else still points at it. Use it, or the daily orphan sweep is the only thing
+  that ever collects a removed block's picture.
 - **`removals`** — block, owner, date, rule, action, reason as written. Kept ten years.
 - **The strike counter on `owners`**, not on blocks. ⚠️ A strike **expires after twelve
   months**. The third live strike freezes **only the block that caused it**.
