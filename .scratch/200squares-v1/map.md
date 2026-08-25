@@ -9,9 +9,12 @@ backend, Better Auth for accounts, Stripe for payments.
 
 A visitor drags a rectangle, pays by card, and afterwards supplies artwork and a
 link through an account they never had to create. The daily banner auction runs on
-real card holds and closes hard at 00:00 UTC. Owners sell their squares on through
-the site. Clicks are really counted. A DDoS attack may take the site offline, but
-it must never produce a bill.
+real card holds and closes hard at 00:00 UTC. Clicks are really counted. A DDoS
+attack may take the site offline, but it must never produce a bill.
+
+⚠️ **Resale is not in V1.0** (2026-08-25). Charting put it in; the dev took it out to keep
+the build smaller and to let scarcity work before a second-hand market softens it. The site
+launches without it. See **Out of scope**.
 
 Marketing and the launch itself are out of scope. The map is finished when the dev
 can decide to launch — not when the launch happens.
@@ -57,8 +60,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 - **Stack**: Next.js on Vercel, Convex, Better Auth, Stripe, Resend for email.
 - **The prototype stays.** The components are kept. `src/lib/board/state.tsx` — the
   reducer and the two mock datasets — is what gets replaced by Convex.
-- **Resale is in V1.0.** The dev chose it knowing the cost. Ticket 01 finds out what
-  that cost really is.
+- ~~**Resale is in V1.0.**~~ ⚠️ **Reversed 2026-08-25.** The dev took it out again once
+  ticket 01 had priced it. It moves to V1.1 and the site launches without it. Ticket 01's
+  answer stands as research V1.1 begins with. See **Out of scope** and
+  [ticket 12](issues/12-resale-for-real.md).
 - **Buying needs no account.** Stripe supplies the email. The site then creates the
   account and sends a magic link. Better Auth, no password.
 - **Artwork comes after payment.** The block lands `pending` and the owner uploads
@@ -357,13 +362,6 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   buyer's accountant asks for an attachment is the moment to revisit it. It needs a real
   complaint first.
 
-- **Site credit as a product.** Ticket 01 moved resale onto credit instead of cash, and
-  that creates a thing the site never had: a balance a person holds. Ticket 05 fixed its
-  **shape** — a ledger of entries that never change, never a balance field — and nothing
-  else. What it can be spent on, whether it expires, what happens to it if the site
-  closes, and whether it is a single- or multi-purpose voucher — which decides when VAT
-  falls — are all still open. Ticket 12 builds the ledger; this is the product question
-  beside it.
 - **The build tickets.** Every decision here is followed by building it, the way
   08-10, 12 and 15 followed their decisions on the prototype map. They are created
   as each decision lands, not before. So far:
@@ -377,7 +375,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md). Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day.
+  the day. ⚠️ Resale leaving added two more:
+  [26 — Strip the resale surface](issues/26-strip-resale.md), which must run **before**
+  ticket 15 because it is pure deletion in the same files, and
+  [27 — The resale label, and the day the board sells out](issues/27-label-and-sellout.md),
+  which graduated the sold-out fog.
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
@@ -403,16 +405,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   the captures to exist first.
 - **Backups and loss.** What happens if Convex data is lost, and what the site owes
   people if it is.
-- **What the board does the day it sells out.** Ticket 13 on the prototype map made
-  sell-out point at the market. With real money that becomes a real moment.
 - **Bot clicks.** Ticket 10 covers counting clicks safely; whether a rough number
   must later be filtered is a separate question with its own privacy cost.
 - **Click counts over time.** Old fog, and more expensive since `/privacy` now
   promises that no time is written down.
-- **Blocks an owner cut themselves** — merging them back, or replacing artwork across
-  them at once. Old fog from ticket 12, untouched.
-- **Whether a block shows what it last sold for**, and whether the market gets a
-  price record the way the banner has one.
 - **An archive of past banner winners** older than the site shows today.
 - **SEO and share images.**
 - **Artwork rules the buyer must read.** Ticket 09 settled the technical half — WebP,
@@ -422,6 +418,16 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 
 ## Out of scope
 
+- ⚠️ **Reselling a square — moved to V1.1** (2026-08-25).
+  [12 — Reselling with real money](issues/12-resale-for-real.md) is **closed, not
+  resolved**: nothing was decided, it was ruled beyond the destination. The dev's reasons
+  are a smaller build and letting scarcity work before a second-hand market softens it, and
+  ticket 01 had already called resale the heaviest thing on the map. Nothing is lost —
+  [ticket 01](issues/01-resale-platform-cost.md) stays resolved and is the research V1.1
+  starts from. V1.0 gains **one pricing rule instead of two**, no credit ledger, no
+  `listings` in the board query, and no second VAT treatment on the invoice. What replaces
+  it is a **promise** in the top bar, which is [ticket 27](issues/27-label-and-sellout.md)
+  and carries its own risk.
 - **A price that moves with scarcity.** Fixed at $250. It is a product
   decision, not a build decision, and it may wait until scarcity is real.
 - **Marketing, launch and traffic.** The map ends at a site that can be launched.

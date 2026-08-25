@@ -1,7 +1,7 @@
 # 12 — Reselling with real money
 
 Type: grilling
-Status: open
+Status: closed
 Blocked by: 01, 05, 06
 Parent: ../map.md
 
@@ -70,3 +70,50 @@ what the buyer pays — while [ticket 01](01-resale-platform-cost.md) priced the
 VAT-**on-top**, because inclusive loses $19 there. Both are deliberate and both stand.
 This ticket owns the consequence: the site now has two pricing rules, and the copy must
 say which is which without making the resale look like a trick.
+
+## Closed — out of scope, 2026-08-25
+
+**Resale moves to V1.1. It is not built in V1.0 and the site launches without it.**
+
+The dev's reasons: keep the build smaller, and let scarcity do its work before a
+second-hand market softens it. Both are sound. Ticket 01 called resale *"in risk, law and
+work the heaviest thing on the map"*, so removing it takes more weight out of V1.0 than
+any other single cut.
+
+⚠️ **This ticket is closed, not resolved.** Nothing here was decided; it was ruled beyond
+the destination. It does not appear in the map's Decisions so far, because that section
+records the route actually walked and a scope boundary is not a step on it.
+
+### Nothing is lost
+
+[Ticket 01](01-resale-platform-cost.md) stays **resolved and stands**. Site credit instead
+of cash, VAT on the whole resale price, PSD2 as the reason cash is the expensive road, DAC7
+not applying — all of it is research V1.1 starts with rather than research V1.1 has to do.
+The same is true of the product model in prototype tickets 11 and 12.
+
+### What V1.0 gains by not doing this
+
+- ⚠️ **One pricing rule instead of two.** [Ticket 06](06-buying-for-real.md) priced the
+  first sale VAT-**inclusive**; ticket 01 priced a resale VAT-**on-top**. This ticket owned
+  explaining that difference to buyers without it looking like a trick. The problem is
+  gone.
+- **No credit ledger.** [Ticket 05](05-convex-model.md) put its shape in the schema for
+  this ticket to fill. [Ticket 15](15-build-schema.md) drops it: a table nothing writes to
+  is speculation.
+- **No `listings` in the board query.** Every field there is paid for on every rerun for
+  every viewer (ticket 05), and the asking price was one of them.
+- **Blocks never split.** [Ticket 09](09-artwork-storage.md)'s crop-rectangle answer for a
+  cut block still stands as written, but nothing in V1.0 exercises it.
+- **No second VAT treatment on the invoice.** [Ticket 17](17-invoice-document.md)'s warning
+  that the template must not hard-code inclusive arithmetic is **deferred with this
+  ticket**, not solved — V1.1 must read it before touching the invoice.
+
+### What replaces it
+
+⚠️ A **promise**, which is not nothing. The dev wants a small label in the top bar saying
+that when all 199 squares are sold, owners will be able to sell theirs on — the hard
+wording, chosen deliberately over a softer one. That is
+[ticket 27](27-label-and-sellout.md), and the risk it carries is recorded there with the
+dev's decision beside it.
+
+`/terms` says only the state of today: a square cannot be sold and cannot be handed back.
