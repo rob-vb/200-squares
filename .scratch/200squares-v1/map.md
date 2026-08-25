@@ -609,7 +609,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
-  real inbox and no document has been rendered on a deployment.
+  real inbox and no document has been rendered on a deployment. ⚠️ Beside it,
+  [29 — Which address the invoice may carry](issues/29-invoice-address.md) came out of
+  setting those variables: the eenmanszaak is registered on the dev's **home address**, the
+  invoice carries *the address*, and ticket 17's write-once rule freezes it into every
+  document at issue time — so it is a decision to take before the first real sale, not
+  after.
 - ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
   that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
   fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket

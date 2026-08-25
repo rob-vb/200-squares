@@ -84,6 +84,23 @@ const percent = (bps: number) =>
 const day = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 /**
+ * One address, however it was typed, as one line per line.
+ *
+ * ⚠️ An environment variable is a single string, and a street, a postcode and a
+ * town want three lines on a document. So a real newline **and** a typed `\n`
+ * both split — the second because `npx convex env set` is a shell command, and a
+ * shell hands `\n` through as two characters more often than as a newline. An
+ * address with neither stays the one line it was written as.
+ */
+const addressLines = (address: string) =>
+  address
+    .split(/\r?\n|\\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `<div>${esc(line)}</div>`)
+    .join("");
+
+/**
  * ⚠️ Everything the buyer typed goes through here.
  *
  * A company name is a free-text field on a Stripe form and this document is
@@ -207,7 +224,7 @@ export function invoiceHtml(input: InvoiceInput): string {
     <section>
       <h2>From</h2>
       <div>${esc(b.name)}</div>
-      <div>${esc(b.address)}</div>
+      ${addressLines(b.address)}
       <div>KVK ${esc(b.kvk)}</div>
       <div>BTW-identificatienummer ${esc(b.vatId)}</div>
     </section>
