@@ -47,22 +47,26 @@ the only branch with a stable URL, and there is no localhost to work on instead.
 
 ---
 
-## 1. Vercel Pro
+## 1 & 2. Vercel Pro and the spend cap — **deferred, on purpose**
 
-Settings → Billing. $20 a month. Ticket 02 found it is compulsory for a commercial site —
-the free plan forbids commercial use, and Pro carries the firewall this project needs.
+**Stay on Hobby for now.** Both steps wait.
 
-## 2. The spend cap
+⚠️ Hobby **pauses instead of billing**: exceed a limit and the feature stops for 30 days.
+That is a wall. Pro plus Spend Management is a **brake** — Vercel checks every few minutes
+and can overshoot. For a site under construction, Hobby enforces ticket 02's rule better
+than Pro does, and costs $0 instead of $20.
 
-Settings → Billing → **Spend Management**.
+Hobby also carries 3 WAF custom rules, 3 IP blocks, DDoS mitigation on by default, Attack
+Mode, and Vercel Authentication on previews. Less than Pro, but not nothing.
 
-- Turn it on
-- Amount: **5**
-- **Pause production deployment: ON**
-- Confirm by typing the team name
+### ⚠️ The trigger to upgrade
 
-⚠️ Vercel checks every few minutes. This is a brake, not a wall — which is why the amount
-is far below what you would tolerate.
+**Commercial use is forbidden on Hobby.** Right now the site sells nothing, so the rule
+does not bite. It bites the moment the site can take real money.
+
+**Upgrade to Pro before step 10 — before a live Stripe key goes into the Production
+environment.** Set Spend Management ($5, *Pause production deployment* ON) in the same
+sitting.
 
 ## 3. Check Convex has no card
 
@@ -114,7 +118,7 @@ Five are already set. **Four are left**, and all four need a key only you have.
 | --- | --- |
 | `CONVEX_DEPLOY_KEY` | Convex dashboard → **energized-deer-345** → Settings → Deploy keys |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key — mark it **non-sensitive** |
-| `STRIPE_SECRET_KEY` | `sk_live_…` |
+| `STRIPE_SECRET_KEY` | `sk_live_…` — ⚠️ **this is the line that needs Pro first** |
 
 **Preview**
 

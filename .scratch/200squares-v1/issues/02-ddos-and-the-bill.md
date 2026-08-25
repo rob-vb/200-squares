@@ -42,6 +42,42 @@ a monthly ceiling — ask for one if the answer needs it.
 Primary sources: Vercel, Cloudflare and Convex documentation and pricing pages.
 Capture the findings as a markdown file in the repo and link it from this ticket.
 
+## Vercel Pro deferred — 2026-08-25
+
+⚠️ **The site stays on Vercel Hobby until it can take real money.** The dev asked whether
+Pro could wait, and it can. Everything below still stands **for launch**; what changes is
+*when* the $20 starts.
+
+**Hobby enforces the dev's own rule more strictly than Pro does.** This ticket's rule is
+that an attack may take the site offline but may never make a bill. On Hobby, *"if you
+exceed your usage limits you will have to wait until 30 days have passed before you can use
+the feature again"* — it **pauses and does not bill**, the same shape as Convex Free. Pro
+plus Spend Management is a **brake, not a wall**: Vercel checks every few minutes and this
+ticket already accepted that gap. So during the build, Hobby is the safer of the two.
+
+⚠️ **This ticket understated the Hobby firewall.** The comparison table says Hobby carries
+**WAF Custom Rules up to 3** and **IP Blocking up to 3** (Pro: 40 and 100), and **DDoS
+Mitigation is on by default on both plans**, with **Attack Mode** available on both. The
+finding that Pro's firewall beats Cloudflare Free is unchanged; the claim that Hobby has
+nothing was too strong. Three rules is short of the five this ticket wanted — but one of
+those five was the **Stripe-webhook bypass**, and [ticket 14](14-environments-and-keys.md)
+moved that webhook to Convex, so it is no longer needed. Four wanted, three available.
+
+**Deployment Protection**: Hobby has Vercel Authentication, so `staging.200squares.com`
+stays private to the dev either way.
+
+### The trigger
+
+**Commercial use is forbidden on Hobby** — the fair-use guidelines restrict it to
+non-commercial personal use. Today the site sells nothing: no live Stripe key, no
+customers, no orders. That is not yet commercial.
+
+The line is crossed at one exact moment: **a live Stripe key entering the Production
+environment.** That is step 10 of the setup checklist. Upgrade to Pro **before** it, not
+after, and set Spend Management in the same sitting.
+
+Until then the hosting bill is **$0**, not $20.
+
 ## Answer
 
 Findings: [`research/02-ddos-and-the-bill.md`](../research/02-ddos-and-the-bill.md),

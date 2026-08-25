@@ -88,7 +88,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   acceptable failure; an unexpected invoice is not.
 - **The ceiling is about $20 a month**, and it is nearly all fixed cost. Ticket 02
   found that Vercel Pro is compulsory for a commercial site at $20, so the dev chose
-  (2026-08-24) to stop there: **Vercel Pro plus Convex Free**. The Convex websocket
+  (2026-08-24) to stop there: **Vercel Pro plus Convex Free**. ⚠️ **Pro is deferred**
+  (2026-08-25): the site stays on **Hobby** until a live Stripe key enters Production,
+  because Hobby **pauses instead of billing** — a wall where Pro's Spend Management is only
+  a brake — and nothing commercial exists yet. Until then the bill is **$0**. See the dated
+  note on [ticket 02](issues/02-ddos-and-the-bill.md). The Convex websocket
   stays unprotected, which is accepted on purpose — Convex Free refuses work instead of
   billing for it, so an attack breaks the site rather than the bank, and that is the
   failure the dev already called acceptable. The $25 step to Convex Pro waits until
