@@ -9,6 +9,12 @@ Parent: ../map.md
 
 Nothing to decide. [Ticket 17](17-invoice-document.md) settled it. Read its answer first.
 
+⚠️ **Added by [ticket 16](16-build-checkout.md) (2026-08-25): skip refunded orders.** A
+payment that landed on squares somebody else had already bought is written to `orders`
+with `refundedAt` set and **no block behind it**. It must take no invoice number: a number
+is allocated once, in sequence, and one spent on a sale that did not happen is a gap in the
+series that has to be explained to an inspector.
+
 - **Numbering** — one series per calendar year, `2026-0001`, allocated **inside the
   mutation that writes the invoice**. One invoice per order, unique index on the order id.
   A hot counter row is fine here; invoices are rare.

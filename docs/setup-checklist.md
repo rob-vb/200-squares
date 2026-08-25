@@ -118,8 +118,9 @@ ready to take money.
    | Name | Value |
    | --- | --- |
    | `CONVEX_DEPLOY_KEY` | Convex → **energized-deer-345** → Settings → Deploy keys |
-   | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key — **non-sensitive** |
+   | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the **real** Turnstile site key — non-sensitive |
    | `STRIPE_SECRET_KEY` | `sk_live_…` |
+   | `BUSINESS_VAT_ID` | ⚠️ the eenmanszaak's own BTW-id, e.g. `NL…B01` — needed **here**, not only on Convex: VIES returns the `requestIdentifier` only to a caller that identifies itself, and that reference is the art. 18(1)(a) proof. Without it the check works and nothing is kept. |
 
 5. **Convex prod variables**:
 

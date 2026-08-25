@@ -44,6 +44,17 @@ real backend, and then makes the copy true again.
 - ⚠️ **Do not poll the staging URL with `curl`.** It trips Vercel's bot challenge, which
   then blocks Playwright too and there is no other way to see the site. Use
   `node scripts/shot.mjs` from the repo root and leave time between runs.
+- ⚠️ **Turnstile cannot be solved from the VPS.** Headless or headful, the widget renders,
+  fetches its challenge and stalls — no callback, no error code. Cloudflare does not answer
+  a datacenter address. So dev and preview run Cloudflare's **dummy always-passes keys**
+  and production keeps the real pair; without that nobody working on this site could get
+  through their own checkout. Found by [ticket 16](issues/16-build-checkout.md), written
+  up under *Turnstile on dev* in `docs/environments.md`, and it puts one manual live-mode
+  purchase on [ticket 25](issues/25-launch.md).
+- **Driving a real purchase**: `node scripts/flow.mjs [prefix]` buys a square end to end on
+  staging in Stripe test mode and screenshots every step. Run
+  `node scripts/free-holds.mjs` first if a previous run stopped at Stripe — one visitor may
+  hold one reservation and the VPS is one visitor.
 - The dev speaks Dutch; write to them in Dutch, ASD-STE100 style. The product UI is
   English, prices in USD.
 - Vocabulary lives in `CONTEXT.md` at the repo root. Product truth lives in
@@ -394,6 +405,27 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   a thing to build. Every unbuilt seam says out loud which ticket owns it, and
   `owners.seedViewer` is the fake sign-in on borrowed time until ticket 18.
 
+- [16 — Build: the checkout](issues/16-build-checkout.md) — **the order is placed on
+  200squares.com, reserving moved to Convex, and one keyed mutation is the only thing that
+  writes a block.** The panel holds the ticket 03 fields and did not grow; the wording of
+  the tick box is stored **as words**, and `orders` gained the IP, that wording and a
+  `refundedAt` to carry it. ⚠️ **`reservations.reserve` is now internal** — reached only
+  through a Convex HTTP action, because the two limits need the caller's IP and a Turnstile
+  answer, and a public mutation with the controls wrapped *around* it is a bypass. The 10%
+  ceiling needed a floor of one 4 × 4 or the last nine squares could never be sold, and the
+  hold now keeps a **salted hash of the address**, which `/privacy` owes a sentence.
+  ⚠️ **A free square is one no *block* covers**: another visitor's live hold does not beat
+  a completed payment, whoever pays first wins, and the loser is refunded in full — a path
+  staged by hand, which is how the refund was found to be **unretryable** and fixed.
+  ⚠️ **Turnstile cannot be solved from the dev's VPS at all**, so dev runs Cloudflare's
+  dummy keys and **production is the first place the real widget ever runs** — one manual
+  live-mode purchase is now on [ticket 25](issues/25-launch.md). ⚠️ `owners.name` starts
+  **empty** and is set on the return page, so a private person's legal name never becomes
+  the public tooltip. All five pages still build `○ (Static)`: the session id is read on
+  the client and Stripe's back link has its own route.
+  [Ticket 23](issues/23-build-invoice.md) gains one rule — a refunded order takes no
+  invoice number.
+
 ## Not yet specified
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
@@ -404,10 +436,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 - **The build tickets.** Every decision here is followed by building it, the way
   08-10, 12 and 15 followed their decisions on the prototype map. They are created
   as each decision lands, not before. **Done** (2026-08-25):
-  [26 — Strip the resale surface](issues/26-strip-resale.md) and
-  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md).
+  [26 — Strip the resale surface](issues/26-strip-resale.md),
+  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md) and
+  [16 — Build: the checkout](issues/16-build-checkout.md).
   **Still open**:
-  [16 — Build: the checkout](issues/16-build-checkout.md),
   [18 — Build: accounts and signing in](issues/18-build-accounts.md),
   [19 — Build: the auction on real card holds](issues/19-build-auction.md),
   [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md),
@@ -433,7 +465,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
 - **Making the copy true again.** `/how-it-works`, `/terms`, `/privacy` and the FAQ
   describe a site that fakes everything. Real accounts, real payment, real refunds
   and a real removal policy all break lines that are true today. This is the same
-  shape as 07 → 10, 11 → 13 and 14 → 16, and it comes last.
+  shape as 07 → 10, 11 → 13 and 14 → 16, and it comes last. ⚠️ Ticket 16 added two
+  specific debts: `/privacy` must say that a **reservation keeps a salted hash of the
+  visitor's address for fifteen minutes** — the price of *one hold per visitor*, and the
+  first thing on the board path that is about a visitor at all — and that an **order keeps
+  the IP, the tick-box wording and the address for ten years**.
 - **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
   that a capture was declined, or that a webhook never arrived. It needs the cron and
   the captures to exist first.
