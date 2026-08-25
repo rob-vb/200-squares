@@ -269,7 +269,45 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   most honest thing on the page. The part-sale tiebreak is the lowest square number.
   [21 — Build: counting clicks for real](issues/21-build-clicks.md) follows.
 
+- [13 — Email](issues/13-email.md) — **six messages, one merged out of two, and Stripe
+  sends nothing at all.** Magic link, order-confirmed-with-invoice, outbid, banner won,
+  automatic refund, block removed — plus ticket 06's artwork reminders at 1, 7 and 30 days.
+  ⚠️ **Stripe's own receipts are switched off**: the site issues the invoice, and two
+  documents where the prettier one is not a valid VAT invoice is worse than either alone.
+  The magic link is the one that may not fail, which is what the `send.` subdomain
+  verification in ticket 14 is for. ⚠️ **The auction timing problem is fixed in the words,
+  not the timing** — every mail states the close time and never a countdown, so it stays
+  true whenever it is read; late outbid mail is sent anyway, and there is no "closes in an
+  hour" reminder. No bid confirmation; a first bid's mail *is* the magic link. ⚠️ **A reply
+  reaches a person**, not a `no-reply@`, because ticket 08 made emailing the dev the
+  official way back into a locked-out account — one more DNS record for ticket 14. And the
+  sentence that stops `/privacy` reading as self-contradictory: an **email address belongs
+  to an owner**, while the clicks promise is about a **visitor**.
+  [22 — Build: the mail](issues/22-build-email.md) follows.
+
+- [17 — The invoice as a document](issues/17-invoice-document.md) — **one series a year,
+  the ECB rate frozen on the invoice date, and an HTML document written once and never
+  recomputed.** `2026-0001`, allocated inside the mutation that writes the invoice, so no
+  number is taken by something that then fails; ⚠️ the double-write ticket 06 worried about
+  **cannot happen**, because the order is keyed on the Stripe session id and one order has
+  one invoice. The euro amount is the **ECB daily reference rate** — published, dated,
+  auditable in 2036 — and ⚠️ it is **not published on weekends or TARGET closing days**, so
+  the order freezes `fxRate`, `fxRateDate` **and** `fxSource`; without the date a weekend
+  invoice is unprovable. Stored as HTML in Convex file storage at a **permanent,
+  unguessable URL keyed on a random token**, never on the invoice number, because an
+  invoice carries a name and an address. No PDF at V1.0. A consumer gets one too — deciding
+  who needs an invoice costs more than sending everybody one. ⚠️ **The resale invoice is
+  the same document with a different VAT rule**, so the template must not hard-code
+  inclusive arithmetic or every resale invoice is wrong by 21%. The seller-side self-billed
+  document is different law and sits with ticket 12.
+  [23 — Build: the invoice document](issues/23-build-invoice.md) follows.
+
 ## Not yet specified
+
+- **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
+  grounds that it is legally sufficient and costs nothing. The moment a real business
+  buyer's accountant asks for an attachment is the moment to revisit it. It needs a real
+  complaint first.
 
 - **Site credit as a product.** Ticket 01 moved resale onto credit instead of cash, and
   that creates a thing the site never had: a balance a person holds. Ticket 05 fixed its
@@ -285,8 +323,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [16 — Build: the checkout](issues/16-build-checkout.md),
   [18 — Build: accounts and signing in](issues/18-build-accounts.md),
   [19 — Build: the auction on real card holds](issues/19-build-auction.md),
-  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) and
-  [21 — Build: counting clicks for real](issues/21-build-clicks.md).
+  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md),
+  [21 — Build: counting clicks for real](issues/21-build-clicks.md),
+  [22 — Build: the mail](issues/22-build-email.md) and
+  [23 — Build: the invoice document](issues/23-build-invoice.md).
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
   Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
