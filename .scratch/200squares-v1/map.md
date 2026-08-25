@@ -384,7 +384,7 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   anchor needs its `href` at render — a `/go/<id>` route would undo that whole answer. The
   write path is the point: `reserve` reads and writes in one serialisable mutation, and the
   loser gets `largestFreePart` of their drag rather than an error, verified against the
-  deployment. The kill switch is `BOARD_MODE=snapshot`, a cached row a cron rewrites
+  deployment. The kill switch is `BOARD_LIVE=false`, a cached row a cron rewrites
   **every two minutes whether or not the switch is thrown**, because a snapshot built under
   the load is no escape from it. ⚠️ **`?data=` is dead and every route is now
   `○ (Static)`** — ticket 08's finding closed, and ticket 02's cheapest defence switched on

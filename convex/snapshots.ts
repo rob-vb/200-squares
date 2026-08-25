@@ -24,7 +24,7 @@ async function put(ctx: MutationCtx, key: "board" | "siteClicks", value: unknown
 }
 
 /**
- * The board, frozen. What `BOARD_MODE=snapshot` serves.
+ * The board, frozen. What `BOARD_LIVE=false` serves.
  *
  * ⚠️ It is built on a schedule and not on demand, so the switch takes effect the
  * moment it is set. A snapshot built when the switch is thrown would be built

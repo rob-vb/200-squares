@@ -356,8 +356,8 @@ export default defineSchema({
    *
    *   `board`      — the kill switch's snapshot. Ticket 05 asked for one
    *                  environment variable that falls the board back with no
-   *                  deploy; `BOARD_MODE=snapshot` makes the board query read
-   *                  this row instead of the tables.
+   *                  deploy; `BOARD_LIVE=false` makes the board query read this
+   *                  row instead of the tables.
    *   `siteClicks` — the public total on /how-it-works, an hour old on purpose.
    *                  That page holds a websocket by design, so a live total
    *                  would rerun it for every viewer on every click anywhere

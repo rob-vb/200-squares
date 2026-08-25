@@ -70,12 +70,16 @@ const boardShape = v.object({
 /**
  * The kill switch, and the only answer available at 03:00 on a viral day.
  *
- * `BOARD_MODE=snapshot` on the Convex deployment moves the board off the tables
- * and onto one cached row that a cron rewrites. The websocket stays; what stops
- * is the fan-out, because a block write no longer reruns anybody's query. No
- * deploy, no code change, and it goes back by unsetting the variable.
+ * `BOARD_LIVE=false` on the Convex deployment moves the board off the tables and
+ * onto one cached row that a cron rewrites. The websocket stays; what stops is
+ * the fan-out, because a block write no longer reruns anybody's query. No deploy,
+ * no code change, and it goes back by setting it to `true`.
+ *
+ * ⚠️ It defaults to **live** when the variable is missing or misspelt. A board
+ * that quietly went cold because somebody typed `BOARD_LIV` would be a much
+ * worse failure than one that stayed live: only `"false"` throws the switch.
  */
-const boardMode = () => (process.env.BOARD_MODE === "snapshot" ? "snapshot" : "live");
+const boardMode = () => (process.env.BOARD_LIVE === "false" ? "snapshot" : "live");
 
 /** The board off the tables. Also what the snapshot cron stores. */
 export async function readBoardLive(ctx: QueryCtx) {

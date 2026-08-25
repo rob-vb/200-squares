@@ -32,7 +32,7 @@ The board query is live for everyone, and two things are kept out of it:
   `orders` — are never in the board query. The board carries only what the canvas draws.
 
 An environment variable can fall the board back to a cached snapshot without a deploy:
-`BOARD_MODE=snapshot` on the Convex deployment moves `board.state` off the tables and onto
+`BOARD_LIVE=false` on the Convex deployment moves `board.state` off the tables and onto
 one cached row a cron rewrites every two minutes. The websocket stays open; what stops is
 the fan-out, because a block write no longer reruns anybody's query.
 

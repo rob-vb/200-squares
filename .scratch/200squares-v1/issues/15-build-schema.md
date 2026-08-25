@@ -75,7 +75,7 @@ so rather than left contradicting the code. Money and identity stay out entirely
 
 ### The kill switch
 
-`BOARD_MODE=snapshot` on the Convex deployment. The board query stops reading the tables
+`BOARD_LIVE=false` on the Convex deployment. The board query stops reading the tables
 and reads one `cached` row instead, so a block write no longer reruns anybody's
 subscription — the websocket stays, the **fan-out** stops. ⚠️ The snapshot is rebuilt by a
 cron **every two minutes whether or not the switch is thrown**, because a snapshot built
