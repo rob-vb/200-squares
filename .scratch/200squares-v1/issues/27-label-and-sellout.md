@@ -1,7 +1,7 @@
 # 27 — The resale label, and the day the board sells out
 
 Type: prototype
-Status: open
+Status: claimed
 Blocked by: 12, 26 (26 done 2026-08-25 — this is now on the frontier)
 Parent: ../map.md
 

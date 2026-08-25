@@ -22,6 +22,7 @@ import { normalise } from "./auth";
 import { mutation, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { todayUtc } from "./lib/time";
+import { BANNER, COLS, ROWS, covers } from "./lib/board";
 import {
   brands,
   EARLY_BLOCKS,
@@ -291,5 +292,68 @@ export const ageAuction = mutation({
       moved += 1;
     }
     return `Moved ${moved} bids from ${tomorrow} to ${today}. Run auction:closeDue.`;
+  },
+});
+
+/**
+ * ⚠️ PROTOTYPE — ticket 27. Throwaway. Fills every free cell so the board is
+ * **sold out**, which is the one board state no seed makes and the one
+ * [ticket 27](../.scratch/200squares-v1/issues/27-label-and-sellout.md) has to
+ * look at: `available` reaches zero, the counter flips to its SOLD OUT branch,
+ * and the drag instruction under the canvas stops being true.
+ *
+ *   npx convex run seed:full     — a normal board first
+ *   npx convex run seed:soldout  — then fill the rest of it
+ *
+ * `seed:full` puts it back. It fills with 1×1 blocks on purpose: a sold-out
+ * board is a mosaic of small owners, which is the harder thing to look at.
+ */
+export const soldout = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    guard();
+
+    const taken = new Set<string>();
+    for (const block of await ctx.db.query("blocks").collect()) {
+      const { r, c, w, h } = block.rect;
+      for (let y = r; y < r + h; y++) for (let x = c; x < c + w; x++) taken.add(`${y},${x}`);
+    }
+    const now = Date.now();
+    for (const hold of await ctx.db.query("reservations").collect()) {
+      if (hold.releasedAt || hold.expiresAt < now) continue;
+      const { r, c, w, h } = hold.rect;
+      for (let y = r; y < r + h; y++) for (let x = c; x < c + w; x++) taken.add(`${y},${x}`);
+    }
+
+    const ids = Object.keys(brands);
+    const owners = await makeOwners(ctx, ids);
+    const free: { r: number; c: number }[] = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (covers(BANNER, r, c)) continue;
+        if (taken.has(`${r},${c}`)) continue;
+        free.push({ r, c });
+      }
+    }
+
+    let n = 0;
+    for (const cell of free) {
+      // Spread the brands so the fill is not one colour, and leave every tenth
+      // one without artwork: a sold-out board still has blocks waiting on it.
+      const brand = brands[ids[n % ids.length]];
+      const pending = n % 10 === 9;
+      await ctx.db.insert("blocks", {
+        rect: { r: cell.r, c: cell.c, w: 1, h: 1 },
+        ownerId: owners.get(brand.id)!,
+        url: brand.url,
+        artwork: pending ? null : { kind: "seed" as const, bg: brand.bg, fg: brand.fg, label: brand.name },
+        frozen: false,
+        createdAt: now,
+      });
+      n++;
+    }
+
+    return `Filled ${n} squares. The board is sold out.`;
   },
 });
