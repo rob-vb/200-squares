@@ -1,7 +1,7 @@
 # 11 — Managing the board: removing a block
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 05, 08
 Parent: ../map.md
 

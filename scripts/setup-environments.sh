@@ -7,6 +7,13 @@
 #
 # Run it from the repo root:   bash scripts/setup-environments.sh
 # You can stop at any time with Ctrl-C and start again. It keeps your place.
+#
+# ⚠ Editing a step's text: escape every dollar sign as \$ . `set -u` is on, so a bare
+#   $20 in a double-quoted line is read as the positional parameter $2 and the script
+#   exits on the spot. That bug cost step 11 two runs.
+#
+# ⚠ Do not pipe input into this script to test it. Every Enter marks a step done in
+#   .setup-state, so a dry run silently claims work nobody did.
 
 set -uo pipefail
 
@@ -194,7 +201,7 @@ step email-routing "10b. A reply must reach a person" \
 step vercel-pro "11. Vercel Pro" \
 "https://vercel.com → your team → Settings → Billing." \
 "" \
-"Pro is $20 a month and ticket 02 found it is compulsory for a commercial site." \
+"Pro is \$20 a month and ticket 02 found it is compulsory for a commercial site." \
 "The free plan forbids commercial use, and Pro is what carries the firewall this" \
 "project depends on."
 
