@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Contact } from "@/components/content/contact";
 import { ContentPage } from "@/components/content/content-page";
 import { Site } from "@/components/site";
-import { getDataset } from "@/lib/board/datasets";
 import { P, Section } from "@/components/content/section";
 
 export const metadata: Metadata = {
@@ -10,10 +9,9 @@ export const metadata: Metadata = {
   description: "One grid, 199 squares and a banner that changes every day.",
 };
 
-export default async function Page(props: PageProps<"/about">) {
-  const { data } = await props.searchParams;
+export default function Page() {
   return (
-    <Site dataset={getDataset(data)}>
+    <Site>
       <ContentPage
         title="ABOUT"
         intro="One grid, 199 squares, and a banner that changes every day."

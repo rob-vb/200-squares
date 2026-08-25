@@ -21,7 +21,7 @@ import { Board } from "./board";
 import { useCanvasTransform, useWheelZoom, type Pt } from "./transform";
 import { PANEL_MEDIA, PANEL_WIDTH, useScreen } from "../panel/flow";
 import { useMediaQuery } from "../use-media-query";
-import { useBoard } from "@/lib/board/state";
+import { useBoard } from "@/lib/board/board";
 import {
   MAX_SCALE,
   PRICE_PER_SQUARE,
@@ -44,9 +44,12 @@ function tooltipFor(
     return bannerName ? `${bannerName} · today's banner` : "Banner · nobody has bid";
   }
   if (cell.state === "available") return `${cell.n} · Available · $${PRICE_PER_SQUARE}`;
+  // ⚠️ A reserved square says the same thing a sold one does. The visitor is not
+  // told that somebody is at a payment page right now — that is an invitation to
+  // wait fifteen minutes, and it is nobody's business but the buyer's.
+  if (cell.state === "reserved") return "Taken";
   if (cell.state === "pending") return "Sold · artwork coming";
-  const owner = cell.block ? board.ownerById.get(cell.block.ownerId) : null;
-  return owner && cell.block ? `${owner.name} · Opens ${cell.block.url}` : null;
+  return cell.block ? `${cell.block.ownerName} · Opens ${cell.block.url}` : null;
 }
 
 /**
@@ -58,12 +61,14 @@ function cursorFor(board: BoardModel, at: CellRef | null): string {
   if (!at) return "default";
   const state = board.cells[at.r][at.c].state;
   if (state === "available") return "crosshair";
-  if (state === "pending") return "default";
+  // Neither is a link: a pending block has nowhere to send anybody yet, and a
+  // reserved square is not a block at all.
+  if (state === "pending" || state === "reserved") return "default";
   return "pointer";
 }
 
 export function Canvas() {
-  const { board, bannerToday, dispatch, ownerOfBannerToday } = useBoardCanvasData();
+  const { board, bannerToday } = useBoard();
   // The selection is the panel's business as much as the canvas's: it is what
   // opens the buy flow, so it lives in the screen state, not in here.
   const {
@@ -107,35 +112,34 @@ export function Canvas() {
     };
   }, []);
 
-  // The one place a click leaves the board, which makes it the one place the
-  // count moves (ticket 14). A pending block returns without a url and so counts
-  // nothing: there is nowhere to send anybody yet. Nothing about the visitor is
-  // recorded — one number goes up and that is the whole of it.
+  // The one place a click leaves the board.
+  //
+  // ⚠️ Nothing is counted here yet. Ticket 10 decided how a click is counted
+  // safely — a native anchor with an un-awaited mutation beside it — and
+  // [ticket 21](../../../.scratch/200squares-v1/issues/21-build-clicks.md)
+  // builds it. Ticket 15 leaves `clickCounts` to be written by that ticket, so
+  // the public total sits at zero until it lands, which is the truth.
   const follow = useCallback(
     (at: CellRef) => {
       const cell = board.cells[at.r][at.c];
-      const url =
-        cell.state === "banner"
-          ? bannerToday?.url
-          : cell.state === "pending"
-            ? // A pending block is paid for but has nothing to show yet.
-              undefined
-            : cell.block?.url;
       // An unsold banner is the house ad. It asks for a bid, so it opens the
       // bid flow rather than sitting there as the one dead end on the board.
       if (cell.state === "banner" && !bannerToday) {
         openBid();
         return;
       }
+      const url =
+        cell.state === "banner"
+          ? bannerToday?.url
+          : // A pending block is paid for but has nothing to show yet, and a
+            // reserved square is not a block.
+            cell.state === "pending" || cell.state === "reserved"
+            ? undefined
+            : cell.block?.url;
       if (!url) return;
-      if (cell.state === "banner") {
-        dispatch({ type: "clickBanner", dayOffset: bannerToday!.dayOffset });
-      } else if (cell.block) {
-        dispatch({ type: "clickThrough", blockId: cell.block.id });
-      }
       window.open(`https://${url}`, "_blank", "noopener,noreferrer");
     },
-    [board, bannerToday, openBid, dispatch],
+    [board, bannerToday, openBid],
   );
 
   const twoFinger = () => {
@@ -200,7 +204,7 @@ export function Canvas() {
       const at = cv.toCell(p);
       setHovered(at && board.cells[at.r][at.c].state === "available" ? at : null);
       setCursor(cursorFor(board, at));
-      const text = at ? tooltipFor(board, ownerOfBannerToday?.name ?? null, at) : null;
+      const text = at ? tooltipFor(board, bannerToday?.ownerName ?? null, at) : null;
       setTip(text ? { x: p.x, y: p.y, text } : null);
     }
 
@@ -375,15 +379,4 @@ function ZoomControls({
       </button>
     </div>
   );
-}
-
-/** Everything the canvas needs out of the board state, in one place. */
-function useBoardCanvasData() {
-  const { board, bannerToday, dispatch } = useBoard();
-  return {
-    board,
-    bannerToday,
-    dispatch,
-    ownerOfBannerToday: bannerToday ? board.ownerById.get(bannerToday.ownerId) ?? null : null,
-  };
 }

@@ -8,7 +8,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { selectionBlocked } from "@/lib/board/geometry";
-import { useBoard } from "@/lib/board/state";
+import { useBoard } from "@/lib/board/board";
 import type { Rect } from "@/lib/board/types";
 
 /** How wide the sliding panel is. The canvas needs the number too. */

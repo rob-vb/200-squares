@@ -16,19 +16,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PAGES, useHref } from "./nav";
+import { PAGES } from "./nav";
 import { useScreen } from "./panel/flow";
-import { useBoard } from "@/lib/board/state";
+import { useViewer } from "@/lib/board/viewer";
 import { cellCount } from "@/lib/board/geometry";
 
 export function TopBar() {
-  const { state, dispatch, viewer, viewerBlocks } = useBoard();
+  const { viewer, available, signIn, signOut, mine } = useViewer();
   const { openMine } = useScreen();
   const pathname = usePathname();
-  const href = useHref();
   const onBoard = pathname === "/";
 
-  const owned = viewerBlocks.reduce((n, b) => n + cellCount(b.rect), 0);
+  const owned = (mine?.blocks ?? []).reduce((n, b) => n + cellCount(b.rect), 0);
   const wordmark = "200 SQUARES";
   const wordmarkClass = "font-display text-[22px] leading-none tracking-[0.01em]";
 
@@ -40,7 +39,7 @@ export function TopBar() {
         {onBoard ? (
           <h1 className={wordmarkClass}>{wordmark}</h1>
         ) : (
-          <Link href={href("/")} className={`${wordmarkClass} shrink-0`}>
+          <Link href="/" className={`${wordmarkClass} shrink-0`}>
             {wordmark}
           </Link>
         )}
@@ -49,7 +48,7 @@ export function TopBar() {
           {PAGES.map((page, i) => (
             <Link
               key={page.href}
-              href={href(page.href)}
+              href={page.href}
               className={`truncate transition-colors duration-150 ${
                 pathname === page.href ? "text-ink font-medium" : "text-faint hover:text-ink"
               } ${i > 0 ? "hidden lg:inline" : ""}`}
@@ -61,7 +60,7 @@ export function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-3 lg:gap-4">
-        {state.signedIn && viewer ? (
+        {viewer ? (
           <div className="flex items-center gap-3 lg:gap-4">
             {onBoard ? (
               <button
@@ -74,7 +73,7 @@ export function TopBar() {
               </button>
             ) : (
               <Link
-                href={href("/")}
+                href="/"
                 className="hover:text-accent text-[13px] transition-colors duration-150"
               >
                 {viewer.name}
@@ -84,19 +83,20 @@ export function TopBar() {
             <button
               type="button"
               className="text-faint hover:text-ink hidden text-[13px] transition-colors duration-150 sm:inline"
-              onClick={() => dispatch({ type: "signOut" })}
+              onClick={signOut}
             >
               Sign out
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            className="shrink-0 text-[14px] font-medium"
-            onClick={() => dispatch({ type: "signIn" })}
-          >
-            Sign in
-          </button>
+          // ⚠️ The prototype's fake sign-in, and it is gone with ticket 18. It
+          // has nobody to become unless the deployment is seeded, so on
+          // production it is hidden rather than broken.
+          available && (
+            <button type="button" className="shrink-0 text-[14px] font-medium" onClick={signIn}>
+              Sign in
+            </button>
+          )
         )}
       </div>
     </header>

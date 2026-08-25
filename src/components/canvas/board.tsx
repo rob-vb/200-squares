@@ -7,13 +7,14 @@
 // available square. A block is a single grid item, which is why the seams inside
 // a bought rectangle disappear on their own.
 
-import type { Artwork, BannerDay, Rect } from "@/lib/board/types";
+import type { Artwork, BannerToday, Rect } from "@/lib/board/types";
 import {
   BANNER,
   COLS,
   NUMBER_MIN_PX,
   ROWS,
   SEAM,
+  artSrc,
   boxOf,
   cropStyle,
   gridArea,
@@ -27,16 +28,33 @@ function labelSize(label: string, wpx: number, hpx: number) {
 }
 
 /**
- * How artwork paints its box. An uploaded image may carry a crop, because a
- * block that was split keeps the same picture windowed to the part it still is.
+ * How artwork paints its box.
+ *
+ * An upload may carry a crop, because a block that was split keeps the same file
+ * windowed to the part it still is. Seeded artwork has nothing to crop: a
+ * wordmark simply re-fits, which is what a wordmark does anyway.
  */
-function artStyle(art: Artwork, wpx: number, hpx: number): React.CSSProperties {
-  return art.kind === "mock"
-    ? { background: art.bg, color: art.fg, fontSize: labelSize(art.label, wpx, hpx) }
-    : { backgroundImage: `url(${art.src})`, ...cropStyle(art.crop) };
+function artStyle(
+  art: Artwork,
+  wpx: number,
+  hpx: number,
+  scale: number,
+): React.CSSProperties {
+  if (art.kind === "seed") {
+    return { background: art.bg, color: art.fg, fontSize: labelSize(art.label, wpx, hpx) };
+  }
+  return { backgroundImage: `url(${artSrc(art, scale)})`, ...cropStyle(art.crop) };
 }
 
-function BannerCell({ day, cell }: { day: BannerDay | null; cell: number }) {
+function BannerCell({
+  day,
+  cell,
+  scale,
+}: {
+  day: BannerToday | null;
+  cell: number;
+  scale: number;
+}) {
   const step = cell + SEAM;
   const wpx = BANNER.w * step - SEAM;
 
@@ -64,17 +82,21 @@ function BannerCell({ day, cell }: { day: BannerDay | null; cell: number }) {
   }
 
   const art = day.artwork;
+  // A winner who brought no artwork gets the house ad in their place (ticket 07),
+  // so a banner day with nothing on it reads exactly like an unwon one.
+  if (!art) return <BannerCell day={null} cell={cell} scale={scale} />;
+
   return (
     <div
       className="flex flex-col items-center justify-center overflow-hidden text-center"
       style={{
         ...gridArea(BANNER),
-        ...(art.kind === "mock"
+        ...(art.kind === "seed"
           ? { background: art.bg, color: art.fg }
-          : { backgroundImage: `url(${art.src})`, ...cropStyle(art.crop) }),
+          : { backgroundImage: `url(${artSrc(art, scale)})`, ...cropStyle(art.crop) }),
       }}
     >
-      {art.kind === "mock" ? (
+      {art.kind === "seed" ? (
         <span className="font-display leading-none" style={{ fontSize: wpx * 0.13 }}>
           {art.label}
         </span>
@@ -95,7 +117,7 @@ export function Board({
   highlight,
 }: {
   board: BoardModel;
-  bannerToday: BannerDay | null;
+  bannerToday: BannerToday | null;
   /** Square size in px at scale 1 — the fit size. */
   cell: number;
   scale: number;
@@ -125,7 +147,7 @@ export function Board({
         gap: SEAM,
       }}
     >
-      <BannerCell day={bannerToday} cell={cell} />
+      <BannerCell day={bannerToday} cell={cell} scale={scale} />
 
       {board.blocks.map((block) => {
         const wpx = block.rect.w * step - SEAM;
@@ -151,9 +173,9 @@ export function Board({
           <div
             key={block.id}
             className="flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight"
-            style={{ ...gridArea(block.rect), ...artStyle(art, wpx, hpx) }}
+            style={{ ...gridArea(block.rect), ...artStyle(art, wpx, hpx, scale) }}
           >
-            {art.kind === "mock" ? art.label : null}
+            {art.kind === "seed" ? art.label : null}
           </div>
         );
       })}

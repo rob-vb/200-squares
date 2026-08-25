@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Anton, Archivo, Roboto_Mono } from "next/font/google";
+import { ConvexClientProvider } from "@/components/convex-provider";
 import "./globals.css";
 
 const display = Anton({ subsets: ["latin"], weight: "400", variable: "--f-display" });
@@ -19,7 +20,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       {/* The board page is exactly one screen — its main takes the space the top
           bar leaves. The other pages are as long as their text. */}
-      <body className="flex min-h-full flex-col">{children}</body>
+      {/* The Convex client lives above the router, so the websocket survives
+          navigation: a visitor who reads /how-it-works and comes back does not
+          open a second one. */}
+      <body className="flex min-h-full flex-col">
+        <ConvexClientProvider>{children}</ConvexClientProvider>
+      </body>
     </html>
   );
 }

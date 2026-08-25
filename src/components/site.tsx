@@ -2,26 +2,30 @@
 
 // The shell every page shares: one board, one top bar.
 //
-// The dataset is read on the server, by the page, and handed down — so every
-// page renders its markup on the server. Nothing here reads the query string on
-// the client: a hook that did would opt the whole page out of server rendering,
-// and these pages are mostly text.
+// ⚠️ It takes no props any more. The prototype handed a dataset down from the
+// server, which is why every page read `props.searchParams` — and that is why
+// ticket 08 found all five routes building **dynamic**. The board now comes from
+// Convex over a websocket the client opens after hydration, so there is nothing
+// to read at render and the routes are static again.
 //
-// The board is seeded per page, so navigating resets it. That is the rule ticket
-// 03 already set for a reload: a demo wants every visitor on the same board.
+// The board outlives navigation because the Convex client does (see
+// `convex-provider.tsx`). A block bought on the board is already gone from the
+// counter by the time /how-it-works opens.
 
 import { ScreenProvider } from "./panel/flow";
 import { TopBar } from "./top-bar";
-import { BoardProvider } from "@/lib/board/state";
-import type { Dataset } from "@/lib/board/types";
+import { BoardProvider } from "@/lib/board/board";
+import { ViewerProvider } from "@/lib/board/viewer";
 
-export function Site({ dataset, children }: { dataset: Dataset; children: React.ReactNode }) {
+export function Site({ children }: { children: React.ReactNode }) {
   return (
-    <BoardProvider dataset={dataset}>
-      <ScreenProvider>
-        <TopBar />
-        {children}
-      </ScreenProvider>
+    <BoardProvider>
+      <ViewerProvider>
+        <ScreenProvider>
+          <TopBar />
+          {children}
+        </ScreenProvider>
+      </ViewerProvider>
     </BoardProvider>
   );
 }

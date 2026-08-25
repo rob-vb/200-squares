@@ -15,28 +15,39 @@
 import { useRef, useState } from "react";
 import { Money, PanelHeader, SecondaryButton, cleanUrl, inputClass } from "./controls";
 import { useScreen } from "./flow";
-import { useBoard } from "@/lib/board/state";
+import { useViewer } from "@/lib/board/viewer";
 import { cellCount, priceOf, squareRange } from "@/lib/board/geometry";
-import { agoLabel, dayLabel } from "@/lib/board/time";
+import { agoLabel, dayLabel, usd } from "@/lib/board/time";
 import { useClientDate } from "../use-client-date";
-import type { Block } from "@/lib/board/types";
+import type { Rect } from "@/lib/board/types";
 
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+/** One block as `owners.mine` sends it: the board's fields plus a click count. */
+type MyBlock = {
+  id: string;
+  rect: Rect;
+  url: string;
+  artwork: unknown | null;
+  frozen: boolean;
+  clicks: number;
+};
 
 /** A bare count. A number and a noun, nothing around it. */
 export const clicksLabel = (clicks: number) =>
   `${clicks.toLocaleString("en-US")} ${clicks === 1 ? "click" : "clicks"}`;
 
 export function MySquares() {
-  const { state, viewer, viewerBlocks, viewerBannerDays, liveBids } = useBoard();
+  const { viewer, mine } = useViewer();
   // Null until the client has one: the day labels are the visitor's days.
   const now = useClientDate();
   const { close, setHighlight, highlight, openBid } = useScreen();
 
   // Pending first: an unfinished block is the only thing here that needs doing.
-  const blocks = [...viewerBlocks].sort((a, b) => Number(!!a.artwork) - Number(!!b.artwork));
+  const blocks = [...(mine?.blocks ?? [])].sort(
+    (a, b) => Number(!!a.artwork) - Number(!!b.artwork),
+  );
   const squares = blocks.reduce((n, b) => n + cellCount(b.rect), 0);
-  const myBids = liveBids.filter((b) => b.bidderId === state.viewerId);
+  const viewerBannerDays = mine?.bannerDays ?? [];
+  const myBids = mine?.bids ?? [];
 
   return (
     <>
@@ -75,14 +86,16 @@ export function MySquares() {
             <div className="text-faint pb-2 text-[13px]">Banner days you won</div>
             {viewerBannerDays.map((day) => (
               <div
-                key={day.dayOffset}
+                key={day.date}
                 className="flex items-baseline justify-between gap-3 py-1 text-[13px]"
               >
                 <span className="font-mono text-[12px]" data-numeric>
-                  {now ? dayLabel(day.dayOffset, now) : " "}
+                  {now ? dayLabel(day.date, now) : " "}
                 </span>
                 <span className="text-faint">{clicksLabel(day.clicks)}</span>
-                <Money amount={day.wonWith} className="text-[15px]" />
+                <span className="font-display text-[15px]" data-numeric>
+                  {usd(day.wonWithCents)}
+                </span>
               </div>
             ))}
           </div>
@@ -101,8 +114,10 @@ export function MySquares() {
                 key={bid.id}
                 className="flex items-baseline justify-between gap-3 py-1 text-[13px]"
               >
-                <Money amount={bid.amount} className="text-[15px]" />
-                <span className="text-faint">{agoLabel(bid.minutesAgo)}</span>
+                <Money amount={Math.round(bid.amountCents / 100)} className="text-[15px]" />
+                <span className="text-faint">
+                  {now ? agoLabel(bid.placedAt, now.getTime()) : " "}
+                </span>
               </div>
             ))
           )}
@@ -117,31 +132,30 @@ function BlockRow({
   lit,
   onPoint,
 }: {
-  block: Block;
+  block: MyBlock;
   lit: boolean;
   onPoint: () => void;
 }) {
-  const { dispatch } = useBoard();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [link, setLink] = useState(block.url);
 
+  // ⚠️ Neither write is built. Ticket 20 owns the upload — the browser crops and
+  // resizes to two exact WebP files before anything leaves the machine — and the
+  // guard both writes go through is ticket 18's `requireOwner(ctx, blockId)`.
+  // A button that silently did nothing would be worse than one that says so.
+  const soon = (what: string) => setError(`${what} is not built on this deployment yet.`);
+
   const upload = (chosen: File | null) => {
     if (!chosen) return;
-    if (!chosen.type.startsWith("image/")) return setError("That is not an image.");
-    if (chosen.size > MAX_UPLOAD_BYTES) return setError("Too large. The limit is 2 MB.");
-    setError(null);
-    dispatch({
-      type: "uploadArtwork",
-      blockId: block.id,
-      artwork: { kind: "image", src: URL.createObjectURL(chosen) },
-    });
+    soon("Uploading artwork");
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const saveLink = () => {
     const next = cleanUrl(link);
-    if (next) dispatch({ type: "editLink", blockId: block.id, url: next });
+    soon("Changing the link");
     setLink(next || block.url);
     setEditing(false);
   };

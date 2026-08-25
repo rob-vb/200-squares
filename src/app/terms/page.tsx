@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Contact } from "@/components/content/contact";
 import { ContentPage } from "@/components/content/content-page";
 import { Site } from "@/components/site";
-import { getDataset } from "@/lib/board/datasets";
 import { P, Section } from "@/components/content/section";
 
 export const metadata: Metadata = {
@@ -10,10 +9,9 @@ export const metadata: Metadata = {
   description: "What you buy, what you may put on it, and what is not promised.",
 };
 
-export default async function Page(props: PageProps<"/terms">) {
-  const { data } = await props.searchParams;
+export default function Page() {
   return (
-    <Site dataset={getDataset(data)}>
+    <Site>
       <ContentPage
         title="TERMS"
         intro="Short, and in the same words the rest of the site uses. Buying a square or placing a bid means these apply to you."

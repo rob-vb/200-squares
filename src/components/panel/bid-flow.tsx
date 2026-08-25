@@ -3,21 +3,42 @@
 // Bid: the auction, in the panel. Three states — nobody has bid, you are top,
 // you were outbid — and one field that always knows what the next bid has to be.
 //
-// The tension of an auction is being passed. A prototype has nobody to pass you,
-// so a single fake rival goes over the visitor once, about twenty seconds after
-// they bid (it is scheduled in `state.tsx`, so it lands even with the panel shut).
+// ⚠️ The prototype's fake rival is gone with the reducer. It went over the
+// visitor about twenty seconds after they bid, to make being passed visible on a
+// board nobody else was looking at. The bids are real rows now, and a real rival
+// arrives when somebody else bids.
+//
+// ⚠️ Placing a bid is **not built here**. A bid is a card authorization, refused
+// at the keyboard if the hold would die before the coming 00:00 UTC, and that is
+// [ticket 19](../../../.scratch/200squares-v1/issues/19-build-auction.md)'s
+// whole job. This panel reads the auction and stops at the button.
 
 import { useState } from "react";
+import { useClientDate } from "../use-client-date";
 import { Countdown } from "../countdown";
 import { Field, Money, PanelHeader, PrimaryButton, inputClass } from "./controls";
 import { useScreen } from "./flow";
-import { BID_FLOOR, useBoard } from "@/lib/board/state";
+import { BID_FLOOR, useBoard } from "@/lib/board/board";
+import { useViewer } from "@/lib/board/viewer";
 import { agoLabel } from "@/lib/board/time";
 
 export function BidFlow() {
-  const { state, dispatch, topBid, liveBids, minNextBid, viewerIsTopBidder, viewerOutbid, board } =
-    useBoard();
+  const { auction } = useBoard();
+  const { viewer } = useViewer();
   const { close } = useScreen();
+  const now = useClientDate();
+
+  const liveBids = auction?.bids ?? [];
+  const topBid = liveBids.reduce<(typeof liveBids)[number] | null>(
+    (best, b) => (!best || b.amountCents > best.amountCents ? b : best),
+    null,
+  );
+  const minNextBid = Math.round((auction?.minNextCents ?? BID_FLOOR * 100) / 100);
+  // Only *theirs* once they are signed in: a stranger must not be told they were
+  // outbid, because the site does not know who a stranger is.
+  const viewerIsTopBidder = !!viewer && topBid?.ownerId === viewer.id;
+  const viewerOutbid =
+    !!viewer && !viewerIsTopBidder && liveBids.some((b) => b.ownerId === viewer.id);
 
   const [amount, setAmount] = useState(String(minNextBid));
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +59,7 @@ export function BidFlow() {
       setError(`The next bid is at least $${minNextBid.toLocaleString("en-US")}.`);
       return;
     }
-    setError(null);
-    dispatch({ type: "placeBid", amount: value });
+    setError("Bidding is not open on this deployment yet. The card hold arrives with ticket 19.");
   };
 
   return (
@@ -54,14 +74,14 @@ export function BidFlow() {
         <div className="border-hairline flex items-end justify-between gap-4 border-b px-4 py-3">
           <div>
             <div className="text-faint text-[13px] leading-tight">Closes 00:00 UTC</div>
-            <Countdown className="font-display text-[30px] leading-none" />
+            <Countdown className="font-display text-[30px] leading-none" until={auction?.closesAt} />
           </div>
           <div className="text-right">
             <div className="text-faint text-[13px] leading-tight">
               {topBid ? `Top bid · ${liveBids.length} bids` : "No bids yet"}
             </div>
             <Money
-              amount={topBid ? topBid.amount : BID_FLOOR}
+              amount={topBid ? Math.round(topBid.amountCents / 100) : BID_FLOOR}
               className="text-[26px] leading-none"
             />
           </div>
@@ -104,18 +124,21 @@ export function BidFlow() {
 
         <div className="border-hairline min-h-0 flex-1 overflow-y-auto border-t">
           {liveBids.map((bid) => {
-            const bidder = board.ownerById.get(bid.bidderId);
-            const mine = bid.bidderId === state.viewerId;
+            const mine = !!viewer && bid.ownerId === viewer.id;
             return (
               <div
                 key={bid.id}
                 className="border-hairline flex items-baseline justify-between gap-3 border-b px-4 py-2 text-[13px] last:border-b-0"
               >
                 <span className={mine ? "font-semibold" : ""}>
-                  {mine ? "You" : (bidder?.name ?? "Somebody")}
+                  {mine ? "You" : (bid.ownerName || "Somebody")}
                 </span>
-                <span className="text-faint">{agoLabel(bid.minutesAgo)}</span>
-                <Money amount={bid.amount} className="text-[15px]" />
+                {/* Null until the client has a clock: "how long ago" is the
+                    visitor's own, and the server has no idea what second it is. */}
+                <span className="text-faint">
+                  {now ? agoLabel(bid.placedAt, now.getTime()) : " "}
+                </span>
+                <Money amount={Math.round(bid.amountCents / 100)} className="text-[15px]" />
               </div>
             );
           })}

@@ -8,13 +8,35 @@
  * @module
  */
 
+import type * as auction from "../auction.js";
+import type * as board from "../board.js";
+import type * as crons from "../crons.js";
+import type * as lib_board from "../lib/board.js";
+import type * as lib_time from "../lib/time.js";
+import type * as owners from "../owners.js";
+import type * as reservations from "../reservations.js";
+import type * as seed from "../seed.js";
+import type * as seedData from "../seedData.js";
+import type * as snapshots from "../snapshots.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  auction: typeof auction;
+  board: typeof board;
+  crons: typeof crons;
+  "lib/board": typeof lib_board;
+  "lib/time": typeof lib_time;
+  owners: typeof owners;
+  reservations: typeof reservations;
+  seed: typeof seed;
+  seedData: typeof seedData;
+  snapshots: typeof snapshots;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

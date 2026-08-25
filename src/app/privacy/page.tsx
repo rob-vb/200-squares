@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Contact } from "@/components/content/contact";
 import { ContentPage } from "@/components/content/content-page";
 import { Site } from "@/components/site";
-import { getDataset } from "@/lib/board/datasets";
 import { P, Section } from "@/components/content/section";
 
 export const metadata: Metadata = {
@@ -10,10 +9,9 @@ export const metadata: Metadata = {
   description: "What this site stores, what it counts, and what it keeps about you.",
 };
 
-export default async function Page(props: PageProps<"/privacy">) {
-  const { data } = await props.searchParams;
+export default function Page() {
   return (
-    <Site dataset={getDataset(data)}>
+    <Site>
       <ContentPage
         title="PRIVACY"
         intro="This site sells squares on a page. It does not need to know much about you, so it does not ask."

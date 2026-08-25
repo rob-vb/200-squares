@@ -8,7 +8,7 @@
 // block bought on the board has already changed this number by the time the
 // page opens.
 
-import { useBoard } from "@/lib/board/state";
+import { useBoard } from "@/lib/board/board";
 import { SQUARE_COUNT } from "@/lib/board/geometry";
 
 export function Counter() {

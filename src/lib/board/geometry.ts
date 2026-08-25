@@ -4,7 +4,7 @@
 // so a cell advances by `cell + SEAM`. Ticket 02's spike ignored the seam and its
 // hit-testing drifted by most of a square at the right edge of the grid.
 
-import type { Artwork, Block, Crop, Owner, Rect, SquareState } from "./types";
+import type { Artwork, Block, Crop, Rect, SquareState } from "./types";
 
 export const COLS = 16;
 export const ROWS = 14;
@@ -65,14 +65,19 @@ export type Cell = {
 export type BoardModel = {
   cells: Cell[][];
   blocks: Block[];
-  ownerById: Map<string, Owner>;
-  /** Every square nobody has bought, ready to render one by one. */
+  /** Every square nobody holds, ready to render one by one. */
   available: { r: number; c: number; n: number }[];
   stats: { total: number; taken: number; pending: number; available: number };
 };
 
-/** The whole derived view of the board. Blocks in, squares out. */
-export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
+/**
+ * The whole derived view of the board. Blocks and holds in, squares out.
+ *
+ * ⚠️ A reserved square is neither `pending` (that means paid) nor `taken`, and
+ * the viewer is never told the difference: all three read as unavailable. It is
+ * the only state a square leaves without anybody acting.
+ */
+export function buildBoard(blocks: Block[], reserved: Rect[]): BoardModel {
   const cells: Cell[][] = Array.from({ length: ROWS }, (_, r) =>
     Array.from({ length: COLS }, (_, c) => ({
       state: (isBanner(r, c) ? "banner" : "available") as SquareState,
@@ -81,8 +86,19 @@ export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
     })),
   );
 
+  // Reservations first, so a block written over one wins: the reservation is
+  // what the block came out of, and a late sweep must never hide a real sale.
+  for (const rect of reserved) {
+    for (let r = rect.r; r < rect.r + rect.h; r++) {
+      for (let c = rect.c; c < rect.c + rect.w; c++) {
+        if (cells[r][c].state === "available") cells[r][c].state = "reserved";
+      }
+    }
+  }
+
   for (const block of blocks) {
-    const state: SquareState = block.artwork ? "taken" : "pending";
+    // A frozen block may hold no artwork, so it reads as one waiting for some.
+    const state: SquareState = block.artwork && !block.frozen ? "taken" : "pending";
     for (let r = block.rect.r; r < block.rect.r + block.rect.h; r++) {
       for (let c = block.rect.c; c < block.rect.c + block.rect.w; c++) {
         cells[r][c].state = state;
@@ -106,8 +122,9 @@ export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
   return {
     cells,
     blocks,
-    ownerById: new Map(owners.map((o) => [o.id, o])),
     available,
+    // `taken` and `pending` count squares somebody paid for. A reserved square
+    // is in none of the three: it is not available, and nobody owns it yet.
     stats: { total: SQUARE_COUNT, taken, pending, available: available.length },
   };
 }
@@ -160,65 +177,12 @@ export function squareRange(rect: Rect): string {
 }
 
 // ---------------------------------------------------------------------------
-// Cutting a block up. A block can be sold in part — one rectangle out of a
-// bigger one — and what is left over is not a rectangle, so it falls apart into
-// blocks that are. Resale is V1.1, but a part sale is not only resale: the
-// remainder is what the loser of a race for the same squares is offered instead.
-
-/** The overlap of two rectangles, or null where they do not touch. */
-export function intersect(a: Rect, b: Rect): Rect | null {
-  const r = Math.max(a.r, b.r);
-  const c = Math.max(a.c, b.c);
-  const r2 = Math.min(a.r + a.h, b.r + b.h);
-  const c2 = Math.min(a.c + a.w, b.c + b.w);
-  return r2 > r && c2 > c ? { r, c, w: c2 - c, h: r2 - r } : null;
-}
-
-/**
- * What the seller is left holding once `part` is sold out of `rect`.
- *
- * A buyer takes any rectangle they like, so what is left is a rectangle with a
- * bite out of it — which is not a block, because a block renders one image and
- * an L cannot. It falls apart into at most four blocks instead: a strip above,
- * a strip below, and whatever is left to the left and right of the bite.
- *
- * The seller keeps every square they did not sell. They simply hold them as
- * more than one block, each with its own crop of the artwork they had.
- */
-export function remainderOf(rect: Rect, part: Rect): Rect[] {
-  const above = part.r - rect.r;
-  const below = rect.r + rect.h - (part.r + part.h);
-  const left = part.c - rect.c;
-  const right = rect.c + rect.w - (part.c + part.w);
-  const out: Rect[] = [];
-  if (above > 0) out.push({ r: rect.r, c: rect.c, w: rect.w, h: above });
-  if (below > 0) out.push({ r: part.r + part.h, c: rect.c, w: rect.w, h: below });
-  if (left > 0) out.push({ r: part.r, c: rect.c, w: left, h: part.h });
-  if (right > 0) out.push({ r: part.r, c: part.c + part.w, w: right, h: part.h });
-  return out;
-}
-
-/**
- * The same artwork, cropped to a sub-rectangle of the block it was on.
- *
- * Mock artwork is a colour and a wordmark, so it has nothing to crop: it simply
- * re-fits to the smaller rectangle, which is what a wordmark does anyway. An
- * uploaded image carries a window, and windows compose — a block cut twice
- * narrows the window twice rather than losing the first cut.
- */
-export function cropArtwork(art: Artwork | null, from: Rect, to: Rect): Artwork | null {
-  if (!art || art.kind !== "image") return art;
-  const outer = art.crop ?? { x: 0, y: 0, w: 1, h: 1 };
-  return {
-    ...art,
-    crop: {
-      x: outer.x + ((to.c - from.c) / from.w) * outer.w,
-      y: outer.y + ((to.r - from.r) / from.h) * outer.h,
-      w: (to.w / from.w) * outer.w,
-      h: (to.h / from.h) * outer.h,
-    },
-  };
-}
+// Artwork on the page.
+//
+// ⚠️ Cutting a block up used to live here. It moved to `convex/lib/board.ts`,
+// because both places that need it are on the server: the reservation's overlap
+// check offers the loser the remainder of what they drew, and a part sale splits
+// a block inside a webhook where there is no browser to re-cut anything.
 
 /**
  * `background-size` and `background-position` for a cropped image.
@@ -236,3 +200,27 @@ export function cropStyle(crop: Crop | undefined): React.CSSProperties {
     }%`,
   };
 }
+
+/**
+ * Where an uploaded file is served from.
+ *
+ * ⚠️ **Never from Convex to a visitor.** Convex Free includes only 1 GB of
+ * egress, and a board that served its own artwork would spend it on a good day.
+ * `/art/<storageId>` streams the file through Vercel's edge with a year-long
+ * immutable cache, so Convex is read once per file per region (ticket 09).
+ *
+ * A new file means a new storage id means a new URL, so nothing is ever busted.
+ *
+ * ⚠️ The route itself arrives with
+ * [ticket 20](../../../.scratch/200squares-v1/issues/20-build-artwork.md). This
+ * is only the address; until that lands the only artwork on any board is seeded,
+ * which is a colour and a wordmark and needs no file.
+ */
+export const artUrl = (storageId: string) => `/art/${storageId}`;
+
+/**
+ * The two sizes the browser produced before upload: the `1x` set below 2x zoom,
+ * the `4x` only above it. A phone never downloads the large one at fit scale.
+ */
+export const artSrc = (art: Artwork, scale: number) =>
+  art.kind === "upload" ? artUrl(scale > 2 ? art.large : art.small) : null;

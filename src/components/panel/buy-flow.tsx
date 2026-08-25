@@ -1,84 +1,99 @@
 "use client";
 
 // Buy: one screen, not a wizard. The selection was already confirmed by the chip
-// on the canvas, so the panel only has to collect who you are and put the
-// artwork on the board.
+// on the canvas, so the panel only has to hold the rectangle while the visitor
+// pays for it.
 //
-// Artwork is optional on purpose. A flow that could never finish without an
-// image could never produce a `pending` block, and the board would be rendering
-// a state the product cannot reach.
+// ⚠️ Company, link and artwork have **left this panel**. They were the
+// prototype's, and ticket 06 moved them: the link and the image are supplied
+// after payment, from the thank-you page, and their place here is taken by the
+// ticket 03 fields — buyer type, country, name, the conditional EU VAT number,
+// the withdrawal box and the invoice line. Those, the order button that says
+// *Order now — obliges you to pay*, and Stripe itself all arrive with
+// [ticket 16](../../../.scratch/200squares-v1/issues/16-build-checkout.md).
+//
+// What ticket 15 does build is the thing underneath all of it: **the claim**. A
+// reservation holds the rectangle for fifteen minutes, exactly one visitor can
+// win a given square, and the loser is handed back the part of their drag that
+// survived rather than an error.
 
-import { useRef, useState } from "react";
-import {
-  Field,
-  Money,
-  PanelHeader,
-  PrimaryButton,
-  SecondaryButton,
-  cleanUrl,
-  inputClass,
-} from "./controls";
+import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@convex/api";
+import type { Id } from "@convex/dataModel";
+import { Money, PanelHeader, PrimaryButton, SecondaryButton } from "./controls";
 import { useScreen } from "./flow";
-import { useBoard } from "@/lib/board/state";
+import { Countdown } from "../countdown";
 import { PRICE_PER_SQUARE, cellCount, priceOf, squareRange } from "@/lib/board/geometry";
 import type { Rect } from "@/lib/board/types";
 
-/** The one rule the upload enforces. Aspect ratio is handled by object-fit. */
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+/** How the reservation attempt ended. `null` means it has not been made. */
+type Held = { id: Id<"reservations">; expiresAt: number };
 
 export function BuyFlow({ rect }: { rect: Rect }) {
-  const { dispatch } = useBoard();
-  const { close, setPreview, showBought } = useScreen();
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const { close, selectRect } = useScreen();
+  const reserve = useMutation(api.reservations.reserve);
+  const release = useMutation(api.reservations.release);
 
-  const [company, setCompany] = useState("");
-  const [url, setUrl] = useState("");
-  const [file, setFile] = useState<{ name: string; src: string } | null>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
+  const [held, setHeld] = useState<Held | null>(null);
+  const [lost, setLost] = useState<{ offer: Rect | null } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const price = priceOf(rect);
   const squares = cellCount(rect);
-  const urlOk = /^[^\s.]+\.[^\s.]{2,}/.test(cleanUrl(url));
-  const ready = company.trim().length > 0 && urlOk;
 
-  const chooseFile = (chosen: File | null) => {
-    if (!chosen) return;
-    if (!chosen.type.startsWith("image/")) {
-      setFileError("That is not an image.");
-      return;
+  const claim = async () => {
+    setBusy(true);
+    setLost(null);
+    try {
+      const result = await reserve({ rect });
+      if (result.ok) {
+        setHeld({ id: result.reservationId, expiresAt: result.expiresAt });
+        return;
+      }
+      // ⚠️ Somebody got there first. Ticket 05: the loser is not shown an error
+      // and sent away — their selection is redrawn without the part that went,
+      // so a 2 × 2 that lost one square becomes a 1 × 2 in one tap. Only a total
+      // overlap leaves nothing to show.
+      setLost({ offer: result.offer });
+      if (result.offer) selectRect(result.offer);
+    } finally {
+      setBusy(false);
     }
-    if (chosen.size > MAX_UPLOAD_BYTES) {
-      setFileError(`Too large — ${(chosen.size / 1024 / 1024).toFixed(1)} MB. The limit is 2 MB.`);
-      return;
-    }
-    const src = URL.createObjectURL(chosen);
-    setFileError(null);
-    setFile({ name: chosen.name, src });
-    // This is the moment the idea lands: the image fills the rectangle on the
-    // canvas before a single thing is confirmed.
-    setPreview(src);
   };
 
-  const clearFile = () => {
-    setFile(null);
-    setFileError(null);
-    setPreview(null);
-    if (fileRef.current) fileRef.current.value = "";
+  const giveBack = async () => {
+    if (held) await release({ reservationId: held.id });
+    setHeld(null);
+    close();
   };
 
-  const confirm = () => {
-    setTouched(true);
-    if (!ready) return;
-    dispatch({
-      type: "buy",
-      rect,
-      company: company.trim(),
-      url: cleanUrl(url),
-      artwork: file ? { kind: "image", src: file.src } : null,
-    });
-    showBought(rect, file !== null);
-  };
+  if (held) {
+    return (
+      <>
+        <PanelHeader
+          title="Held for you"
+          note={`Square ${squareRange(rect)} · ${squares} ${squares === 1 ? "square" : "squares"}`}
+          onClose={giveBack}
+        />
+        <div className="flex flex-col gap-4 px-4 py-4">
+          <div className="border-hairline flex items-baseline justify-between border-b pb-3">
+            <span className="text-[14px]">Nobody else can take these</span>
+            <Countdown className="font-display text-[26px] leading-none" until={held.expiresAt} />
+          </div>
+          <p className="text-[14px] leading-snug">
+            The squares are yours for fifteen minutes. On the board they read as taken, and if you
+            do not pay in that time they go back to being for sale.
+          </p>
+          <p className="text-faint text-[13px] leading-snug">
+            Payment is not built yet. This deployment holds the rectangle and stops there — the
+            checkout, the VAT and the invoice arrive with ticket 16.
+          </p>
+          <SecondaryButton onClick={giveBack}>Give them back</SecondaryButton>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -94,69 +109,19 @@ export function BuyFlow({ rect }: { rect: Rect }) {
           <Money amount={price} className="text-[26px] leading-none" />
         </div>
 
-        <Field
-          label="Company name"
-          error={touched && company.trim() === "" ? "Your name goes on the block." : null}
-        >
-          <input
-            className={inputClass}
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            placeholder="Northwind"
-            autoComplete="organization"
-          />
-        </Field>
+        {lost ? (
+          <p className="text-accent text-[14px] leading-snug">
+            {lost.offer
+              ? "Somebody took part of that while you were drawing. What is left is selected — take it, or draw somewhere else."
+              : "Somebody took those while you were drawing. Draw somewhere else."}
+          </p>
+        ) : null}
 
-        <Field
-          label="Website"
-          error={touched && !urlOk ? "A website is needed — this is what a click opens." : null}
-          hint="Clicking your block opens this address."
-        >
-          <input
-            className={inputClass}
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="northwind.co"
-            inputMode="url"
-            autoComplete="url"
-          />
-        </Field>
-
-        <Field
-          label="Artwork"
-          error={fileError}
-          hint={file ? undefined : "Optional. You can add it later — the block waits for it."}
-        >
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => chooseFile(e.target.files?.[0] ?? null)}
-          />
-          {file ? (
-            <div className="border-hairline flex items-center gap-3 border bg-white px-3 py-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={file.src} alt="" className="h-8 w-8 shrink-0 object-cover" />
-              <span className="min-w-0 flex-1 truncate text-[13px]">{file.name}</span>
-              <button
-                type="button"
-                onClick={clearFile}
-                className="text-faint hover:text-ink shrink-0 text-[13px] transition-colors duration-150"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <SecondaryButton onClick={() => fileRef.current?.click()}>Choose image</SecondaryButton>
-          )}
-        </Field>
-
-        <PrimaryButton onClick={confirm}>
-          BUY FOR ${price.toLocaleString("en-US")}
+        <PrimaryButton onClick={claim} disabled={busy}>
+          {busy ? "HOLDING…" : `HOLD FOR $${price.toLocaleString("en-US")}`}
         </PrimaryButton>
         <p className="text-faint text-[12px] leading-snug">
-          Nothing is charged. This is a prototype: no payment, no account.
+          Nothing is charged yet. The squares are held for fifteen minutes while you pay.
         </p>
       </div>
     </>
@@ -179,9 +144,7 @@ export function BoughtFlow({ rect, hasArtwork }: { rect: Rect; hasArtwork: boole
             ? "It is on the board now, and a click on it opens your website."
             : "It is paid for and marked on the board. It stays marked until your artwork arrives."}
         </p>
-        {hasArtwork ? null : (
-          <PrimaryButton onClick={openMine}>ADD YOUR ARTWORK</PrimaryButton>
-        )}
+        {hasArtwork ? null : <PrimaryButton onClick={openMine}>ADD YOUR ARTWORK</PrimaryButton>}
         <SecondaryButton onClick={openMine}>My squares</SecondaryButton>
       </div>
     </>
