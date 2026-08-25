@@ -24,3 +24,12 @@ export const RESERVATION_MS = 15 * 60 * 1000;
 
 /** A strike expires after twelve months (ticket 11). */
 export const STRIKE_MS = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * The 00:00 UTC that **starts** the day `date` — which is the moment the
+ * auction for that banner closes and the day it decides begins.
+ *
+ * ⚠️ The two are the same instant on purpose. Ticket 07: the winner gets no
+ * preparation time at all, which is why a bid may carry artwork while it stands.
+ */
+export const midnightOf = (date: string) => Date.parse(`${date}T00:00:00.000Z`);

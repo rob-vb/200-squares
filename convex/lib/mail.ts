@@ -60,3 +60,62 @@ export const magicLinkMail = (url: string) => ({
     "If something is wrong, reply to this message. A person reads it.",
   ].join("\n"),
 });
+
+/**
+ * You have been outbid.
+ *
+ * ⚠️ Written to be true **whenever it is read**, which is
+ * [ticket 13](../../.scratch/200squares-v1/issues/13-email.md)'s rule for every
+ * auction mail: it names the close time and never a countdown. "Two minutes
+ * left" is a lie by the time the message is opened, and it would be the site's
+ * own copy telling it. Sent immediately, always, and a late one is never
+ * suppressed — every cutoff is wrong for somebody.
+ *
+ * The second paragraph is the one ticket 07 made load-bearing: the hold stays.
+ * Nothing is released until somebody has paid, so an outbid bidder's money is
+ * still frozen and they are told so rather than finding out from their bank.
+ */
+export const outbidMail = (input: { yours: number; top: number; date: string }) => ({
+  subject: "You have been outbid on the 200 squares banner",
+  text: [
+    `Somebody has bid more than you for the banner on ${input.date}.`,
+    "",
+    `Your bid: ${usd(input.yours)}. The top bid now: ${usd(input.top)}.`,
+    "",
+    "Your hold is still on your card. It stays there until the auction closes at",
+    "00:00 UTC, because the banner goes to the highest bid that can actually be",
+    "collected — and yours is next in line if the one above it cannot be. If you",
+    "do not win, the hold is released at the close and your bank may take some",
+    "days to show it.",
+    "",
+    "To take the lead back, bid again on 200squares.com.",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/**
+ * You won the banner.
+ *
+ * ⚠️ It says which of the two things happened, because ticket 07 left the winner
+ * no preparation time: a prepared bidder's image is already up, and an
+ * unprepared one is looking at the house ad until they upload.
+ */
+export const wonMail = (input: { amount: number; date: string; hasArtwork: boolean }) => ({
+  subject: `You have the 200 squares banner on ${input.date}`,
+  text: [
+    `Your bid of ${usd(input.amount)} won the banner for ${input.date}.`,
+    `We collected the hold on your card at 00:00 UTC. The day runs to the next 00:00 UTC.`,
+    "",
+    input.hasArtwork
+      ? "Your image is on the board now."
+      : "You attached no image, so the house advertisement is standing in your place. Sign in on 200squares.com and upload one; it goes up the moment you do.",
+    "",
+    "Your invoice follows.",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/** Whole cents to `$1,250`. Money is never a float, not even in a sentence. */
+const usd = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;

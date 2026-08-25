@@ -43,7 +43,15 @@ export const mine = query({
       bannerDays: v.array(
         v.object({ date: v.string(), wonWithCents: v.number(), clicks: v.number() }),
       ),
-      bids: v.array(v.object({ id: v.string(), amountCents: v.number(), placedAt: v.number() })),
+      bids: v.array(
+        v.object({
+          id: v.string(),
+          amountCents: v.number(),
+          placedAt: v.number(),
+          /** Where the banner will point if this bid wins. Ticket 19. */
+          url: v.string(),
+        }),
+      ),
     }),
   ),
   handler: async (ctx) => {
@@ -100,7 +108,12 @@ export const mine = query({
         .collect()
     )
       .filter((r) => r.date === nextDate(today) && r.status === "held")
-      .map((r) => ({ id: r._id as string, amountCents: r.amountCents, placedAt: r.placedAt }));
+      .map((r) => ({
+        id: r._id as string,
+        amountCents: r.amountCents,
+        placedAt: r.placedAt,
+        url: r.url ?? "",
+      }));
 
     return {
       id: owner._id as string,
@@ -109,6 +122,44 @@ export const mine = query({
       blocks,
       bannerDays,
       bids,
+    };
+  },
+});
+
+/**
+ * The ticket 03 fields this owner last gave, to fill a form in with.
+ *
+ * ⚠️ **A form filler, not the record** — ticket 07's own words. Every order
+ * freezes its own copy, so `05`'s "an invoice is never recomputed" is untouched
+ * and changing an answer here changes nothing that was already sold. It reads
+ * the last order rather than four columns on `owners`, because `owners` is read
+ * whole by the board query and every column on it is paid for by every viewer.
+ */
+export const lastDeclared = query({
+  args: {},
+  returns: v.union(
+    v.null(),
+    v.object({
+      buyerType: v.union(v.literal("business"), v.literal("consumer")),
+      country: v.string(),
+      name: v.string(),
+      vatNumber: v.string(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const owner = await currentOwner(ctx);
+    if (!owner) return null;
+    const last = await ctx.db
+      .query("orders")
+      .withIndex("by_owner", (q) => q.eq("ownerId", owner._id))
+      .order("desc")
+      .first();
+    if (!last) return null;
+    return {
+      buyerType: last.buyerType,
+      country: last.country,
+      name: last.name,
+      vatNumber: last.vatNumber ?? "",
     };
   },
 });

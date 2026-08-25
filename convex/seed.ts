@@ -246,3 +246,50 @@ export const adopt = mutation({
     return `${best.name} (${most} blocks) now answers to ${address}.`;
   },
 });
+
+/**
+ * Bring tomorrow's auction forward, so the close can be watched happening.
+ *
+ * ⚠️ The close is the one path on this site that cannot be tested by waiting for
+ * it: it fires at 00:00 UTC, once a day, and the ticket that built it asks for a
+ * **declined capture** to be forced by hand — a case that has never run and that
+ * the copy now promises. So this moves every live bid on tomorrow's banner back
+ * to today, whose 00:00 UTC has already passed, and clears today's day row. The
+ * next run of the hourly cron then closes it for real, with real holds and real
+ * captures against Stripe test mode.
+ *
+ *   npx convex run seed:ageAuction
+ *   npx convex run auction:closeDue     # or wait for the hour
+ *
+ * It writes no outcome of its own. Everything after it is the production path.
+ *
+ * `SEED_ENABLED` guards it like everything else here. On production it would
+ * collect a day of card holds hours before the day it was collecting them for.
+ */
+export const ageAuction = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    guard();
+    const today = todayUtc(Date.now());
+    const tomorrow = daysAgo(-1);
+
+    const day = await ctx.db
+      .query("bannerDays")
+      .withIndex("by_date", (q) => q.eq("date", today))
+      .unique();
+    if (day) await ctx.db.delete(day._id);
+
+    const bids = await ctx.db
+      .query("bids")
+      .withIndex("by_date", (q) => q.eq("date", tomorrow))
+      .collect();
+    let moved = 0;
+    for (const bid of bids) {
+      if (bid.status !== "held" && bid.status !== "pending") continue;
+      await ctx.db.patch(bid._id, { date: today });
+      moved += 1;
+    }
+    return `Moved ${moved} bids from ${tomorrow} to ${today}. Run auction:closeDue.`;
+  },
+});

@@ -1,7 +1,7 @@
 # 19 — Build: the auction on real card holds
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 07, 14, 15, 18 (all done 2026-08-25 — this is now on the frontier)
 Parent: ../map.md
 

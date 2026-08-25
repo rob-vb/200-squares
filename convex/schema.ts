@@ -260,7 +260,17 @@ export default defineSchema({
     refundReason: v.optional(v.string()),
 
     createdAt: v.number(),
-  }).index("by_session", ["stripeSessionId"]),
+  })
+    .index("by_session", ["stripeSessionId"])
+    /**
+     * ⚠️ Ticket 07 asked for the ticket 03 fields as **remembered defaults** on
+     * `owners`, and they are not there: an order already freezes every one of
+     * them, and `owners` is read whole by the board query (ADR 0001), so four
+     * more columns on it would be paid for by every viewer on every write. The
+     * bidder's last order is the same answer for free — and it is honest about
+     * what it is, because ticket 07 called these a form filler, not the record.
+     */
+    .index("by_owner", ["ownerId"]),
 
   /**
    * The invoice as a document. One per order, one series per calendar year.
@@ -331,28 +341,67 @@ export default defineSchema({
   bids: defineTable({
     /** The banner day bid for, `YYYY-MM-DD` UTC. */
     date: v.string(),
-    ownerId: v.id("owners"),
+    /**
+     * ⚠️ Empty until Stripe has said who paid. A bid is opened before the card
+     * is seen, the same way a reservation is taken before the buyer is known,
+     * and the address that makes an owner arrives with the webhook (ticket 08).
+     */
+    ownerId: v.optional(v.id("owners")),
     amountCents: v.number(),
-    /** The manual-capture PaymentIntent holding the money. */
-    paymentIntentId: v.string(),
+    /** The manual-capture PaymentIntent holding the money. Set when it exists. */
+    paymentIntentId: v.optional(v.string()),
     /**
      * ⚠️ Read on every bid: a hold that would die before the coming 00:00 UTC is
-     * refused at the keyboard, so the bidder can reach for another card while
-     * they are still looking at the screen (ticket 07).
+     * refused, so the bidder can reach for another card while they are still
+     * looking at the screen (ticket 07).
      */
-    captureBefore: v.number(),
+    captureBefore: v.optional(v.number()),
+    /**
+     * ⚠️ `pending` is ticket 19's, and it is the bid's half of a reservation: a
+     * row that exists so the amount and the caller can be judged **before**
+     * Stripe is asked for anything. Nothing outside the bid's own two screens
+     * ever sees one — `auction.live` shows `held` and nothing else.
+     *
+     * `held` is a live card authorization. ⚠️ It stays held while the bidder is
+     * outbid: ticket 07's rule is that **nothing is released until somebody has
+     * paid**, and a runner-up with no hold cannot be promoted at the close.
+     */
     status: v.union(
+      v.literal("pending"),
       v.literal("held"),
       v.literal("captured"),
       v.literal("released"),
       v.literal("failed"),
     ),
-    /** The ticket 03 fields for the invoice, frozen the way an order's are. */
+    /** The Checkout Session the hold was taken through. One session, one bid. */
+    stripeSessionId: v.optional(v.string()),
+    /** A pending bid dies fifteen minutes after it was opened, like a hold. */
+    pendingUntil: v.optional(v.number()),
+    /**
+     * The same salted hash a reservation keeps, and for the same reason: one
+     * pending bid per caller, so opening rows is not a free way to spend the
+     * site's Stripe quota. It never travels with a bid that became a hold.
+     */
+    ipHash: v.optional(v.string()),
+    /**
+     * What the winner's banner will show, attached to the bid while it stands
+     * (ticket 07). Optional and replaceable — the winner gets no preparation
+     * time, so a prepared bidder gets the whole day and an unprepared one gets
+     * the house ad until they upload. Copied onto `bannerDays` at the close.
+     *
+     * ⚠️ `artwork` is written by [ticket 20](../.scratch/200squares-v1/issues/20-build-artwork.md),
+     * which owns the upload. Ticket 19 built the field, the link beside it and
+     * the copy onto the banner day.
+     */
+    url: v.optional(v.string()),
+    artwork: v.optional(artwork),
+    /** The order this bid became, once it was captured. */
     orderId: v.optional(v.id("orders")),
     placedAt: v.number(),
   })
     .index("by_date", ["date"])
     .index("by_owner", ["ownerId"])
+    .index("by_session", ["stripeSessionId"])
     .index("by_payment_intent", ["paymentIntentId"]),
 
   /**

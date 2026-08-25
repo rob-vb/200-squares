@@ -13,6 +13,9 @@
 // per-block number private to its owner, so nothing here has a public twin.
 
 import { useRef, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@convex/api";
+import type { Id } from "@convex/dataModel";
 import { Money, PanelHeader, SecondaryButton, cleanUrl, inputClass } from "./controls";
 import { useScreen } from "./flow";
 import { useViewer } from "@/lib/board/viewer";
@@ -109,21 +112,62 @@ export function MySquares() {
               <SecondaryButton onClick={openBid}>Bid</SecondaryButton>
             </div>
           ) : (
-            myBids.map((bid) => (
-              <div
-                key={bid.id}
-                className="flex items-baseline justify-between gap-3 py-1 text-[13px]"
-              >
-                <Money amount={Math.round(bid.amountCents / 100)} className="text-[15px]" />
-                <span className="text-faint">
-                  {now ? agoLabel(bid.placedAt, now.getTime()) : " "}
-                </span>
-              </div>
-            ))
+            myBids.map((bid) => <BidRow key={bid.id} bid={bid} now={now} />)
           )}
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * One standing bid, and where it will point if it wins.
+ *
+ * ⚠️ Ticket 07's empty hour: the auction closes at 00:00 UTC and the day it
+ * decides begins at 00:00 UTC, so the winner gets no preparation time at all. A
+ * bidder may attach a link and an image at any time while the bid stands, and a
+ * winner with neither gets the house ad until they upload. The image half is
+ * [ticket 20](../../../.scratch/200squares-v1/issues/20-build-artwork.md)'s.
+ */
+function BidRow({
+  bid,
+  now,
+}: {
+  bid: { id: string; amountCents: number; placedAt: number; url: string };
+  now: Date | null;
+}) {
+  const setBannerContent = useMutation(api.auction.setBannerContent);
+  const [url, setUrl] = useState(bid.url);
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-2 py-1">
+      <div className="flex items-baseline justify-between gap-3 text-[13px]">
+        <Money amount={Math.round(bid.amountCents / 100)} className="text-[15px]" />
+        <span className="text-faint">{now ? agoLabel(bid.placedAt, now.getTime()) : " "}</span>
+      </div>
+      <div className="flex gap-2">
+        <input
+          className={inputClass}
+          value={url}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setSaved(false);
+          }}
+          placeholder="Where the banner will point"
+          autoComplete="url"
+        />
+        <SecondaryButton
+          onClick={() => {
+            void setBannerContent({ bidId: bid.id as Id<"bids">, url: cleanUrl(url) }).then(() =>
+              setSaved(true),
+            );
+          }}
+        >
+          {saved ? "Saved" : "Save"}
+        </SecondaryButton>
+      </div>
+    </div>
   );
 }
 

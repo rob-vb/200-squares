@@ -12,6 +12,15 @@
 // caller's IP, and a Turnstile answer that has to be checked over the network.
 // So the mutation stays internal and this is the only door to it.
 //
+// ⚠️ **Opening a bid goes to Convex for the reservation's reason** (ticket 19).
+// A bid has no reserve step in front of it, so `/auction/bid` would otherwise be
+// the site's most floodable Vercel route — and on Hobby a flood of invocations
+// pauses production, which is ticket 02's own failure. It needs the same two
+// things reserving does: the caller's address, and a Turnstile answer checked
+// over the network. Everything after it — VIES, the VAT case, the Checkout
+// Session — happens on `/api/bid`, behind a bid id, exactly as ticket 16 put the
+// order behind a reservation id.
+//
 // ⚠️ **Better Auth serves from here as well** (ticket 18). Its routes sit under
 // `/api/auth/`, and the browser never calls them at this address: it calls
 // 200squares.com, and the Next.js handler forwards to here. That is what keeps
@@ -153,6 +162,41 @@ const reserve = httpAction(async (ctx, request) => {
 });
 
 // ---------------------------------------------------------------------------
+// Open a bid.
+
+/**
+ * The bid's reservation: judge the amount and the caller, write a `pending` row,
+ * and hand back its id. No money, no card, no Stripe.
+ *
+ * ⚠️ The minimum is **not** checked here. It is checked inside the mutation,
+ * where Convex's serialisable reads make two bidders at the same number
+ * impossible; a check in this action would be a check two requests walk past
+ * together. This action only carries the two things the mutation cannot see.
+ */
+const openBid = httpAction(async (ctx, request) => {
+  let body: { amountCents?: number; token?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return json(request, { ok: false, reason: "bad-request" }, 400);
+  }
+
+  const amountCents = Number(body.amountCents);
+  if (!Number.isSafeInteger(amountCents) || amountCents <= 0) {
+    return json(request, { ok: false, reason: "bad-request" }, 400);
+  }
+
+  const token = typeof body.token === "string" ? body.token : "";
+  if (!(await turnstileOk(token, request))) {
+    return json(request, { ok: false, reason: "turnstile" }, 403);
+  }
+
+  const ipHash = await hashCaller(callerKey(request, token));
+  const result = await ctx.runMutation(internal.auction.openBid, { amountCents, ipHash });
+  return json(request, result);
+});
+
+// ---------------------------------------------------------------------------
 // Stripe.
 
 /** Pull the buyer's own declarations back out of the session they travelled in. */
@@ -191,7 +235,75 @@ const idOf = (value: unknown): string =>
  * to Stripe. They write through the same keyed mutation, so whichever arrives
  * second finds the work done and does nothing.
  */
+/**
+ * A bid's session, which is the one that comes back **paid-but-uncaptured**.
+ *
+ * ⚠️ `payment_status` is `unpaid` here and stays that way until the close. A bid
+ * is a card authorization with `capture_method: manual`, so the money is frozen
+ * and not taken, and the test the squares path uses would throw every bid away.
+ * What is read instead is the PaymentIntent's own state.
+ */
+async function settleBid(
+  ctx: Parameters<Parameters<typeof httpAction>[0]>[0],
+  session: Stripe.Checkout.Session,
+) {
+  if (session.status !== "complete") return { status: "open" as const };
+  const paymentIntentId = idOf(session.payment_intent);
+  if (!paymentIntentId) return { status: "open" as const };
+
+  const api = stripe();
+  const intent = await api.paymentIntents.retrieve(paymentIntentId, {
+    // ⚠️ `capture_before` lives on the **charge**, not on the PaymentIntent, and
+    // it is the authoritative per-payment value ticket 03 named. Expanding it
+    // here is what makes the check possible at all.
+    expand: ["latest_charge"],
+  });
+  if (intent.status !== "requires_capture" && intent.status !== "succeeded") {
+    return { status: "open" as const };
+  }
+
+  const charge = intent.latest_charge as Stripe.Charge | null;
+  const seconds = charge?.payment_method_details?.card?.capture_before;
+  // ⚠️ Where the card tells us nothing, ticket 03's seven days stands in. A bid
+  // lives under 24 hours, so the fallback is the same answer in practice — and
+  // refusing every card that does not publish the field would refuse the bid for
+  // a fact nobody has.
+  const captureBefore = seconds ? seconds * 1000 : Date.now() + 7 * 24 * 60 * 60 * 1000;
+
+  const result = await ctx.runMutation(internal.auction.land, {
+    bidId: session.metadata?.bidId ?? "",
+    stripeSessionId: session.id,
+    paymentIntentId,
+    amountCents: session.amount_total ?? 0,
+    captureBefore,
+    email: session.customer_details?.email ?? "",
+  });
+
+  // ⚠️ A refused bid gives the hold straight back. There is nothing to keep: the
+  // bidder is on the return page reading why, and a frozen amount on a card that
+  // can win nothing is the worst of both.
+  //
+  // `cancel` carries the same idea one step further: a bidder who raised their
+  // own bid has an older hold on the same card, and it can never be collected
+  // ahead of the new one. Other bidders' holds are untouched — that is the
+  // ladder, and it is the whole of ticket 07.
+  const dead =
+    result.status === "late" || result.status === "closed"
+      ? [paymentIntentId, ...result.cancel]
+      : result.cancel;
+  for (const id of dead) {
+    try {
+      await api.paymentIntents.cancel(id);
+    } catch {
+      // Already cancelled is the expected answer on a retry, and it is the
+      // outcome we wanted. The row is marked either way.
+    }
+  }
+  return result;
+}
+
 async function settle(ctx: Parameters<Parameters<typeof httpAction>[0]>[0], session: Stripe.Checkout.Session) {
+  if (session.metadata?.kind === "bid") return await settleBid(ctx, session);
   if (session.payment_status !== "paid") return { status: "unpaid" as const };
 
   const address = session.customer_details?.address;
@@ -302,6 +414,8 @@ authComponent.registerRoutes(http, createAuth);
 
 http.route({ path: "/checkout/reserve", method: "POST", handler: reserve });
 http.route({ path: "/checkout/reserve", method: "OPTIONS", handler: preflight });
+http.route({ path: "/auction/bid", method: "POST", handler: openBid });
+http.route({ path: "/auction/bid", method: "OPTIONS", handler: preflight });
 http.route({ path: "/stripe/webhook", method: "POST", handler: webhook });
 http.route({ path: "/stripe/reconcile", method: "POST", handler: reconcile });
 http.route({ path: "/stripe/reconcile", method: "OPTIONS", handler: preflight });
