@@ -42,3 +42,8 @@ next-env.d.ts
 
 # The signed-in session scripts/signin.mjs leaves behind.
 .auth.json
+
+# The screenshots the scripts in `scripts/` leave in the repo root. They are how
+# an agent looks at its own work on a VPS with no browser, and none of them
+# belong in the history.
+/*.png

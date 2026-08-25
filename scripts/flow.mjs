@@ -3,8 +3,9 @@
 //   node scripts/flow.mjs [out-prefix]
 //
 // It selects a free square, fills the panel, presses the order button, pays with
-// a Stripe test card, and waits for the thank-you page to show the block. Every
-// step leaves a screenshot behind.
+// a Stripe test card, waits for the thank-you page to show the block, and then
+// puts a picture on it from that same page — which is the one grant a buyer with
+// no account holds (ticket 20). Every step leaves a screenshot behind.
 //
 // ⚠️ Run `node scripts/free-holds.mjs` first if a previous run stopped at Stripe.
 // One visitor may hold one reservation, and the VPS is one visitor.
@@ -100,5 +101,46 @@ console.log("thanks", page.url().slice(0, 80));
 await page.waitForTimeout(6000);
 await page.screenshot({ path: `${out}-5-thanks.png`, fullPage: true });
 console.log("body:", (await page.locator("main").innerText()).slice(0, 600));
+
+// The picture, on the same page and on the same grant: the session id in this
+// address is the only thing this buyer holds, and there is no account yet
+// (tickets 06 and 20). A source image is made here so the run needs no fixture.
+const source = await page.evaluate(() => {
+  const c = document.createElement("canvas");
+  c.width = 1000;
+  c.height = 1000;
+  const x = c.getContext("2d");
+  const g = x.createLinearGradient(0, 0, 1000, 1000);
+  g.addColorStop(0, "#0C4A6E");
+  g.addColorStop(1, "#38BDF8");
+  x.fillStyle = g;
+  x.fillRect(0, 0, 1000, 1000);
+  x.fillStyle = "#fff";
+  x.font = "700 150px Arial";
+  x.textAlign = "center";
+  x.textBaseline = "middle";
+  x.fillText("NEW", 500, 500);
+  return c.toDataURL("image/png").split(",")[1];
+});
+
+await page.locator('input[type="file"]').first().setInputFiles({
+  name: "source.png",
+  mimeType: "image/png",
+  buffer: Buffer.from(source, "base64"),
+});
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${out}-6-crop.png` });
+await page.getByRole("button", { name: "USE THIS" }).first().click();
+await page
+  .getByRole("button", { name: "USE THIS" })
+  .first()
+  .waitFor({ state: "detached", timeout: 60000 })
+  .catch(() => console.log("the crop box is still open — see the last screenshot"));
+await page.waitForTimeout(2500);
+await page.screenshot({ path: `${out}-7-uploaded.png`, fullPage: true });
+
+await page.goto(BASE, { waitUntil: "networkidle", timeout: 60000 });
+await page.waitForTimeout(3000);
+await page.screenshot({ path: `${out}-8-board.png` });
 
 await browser.close();
