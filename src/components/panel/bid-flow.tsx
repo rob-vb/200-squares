@@ -35,8 +35,10 @@ import {
   cleanUrl,
   inputClass,
 } from "./controls";
+import { ArtworkRules, ArtworkUpload } from "../art/artwork-upload";
 import { useScreen } from "./flow";
 import { BID_FLOOR, useBoard } from "@/lib/board/board";
+import { BANNER } from "@/lib/board/geometry";
 import { useViewer } from "@/lib/board/viewer";
 import { agoLabel } from "@/lib/board/time";
 import {
@@ -424,23 +426,25 @@ export function BidFlow() {
 }
 
 /**
- * Where a standing bid is pointed.
+ * Where a standing bid is pointed, and what it will show.
  *
- * ⚠️ The **image** half is [ticket 20](../../../.scratch/200squares-v1/issues/20-build-artwork.md)'s:
- * it owns `generateUploadUrl`, the two WebP sizes and the crop. The field it
- * lands in, the link beside it and the copy onto the banner day at the close are
- * ticket 19's, and a bid that carries a link and no image still beats one that
- * carries neither.
+ * ⚠️ A bid that carries a link and no picture still beats one that carries
+ * neither: the day is won on the amount, and what is attached only decides what
+ * the winner's first hour looks like. The crop here is against the **banner's**
+ * 5 x 5, which is the shape the winner gets.
  */
 function StandingBid({
   bid,
   onSave,
 }: {
-  bid: { id: string; amountCents: number; url: string };
+  bid: { id: string; amountCents: number; url: string; artwork: boolean };
   onSave: (args: { bidId: Id<"bids">; url: string }) => Promise<null>;
 }) {
+  const bidUploadUrls = useMutation(api.art.bidUploadUrls);
+  const setBidArtwork = useMutation(api.art.setBidArtwork);
   const [url, setUrl] = useState(bid.url);
   const [saved, setSaved] = useState(false);
+  const bidId = bid.id as Id<"bids">;
 
   return (
     <div className="border-hairline flex flex-col gap-2 border-b bg-[#F7F8F4] px-4 py-3">
@@ -470,6 +474,19 @@ function StandingBid({
           {saved ? "Saved" : "Save"}
         </SecondaryButton>
       </div>
+      <ArtworkUpload
+        rect={BANNER}
+        hasArtwork={bid.artwork}
+        urls={() => bidUploadUrls({ bidId })}
+        save={(ids) =>
+          setBidArtwork({
+            bidId,
+            small: ids.small as Id<"_storage">,
+            large: ids.large as Id<"_storage">,
+          })
+        }
+      />
+      <ArtworkRules />
     </div>
   );
 }

@@ -149,10 +149,11 @@ export function BidPlaced() {
           has the field, and so does My squares once you have signed in.
         </p>
         <p className="text-faint max-w-[62ch] pt-3 text-[15px] leading-snug">
-          {/* ⚠️ The upload itself is ticket 20's. The field it lands in, and the
-              copy onto the banner day at the close, are already here. */}
-          Uploading the picture is not built yet. Until it is, a winning bid shows the house
-          advertisement in its place. Your sign-in link is in your email.
+          {/* ⚠️ Both writes live behind a session, so this page points at them
+              rather than holding them: the bidder may have no account yet, and
+              the sign-in link is what turns a paid bid into one they can edit. */}
+          The picture goes in the same two places. A bid with nothing on it still wins the day —
+          it shows the house advertisement until you upload. Your sign-in link is in your email.
         </p>
       </Section>
     </>
