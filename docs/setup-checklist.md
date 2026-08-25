@@ -3,12 +3,19 @@
 Replaces the wizard, which is gone. Work top to bottom. Nothing here can be done by an
 agent: every line is a dashboard, a login or a key.
 
-Your Convex dev deployment is **`proper-heron-683`**, region **`eu-west-1`**.
+Both Convex deployments live in **`eu-west-1`** — owner data and email addresses stay in
+the EU, which `/privacy` may want to say.
 
-```
-cloud   https://proper-heron-683.eu-west-1.convex.cloud
-site    https://proper-heron-683.eu-west-1.convex.site
-```
+| | dev | prod |
+| --- | --- | --- |
+| name | `proper-heron-683` | `energized-deer-345` |
+| cloud | `https://proper-heron-683.eu-west-1.convex.cloud` | `https://energized-deer-345.eu-west-1.convex.cloud` |
+| site | `https://proper-heron-683.eu-west-1.convex.site` | `https://energized-deer-345.eu-west-1.convex.site` |
+
+⚠️ **There are two Vercel projects**: `200-squares` (this repo is linked to it) and
+`200squares` (made 15 days ago, already carrying a Convex build command). One of them is
+a leftover. Decide which before you attach the domain — moving a live domain between
+projects is a DNS problem you do not need.
 
 ---
 
@@ -21,6 +28,21 @@ site    https://proper-heron-683.eu-west-1.convex.site
 - Cloudflare Turnstile widget
 - Cloudflare Email Routing for `hello@200squares.com`
 - On Convex **dev**: `BETTER_AUTH_SECRET`, `SITE_URL`, `BOARD_LIVE`
+- **The build command**, in `vercel.json` at the repo root — versioned, not a dashboard
+  setting. Ignore step 5 below; it is done.
+- **Five Vercel variables**, the ones that need no key from you:
+
+  | Environment | Name |
+  | --- | --- |
+  | Preview | `NEXT_PUBLIC_CONVEX_URL` |
+  | Preview | `NEXT_PUBLIC_CONVEX_SITE_URL` |
+  | Preview | `NEXT_PUBLIC_SITE_URL` |
+  | Production | `NEXT_PUBLIC_CONVEX_SITE_URL` |
+  | Production | `NEXT_PUBLIC_SITE_URL` |
+
+  ⚠️ Vercel now refuses a `NEXT_PUBLIC_` variable with secret visibility. They are set as
+  `--visibility config --no-sensitive`. If you add one by hand in the dashboard, pick the
+  non-sensitive option or the build fails.
 
 ---
 
@@ -63,39 +85,32 @@ Vercel gives you DNS records. Add them at Cloudflare → 200squares.com → DNS.
 ⚠️ **DNS only (grey cloud), never Proxied.** Ticket 02 keeps the whole zone unproxied
 because Vercel's firewall on Pro beats Cloudflare Free.
 
-## 5. The build command
+## 5. The build command — **done**
 
-Settings → Build & Development Settings → Build Command → **Override**:
+It lives in `vercel.json` at the repo root, so it is reviewed and versioned like the rest.
 
-```sh
-if [ "$VERCEL_ENV" = "production" ]; then npx convex deploy --cmd 'npm run build'; else npm run build; fi
-```
-
-Production pushes the Convex functions. A preview does not — previews run against the dev
-deployment, which your VPS pushes to with `npx convex dev`.
+⚠️ If a Build Command override is also set in the dashboard, clear it. `vercel.json` and a
+dashboard override disagreeing is a bad afternoon.
 
 ## 6. Vercel environment variables
 
 Settings → Environment Variables.
 
+Five are already set. **Four are left**, and all four need a key only you have.
+
 **Production**
 
 | Name | Value |
 | --- | --- |
-| `CONVEX_DEPLOY_KEY` | Convex dashboard → prod deployment → Settings → Deploy keys |
-| `NEXT_PUBLIC_CONVEX_SITE_URL` | your **prod** `.convex.site` URL |
-| `NEXT_PUBLIC_SITE_URL` | `https://200squares.com` |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key |
+| `CONVEX_DEPLOY_KEY` | Convex dashboard → **energized-deer-345** → Settings → Deploy keys |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key — mark it **non-sensitive** |
 | `STRIPE_SECRET_KEY` | `sk_live_…` |
 
 **Preview**
 
 | Name | Value |
 | --- | --- |
-| `NEXT_PUBLIC_CONVEX_URL` | `https://proper-heron-683.eu-west-1.convex.cloud` |
-| `NEXT_PUBLIC_CONVEX_SITE_URL` | `https://proper-heron-683.eu-west-1.convex.site` |
-| `NEXT_PUBLIC_SITE_URL` | `https://staging.200squares.com` |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key — mark it **non-sensitive** |
 | `STRIPE_SECRET_KEY` | `sk_test_…` |
 
 ⚠️ **Do not set `CONVEX_DEPLOY_KEY` on Preview.** A preview must never push functions.
@@ -156,8 +171,13 @@ npx convex env set --prod RESEND_API_KEY re_...
 npx convex env set --prod TURNSTILE_SECRET_KEY ...
 ```
 
-Then add the **live** webhook endpoint in Stripe with Test mode OFF, pointing at your prod
-`.convex.site` URL, and set its own secret:
+Then add the **live** webhook endpoint in Stripe with Test mode OFF, pointing at
+
+```
+https://energized-deer-345.eu-west-1.convex.site/stripe/webhook
+```
+
+and set its own secret:
 
 ```sh
 npx convex env set --prod STRIPE_WEBHOOK_SECRET whsec_...
