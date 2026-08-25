@@ -5,6 +5,13 @@
 // It selects a free square, fills the panel, presses the order button, pays with
 // a Stripe test card, and waits for the thank-you page to show the block. Every
 // step leaves a screenshot behind.
+//
+// ⚠️ Run `node scripts/free-holds.mjs` first if a previous run stopped at Stripe.
+// One visitor may hold one reservation, and the VPS is one visitor.
+//
+// ⚠️ It only works because dev runs Cloudflare's dummy Turnstile keys. Turnstile
+// will not complete a challenge from this machine — see *Turnstile on dev* in
+// `docs/environments.md`.
 import { chromium } from "playwright";
 
 const BASE = "https://200-squares-git-staging-robs-projects-52973834.vercel.app";
@@ -68,11 +75,10 @@ await order.click();
 
 await page.waitForURL(/checkout\.stripe\.com/, { timeout: 45000 });
 console.log("stripe", page.url().slice(0, 60));
-await page.waitForLoadState("networkidle");
-await page.waitForTimeout(2000);
+await page.waitForTimeout(5000);
 await page.screenshot({ path: `${out}-3-stripe.png` });
 
-await page.getByPlaceholder("you@example.com").fill("agent+16@example.invalid").catch(() => {});
+await page.locator('#email, input[name="email"]').first().fill("agent+16@example.invalid");
 await page.locator('#cardNumber, input[name="cardNumber"]').first().fill(CARD);
 await page.locator('#cardExpiry, input[name="cardExpiry"]').first().fill("12/34");
 await page.locator('#cardCvc, input[name="cardCvc"]').first().fill("123");
@@ -85,7 +91,10 @@ const city = page.locator('#billingLocality, input[name="billingLocality"]').fir
 if (await city.isVisible().catch(() => false)) await city.fill("Amsterdam");
 await page.screenshot({ path: `${out}-4-card.png` });
 
+await page.screenshot({ path: `${out}-4b-ready.png` });
 await page.locator('button[type="submit"]').first().click();
+await page.waitForTimeout(4000);
+await page.screenshot({ path: `${out}-4c-paid.png` });
 await page.waitForURL(/\/thanks/, { timeout: 90000 });
 console.log("thanks", page.url().slice(0, 80));
 await page.waitForTimeout(6000);

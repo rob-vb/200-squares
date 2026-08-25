@@ -78,7 +78,7 @@ These never reach the browser.
 | `STRIPE_SECRET_KEY` | `sk_test_…` | `sk_live_…` | |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` (test endpoint) | `whsec_…` (live endpoint) | One per endpoint. Never share them. |
 | `RESEND_API_KEY` | `re_…` | `re_…` | Two keys, so one can be revoked alone. |
-| `TURNSTILE_SECRET_KEY` | test key | live key | Ticket 16 checks the token in the mutation. |
+| `TURNSTILE_SECRET_KEY` | ⚠️ Cloudflare's **dummy** always-passes key | the real secret | See *Turnstile on dev* below. |
 | `BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_KVK`, `BUSINESS_VAT_ID` | set | set | The eenmanszaak's identity on an invoice ([ticket 23](../.scratch/200squares-v1/issues/23-build-invoice.md)). Not secret, but not in git either — they change without a deploy, and an invoice freezes its own copy. |
 | `BOARD_LIVE` | `true` | `true` | The [ADR 0001](adr/0001-live-board-clicks-outside-it.md) kill switch. Set to `false` and the board falls back to a cached snapshot, with no deploy. |
 | `RESERVATION_IP_SALT` | optional | optional | Salts the hash a reservation keeps instead of an IP ([ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md)'s *one hold per visitor*). Unset, `BETTER_AUTH_SECRET` is used instead, which is fine — it is a salt, not a key. |
@@ -93,12 +93,38 @@ Set per environment in **Settings → Environment Variables**.
 | `NEXT_PUBLIC_CONVEX_URL` | *set by the build* | `https://proper-heron-683.eu-west-1.convex.cloud` | yes |
 | `NEXT_PUBLIC_CONVEX_SITE_URL` | `https://<prod>.convex.site` | `https://proper-heron-683.eu-west-1.convex.site` | yes |
 | `NEXT_PUBLIC_SITE_URL` | `https://200squares.com` | the staging branch URL | yes |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | live site key | test site key | yes |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the real site key | ⚠️ Cloudflare's **dummy** always-passes site key | yes |
 | `STRIPE_SECRET_KEY` | `sk_live_…` | `sk_test_…` | **no** |
 | `BUSINESS_VAT_ID` | set | set | no |
 
 `NEXT_PUBLIC_` is a promise: the value is compiled into the browser bundle. A secret
 with that prefix is a leaked secret.
+
+⚠️ Vercel **refuses** a `NEXT_PUBLIC_` variable with secret visibility on Preview or
+Production. Add one with `--no-sensitive --visibility config`, or the API answers
+`invalid_visibility`.
+
+### Turnstile on dev: the dummy keys, and why
+
+Preview and the dev deployment run Cloudflare's documented **testing** keys —
+`1x00000000000000000000BB` (invisible, always passes) and
+`1x0000000000000000000000000000000AA` (always verifies). Production runs the real pair.
+
+The reason is not convenience. **Turnstile does not complete a challenge from this VPS**:
+headless or headful, with or without a real user agent, the widget renders, fetches its
+challenge and then stalls with no callback and no error code — Cloudflare simply does not
+answer a datacenter address. There is no browser on the VPS and no browser anywhere else in
+the loop, so with the real key on preview *nobody who works on this site can get through
+their own checkout* — not ticket 16's flow, not ticket 20's artwork upload, not ticket 23's
+invoice, because all three need a real order behind them.
+
+What it costs: `POST /checkout/reserve` on the **dev** deployment is unprotected. It is a
+public `.convex.site` URL that Vercel's Deployment Protection does not cover, so anybody
+who knows it can fill the dev board with holds. Convex Free breaks rather than bills, the
+data is seed data, and the address is not published. Accepted.
+
+⚠️ **The real widget is therefore never exercised before launch.** Ticket 25 owns clicking
+through one live-mode order by hand, from a real browser, on the real key.
 
 `STRIPE_SECRET_KEY` is needed on Vercel as well as on Convex, because
 [ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md) creates the Checkout

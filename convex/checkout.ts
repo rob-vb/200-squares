@@ -83,7 +83,17 @@ export const fulfil = internalMutation({
       .query("orders")
       .withIndex("by_session", (q) => q.eq("stripeSessionId", args.stripeSessionId))
       .unique();
-    if (existing) return { status: "already" as const, paymentIntentId: args.paymentIntentId };
+    if (existing) {
+      // ⚠️ A refunded order says `refunded` again rather than `already`. The
+      // refund is made **after** this mutation returns, so if that call failed —
+      // or the webhook died between the two — the retry Stripe sends is the only
+      // thing that can put it right. Saying `already` here would swallow it, and
+      // the buyer would be left paid up for squares they never got.
+      return {
+        status: existing.refundedAt ? ("refunded" as const) : ("already" as const),
+        paymentIntentId: existing.paymentIntentId ?? args.paymentIntentId,
+      };
+    }
 
     // The reservation is the better source for the rectangle: it is what the
     // overlap check actually passed. The metadata copy is the fallback for a

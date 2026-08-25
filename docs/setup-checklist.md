@@ -149,6 +149,13 @@ ready to take money.
 
 7. **Turnstile**: add `200squares.com` and `www.200squares.com` to the hostnames.
 
+   ⚠️ Production is the **first** place the real widget ever runs. Dev and preview use
+   Cloudflare's dummy always-passes keys, because Turnstile will not complete a challenge
+   from the VPS — see *Turnstile on dev* in [`environments.md`](environments.md). So buy
+   one square by hand, in a real browser, on the live site, before telling anybody it is
+   open. If the widget stalls there, no square can be bought at all and nothing else on
+   this list will tell you.
+
 ---
 
 ## Already done

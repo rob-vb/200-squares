@@ -213,10 +213,18 @@ async function settle(ctx: Parameters<Parameters<typeof httpAction>[0]>[0], sess
   // make the buyer ask. The mail that says so is
   // [ticket 22](../.scratch/200squares-v1/issues/22-build-email.md)'s.
   if (result.status === "refunded" && result.paymentIntentId) {
-    await stripe().refunds.create({
-      payment_intent: result.paymentIntentId,
-      reason: "requested_by_customer",
-    });
+    try {
+      await stripe().refunds.create({
+        payment_intent: result.paymentIntentId,
+        reason: "requested_by_customer",
+      });
+    } catch (error) {
+      // Already refunded is the expected answer on a retry, and it is a success:
+      // the money is back. Anything else is thrown on, so the endpoint answers
+      // non-2xx and Stripe tries again.
+      const code = (error as { code?: string })?.code;
+      if (code !== "charge_already_refunded") throw error;
+    }
   }
   return result;
 }
