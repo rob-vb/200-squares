@@ -19,7 +19,7 @@
 // cannot be collected (ticket 07). The three sentences beside the box say so, and
 // they have to stay true when they are read at 23:59.
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
@@ -82,6 +82,7 @@ export function BidFlow() {
 
   const [amount, setAmount] = useState(String(minNextBid));
   const [error, setError] = useState<string | null>(null);
+  const amountRef = useRef<HTMLDivElement | null>(null);
   // Being outbid moves the floor, so the field refills itself with the new
   // minimum: the visitor should never have to work out what to type. This is the
   // adjust-during-render pattern, not an effect — the new floor is derived from
@@ -130,12 +131,32 @@ export function BidFlow() {
     totalCents,
   });
 
+  // ⚠️ A refusal has to land where the bidder is looking. The amount error is at
+  // the top of the panel and *PLACE BID — OBLIGES YOU TO PAY IF YOU WIN* is at the
+  // bottom of a panel that scrolls inside itself, so somebody who fills the form,
+  // scrolls down and presses gets silence — which on a button that promises a
+  // commitment reads as *it worked*, not as *it was refused* (ticket 35). Every
+  // refusal that belongs on the amount field goes through here, so none of them
+  // can be silent again. After paint, because the error line is part of what has
+  // to come into view.
+  const fail = (message: string) => {
+    setError(message);
+    requestAnimationFrame(() => {
+      amountRef.current?.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      });
+    });
+  };
+
   const place = async () => {
     setError(null);
     setNotice(null);
     setVatError(null);
     if (!Number.isFinite(value) || value < minNextBid) {
-      setError(`The next bid is at least $${minNextBid.toLocaleString("en-US")}.`);
+      fail(`The next bid is at least $${minNextBid.toLocaleString("en-US")}.`);
       return;
     }
     setBusy(true);
@@ -157,7 +178,7 @@ export function BidFlow() {
 
       if (!opened?.ok) {
         if (opened?.reason === "low") {
-          setError(
+          fail(
             `Somebody bid while you were typing. The next bid is at least $${Math.round(
               opened.minNextCents / 100,
             ).toLocaleString("en-US")}.`,
@@ -165,7 +186,7 @@ export function BidFlow() {
         } else if (opened?.reason === "pending") {
           setNotice("You already have a bid waiting to be paid. Finish that one first.");
         } else if (opened?.reason === "amount") {
-          setError("Bids are in whole dollars.");
+          fail("Bids are in whole dollars.");
         } else {
           setNotice("The check in front of the bid did not pass. Reload the page and try again.");
         }
@@ -252,18 +273,20 @@ export function BidFlow() {
         {standing ? <StandingBid bid={standing} onSave={setBannerContent} /> : null}
 
         <div className="flex flex-col gap-4 px-4 py-4">
-          <Field
-            label="Your bid"
-            error={error}
-            hint={`At least $${minNextBid.toLocaleString("en-US")}, in whole dollars`}
-          >
-            <input
-              className={inputClass}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
-              inputMode="numeric"
-            />
-          </Field>
+          <div ref={amountRef}>
+            <Field
+              label="Your bid"
+              error={error}
+              hint={`At least $${minNextBid.toLocaleString("en-US")}, in whole dollars`}
+            >
+              <input
+                className={inputClass}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+                inputMode="numeric"
+              />
+            </Field>
+          </div>
 
           <FieldBox label="You are">
             <div className="flex gap-2">

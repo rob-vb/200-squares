@@ -27,8 +27,13 @@ const CARD = process.env.CARD ?? "4242424242424242";
 
 if (!email) throw new Error("Usage: node scripts/bid.mjs <email> [amount] [out-prefix]");
 
+// ⚠️ `PHONE=1` runs the same bid in the bottom sheet instead of the side panel.
+// A panel that scrolls inside itself hides its own top most easily on a phone, so
+// anything about what a bidder can see has to be checked at both widths (ticket 35).
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const page = await browser.newPage({
+  viewport: process.env.PHONE ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+});
 page.on("console", (m) => {
   if (m.type() === "error") console.log("  console:", m.text());
 });
@@ -41,19 +46,25 @@ await page.getByRole("button", { name: "BID", exact: true }).first().click();
 await page.waitForTimeout(800);
 await page.screenshot({ path: `${out}-1-panel.png` });
 
+// ⚠️ The panel is in the DOM twice — the side panel and the bottom sheet, one of
+// them `display:none` — so every selector below is scoped to the visible one. A
+// bare CSS selector reaches into the copy nobody can see, and at phone width that
+// copy is the *first* one in the tree.
+const panel = page.locator("section:visible").filter({ hasText: "Closes 00:00 UTC" }).first();
+
 if (amount) {
-  const field = page.locator('input[inputmode="numeric"]').first();
+  const field = panel.locator('input[inputmode="numeric"]').first();
   await field.fill("");
   await field.fill(amount);
 }
-await page.getByRole("button", { name: "A private person" }).first().click();
-await page.locator("select").first().selectOption("NL");
-await page.getByPlaceholder("As it goes on the invoice").first().fill("Test Bieder");
-await page.locator('input[type="checkbox"]').first().check();
+await panel.getByRole("button", { name: "A private person" }).click();
+await panel.locator("select").first().selectOption("NL");
+await panel.getByPlaceholder("As it goes on the invoice").fill("Test Bieder");
+await panel.locator('input[type="checkbox"]').first().check();
 await page.waitForTimeout(300);
 await page.screenshot({ path: `${out}-2-filled.png`, fullPage: true });
 
-const place = page.getByRole("button", { name: /PLACE BID/i }).first();
+const place = panel.getByRole("button", { name: /PLACE BID/i });
 console.log("bid button enabled:", await place.isEnabled());
 await place.click();
 
@@ -63,7 +74,11 @@ try {
   await page.waitForURL(/checkout\.stripe\.com/, { timeout: 45000 });
 } catch (caught) {
   await page.screenshot({ path: `${out}-2b-refused.png`, fullPage: true });
-  console.log("never reached Stripe — see", `${out}-2b-refused.png`);
+  // ⚠️ And the panel on its own. `fullPage` scrolls the *page*, and the panel
+  // scrolls inside itself, so the page shot cannot say what the bidder is looking
+  // at — which is the whole of ticket 35. The element shot is that view.
+  await panel.screenshot({ path: `${out}-2c-panel.png` }).catch(() => {});
+  console.log("never reached Stripe — see", `${out}-2b-refused.png`, `${out}-2c-panel.png`);
   throw caught;
 }
 console.log("stripe", page.url().slice(0, 60));
