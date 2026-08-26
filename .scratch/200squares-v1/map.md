@@ -70,6 +70,11 @@ real backend, and then makes the copy true again.
   to end on staging in Stripe test mode. ⚠️ Give each run a **different address** — Stripe's
   email is what makes an owner, and a bidder who raises their own bid has their earlier hold
   released, so a one-address run can never build the ladder the close needs.
+- **Driving a withdrawal**: `node scripts/withdraw.mjs [prefix]` starts from the session
+  `scripts/signin.mjs` leaves in `.auth.json`, opens `/admin` and presses *The bidder withdrew*
+  on today's banner. ⚠️ There is no other way to press it — the button is admin-only and the
+  close fires once a day — so make the day first with `scripts/bid.mjs`, `seed:ageAuction` and
+  `auction:closeDue`. Built by [ticket 32](issues/32-build-withdrawn-banner-day.md).
 - **Driving a click**: `node scripts/clicks.mjs [prefix]` starts from the session
   `scripts/signin.mjs` leaves in `.auth.json`, reads the owner's own count out of My squares,
   clicks their block on the board three ways — mouse, mouse again on the same permit, and the
@@ -655,6 +660,26 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [ADR 0003](../../docs/adr/0003-a-bid-is-an-irrevocable-offer.md), with `CONTEXT.md`'s **Bid**
   entry sharpened to match. Hands on [ticket 32](issues/32-build-withdrawn-banner-day.md).
 
+- [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md) — **built:
+  `withdrawBanner` is `removeBanner` with the blame taken out, and the `removals` row records
+  the withdrawal by *absence*.** Same three patched fields, same `release`, then it stops: no
+  strike, no `rule`, no mail. ⚠️ **`removals.rule` is now optional and its absence is the
+  marker** — a sentinel string or a `rule` plus a `withdrawn` flag were both refused, because
+  two fields about one row can disagree and one cannot; the query derives `withdrawn` on read.
+  ⚠️ **`reason` changed meaning without changing type**: on a removal it is words the owner
+  reads, on a withdrawal it is the dev's own note, and it is still required because the row is
+  the only thing the act leaves behind. ⚠️ The screenshots caught what the ticket did not: two
+  textareas stacked on `/admin`, where the wrong press costs a strike and a *you broke rule X*
+  mail — so the second names itself above its box, which is that page's founding argument
+  turned on the page itself. Ticket 31's words shipped: `/terms`'s daily-banner paragraph went
+  from three to five, which **settles ticket 19's debt** — *"the highest bid at 00:00 UTC wins
+  and is charged"* is gone — a fourth `BID_TRUTHS` line, and `BANNER_WITHDRAWAL_INFO` sharpened.
+  ⚠️ *"the day stays in the public record"* **stays and is still untrue**: that is ticket 30's
+  unbuilt promise, not this one's. Proved twice end to end against a real test-mode capture with
+  the new `scripts/withdraw.mjs`: house ad up, `strikeAt` still `[]`, a `removals` row with no
+  rule, no mail. ⚠️ The artwork release was not re-exercised — neither winner carried a picture —
+  and it is the identical call ticket 20 proved.
+
 ## Not yet specified
 
 - ⚠️ **The 6:219 ground under ticket 31 has never been read against a source.** *An offer
@@ -691,12 +716,9 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [22 — Build: the mail](issues/22-build-email.md),
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md).
+  **Done** (2026-08-26):
+  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md).
   **Still open**:
-  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md), opened
-  2026-08-26 out of ticket 31 — the smallest build on the map: one admin mutation beside
-  `removeBanner` that takes a banner day off **without** a strike and without the removal
-  mail, plus the `/terms` and `consent.ts` wording ticket 31 already wrote. ⚠️ It carries
-  ticket 19's `/terms` debt with it, because that is the same paragraph.
   [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md), opened 2026-08-26 — the
   dev's own decision, made in passing during ticket 31 and unrelated to it. Two constants and
   four pieces of prose; nothing to migrate, because nothing 4 wide exists. ⚠️ The largest
@@ -705,7 +727,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
-  real inbox and no document has been rendered on a deployment.
+  real inbox and no document has been rendered on a deployment. ⚠️ **Its first step is
+  already done on dev**: [ticket 32](issues/32-build-withdrawn-banner-day.md) found
+  `ADMIN_EMAILS`, `SEED_ENABLED` and all four `BUSINESS_` variables set on the Convex **dev**
+  deployment, so ticket 24's *"`ADMIN_EMAILS` is unset"* is out of date and `/admin` really
+  opens. Nothing is known about prod.
 - ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
   that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
   fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
@@ -751,12 +777,17 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   keeps a salted hash of the visitor's address for fifteen minutes** — the price of *one hold per visitor*, and the
   first thing on the board path that is about a visitor at all — and that an **order keeps
   the IP, the tick-box wording and the address for ten years**. ⚠️ Ticket 19 added three
-  more and ticket 31 has taken two of them away: the false *"The highest bid at 00:00 UTC
-  wins and is charged"* and ticket 07's unbuilt **mid-day pro-rata** both sit in the
-  daily-banner paragraph, which [ticket 32](issues/32-build-withdrawn-banner-day.md) now
-  rewrites whole in words ticket 31 already settled. What is left of the three is that
-  `/privacy` must say a **pending bid keeps the same salted address hash** a reservation
-  does, for the same fifteen minutes. ⚠️ Ticket 21 adds two more: `/privacy` and the FAQ
+  more and ticket 31 took two of them away: the false *"The highest bid at 00:00 UTC
+  wins and is charged"* and ticket 07's unbuilt **mid-day pro-rata** both sat in the
+  daily-banner paragraph, and [ticket 32](issues/32-build-withdrawn-banner-day.md)
+  **rewrote that paragraph whole on 2026-08-26** — both are now done. What is left of the
+  three is that `/privacy` must say a **pending bid keeps the same salted address hash** a
+  reservation does, for the same fifteen minutes. ⚠️ And one debt survived the rewrite
+  untouched, because it is not ticket 31's or 32's: the same paragraph still promises
+  *"the day stays in the public record with the winning bid on it"*, which
+  [ticket 30](issues/30-auction-tension.md) committed to and nobody built. Either build the
+  record of past winners or take the sentence out — it is the one line on `/terms` that is
+  false because of something the site does **not** have. ⚠️ Ticket 21 adds two more: `/privacy` and the FAQ
   describe a click count without saying **what it is** — counted in the visitor's browser,
   not audited, a **floor** and not a census, which ticket 10 named and left to the copy; and
   `/privacy`'s *Who else sees it* names the payment provider and Vercel but not **Cloudflare**,
