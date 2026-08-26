@@ -1,6 +1,6 @@
 // Drive the whole checkout on the staging URL, because there is no browser here.
 //
-//   node scripts/flow.mjs [out-prefix]
+//   node scripts/flow.mjs [out-prefix]        EMAIL=you@example.com to reach a real inbox
 //
 // It selects a free square, fills the panel, presses the order button, pays with
 // a Stripe test card, waits for the thank-you page to show the block, and then
@@ -18,6 +18,8 @@ import { chromium } from "playwright";
 const BASE = "https://200-squares-git-staging-robs-projects-52973834.vercel.app";
 const out = process.argv[2] ?? "flow";
 const CARD = process.env.CARD ?? "4242424242424242";
+// ⚠️ Ticket 28 needs a real inbox, so the address is an argument now.
+const EMAIL = process.env.EMAIL ?? "agent+16@example.invalid";
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -79,7 +81,7 @@ console.log("stripe", page.url().slice(0, 60));
 await page.waitForTimeout(5000);
 await page.screenshot({ path: `${out}-3-stripe.png` });
 
-await page.locator('#email, input[name="email"]').first().fill("agent+16@example.invalid");
+await page.locator('#email, input[name="email"]').first().fill(EMAIL);
 await page.locator('#cardNumber, input[name="cardNumber"]').first().fill(CARD);
 await page.locator('#cardExpiry, input[name="cardExpiry"]').first().fill("12/34");
 await page.locator('#cardCvc, input[name="cardCvc"]').first().fill("123");

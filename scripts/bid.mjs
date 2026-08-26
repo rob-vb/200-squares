@@ -57,7 +57,15 @@ const place = page.getByRole("button", { name: /PLACE BID/i }).first();
 console.log("bid button enabled:", await place.isEnabled());
 await place.click();
 
-await page.waitForURL(/checkout\.stripe\.com/, { timeout: 45000 });
+// ⚠️ A refused bid never leaves the page, so the wait is where the reason is.
+// Ticket 28 lost ten minutes to a timeout with no picture of what it said.
+try {
+  await page.waitForURL(/checkout\.stripe\.com/, { timeout: 45000 });
+} catch (caught) {
+  await page.screenshot({ path: `${out}-2b-refused.png`, fullPage: true });
+  console.log("never reached Stripe — see", `${out}-2b-refused.png`);
+  throw caught;
+}
 console.log("stripe", page.url().slice(0, 60));
 await page.waitForTimeout(5000);
 await page.screenshot({ path: `${out}-3-stripe.png` });

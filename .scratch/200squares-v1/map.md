@@ -75,6 +75,21 @@ real backend, and then makes the copy true again.
   on today's banner. ⚠️ There is no other way to press it — the button is admin-only and the
   close fires once a day — so make the day first with `scripts/bid.mjs`, `seed:ageAuction` and
   `auction:closeDue`. Built by [ticket 32](issues/32-build-withdrawn-banner-day.md).
+- **Driving a strip**: `node scripts/strip.mjs <search> [reason] [prefix]` starts from the
+  session `scripts/signin.mjs` leaves in `.auth.json`, opens `/admin` **at a phone width**,
+  searches for an owner and empties their first *Live* block with a rule and a reason. ⚠️
+  There is no other way to press it — the button is admin-only. Built by
+  [ticket 28](issues/28-prove-the-mail.md).
+- **Reading a page, not looking at one**: `TEXT=1 node scripts/shot.mjs <path> out.png`
+  prints the words as well as taking the picture, and `AUTH=1` goes in signed in. An invoice
+  is checked line by line and a screenshot cannot be. Added by
+  [ticket 28](issues/28-prove-the-mail.md).
+- ⚠️ **Mail can be read here after all, and `robvb.com` takes plus addressing.** `hi@robvb.com`
+  is the admin and the inbox; `hi+bid1@`, `hi+bid2@`, `hi+strip@` all deliver, which is what
+  makes a two-bidder ladder testable from one inbox. `EMAIL=` on `scripts/flow.mjs` puts the
+  address into Stripe's checkout. Resend's own log is the fastest way to see what left and
+  whether it landed — `GET https://api.resend.com/emails` with `RESEND_API_KEY`, and
+  `/emails/<id>` gives the body back. Found by [ticket 28](issues/28-prove-the-mail.md).
 - **Driving a click**: `node scripts/clicks.mjs [prefix]` starts from the session
   `scripts/signin.mjs` leaves in `.auth.json`, reads the owner's own count out of My squares,
   clicks their block on the board three ways — mouse, mouse again on the same permit, and the
@@ -690,6 +705,17 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   corrected. Proved on staging: a drag across 5 × 5 stops at *3 × 3 · 9 squares · $2,250*.
   The artwork byte ceilings stay sized for a 4 × 4 picture on purpose — they are ceilings.
 
+- [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md) — **every
+  message reached a real inbox and the whole list was driven.** Purchase, invoice, the bid
+  ladder, the close and a strip, all on staging, all read at `hi@robvb.com` — which
+  **accepts plus addressing**, and that is what makes a two-bidder ladder testable from one
+  inbox at all. Stripe has no *Off* for customer emails; the individual toggles are the
+  switch and they are off in both modes. Three things it was not looking for: the **first
+  invoice on a deployment has no euro amount and never will**, which is now step 8 of
+  [ticket 25](issues/25-launch.md); a **stripped picture keeps serving from its own URL**
+  ([ticket 34](issues/34-stripped-art-stays-cached.md)); and a **refused bid says nothing
+  where the bidder is looking** ([ticket 35](issues/35-a-refused-bid-says-nothing.md)).
+
 ## Not yet specified
 
 - ⚠️ **The 6:219 ground under ticket 31 has never been read against a source.** *An offer
@@ -727,17 +753,15 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md).
   **Done** (2026-08-26):
-  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md) and
-  [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md).
+  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md),
+  [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md) and
+  [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md).
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
-  is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
-  real inbox and no document has been rendered on a deployment. ⚠️ **Its first step is
-  already done on dev**: [ticket 32](issues/32-build-withdrawn-banner-day.md) found
-  `ADMIN_EMAILS`, `SEED_ENABLED` and all four `BUSINESS_` variables set on the Convex **dev**
-  deployment, so ticket 24's *"`ADMIN_EMAILS` is unset"* is out of date and `/admin` really
-  opens. Nothing is known about prod.
+  the day, and it is deliberately last. The two tickets ticket 28 surfaced —
+  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md)
+  and [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md) — are both
+  on the frontier and neither blocks the other.
 - ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
   that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
   fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
@@ -750,7 +774,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   It is a cost decision under ticket 02's rule, and it wants measuring before it is made.
   ⚠️ [Ticket 20](issues/20-build-artwork.md) adds a **second** invocation source to the same
   decision: `/art/<storageId>` is a Vercel function on a cache miss, and an id that does not
-  exist misses every time. The regex turns obvious rubbish away without a fetch, and the
+  exist misses every time. ⚠️ **[Ticket 28](issues/28-prove-the-mail.md) found the hole the
+  regex does not cover** (2026-08-26): a **query string is part of Vercel's cache key**, so
+  `?anything` turns even a *good* id into a fresh invocation, every time, for ever. The
+  guard turns away rubbish paths and nothing else. The regex turns obvious rubbish away without a fetch, and the
   cache absorbs every real file after the first request per region — but a flood of
   plausible-looking ids is invocations, which is what Hobby pauses on. The two belong in one
   answer: whatever protects `/api/auth/*` protects this.

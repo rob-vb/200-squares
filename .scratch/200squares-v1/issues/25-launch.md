@@ -36,6 +36,22 @@ The full list, in order, is Part 2 of
    anybody the site is open. If the widget stalls there, no square can be bought and
    nothing else on this list would say so.
 
+8. ⚠️ **Added by [ticket 28](28-prove-the-mail.md) (2026-08-26): pull the ECB rate before
+   the first sale.** `npx convex run invoices:pullFxRate` against prod, once, by hand.
+
+   The cron that fills the rate runs at **17:00 UTC daily**, so on a deployment whose cron
+   has never fired the `fx` cache is empty. `invoices.ts` then issues the invoice anyway and
+   simply leaves the euro line off — deliberately, because refusing to invoice a paid order
+   is the worse failure. But [ticket 17](17-invoice-document.md)'s **write-once** rule means
+   that invoice is never repaired. Ticket 28 watched it happen on staging: invoice
+   `2026-0010` has no euro amount and now never will; `2026-0011`, minutes later with the
+   rate pulled, carries *VAT in euros: €37.21 — converted at the ECB reference rate of
+   1.1662 USD per EUR, published 2026-08-25*.
+
+   On prod the invoice with no euro line is **the first real sale**, and the euro amount is
+   what art. 35a lid 4 Wet OB asks for. One command before opening the doors, and it cannot
+   be done afterwards.
+
 This ticket is deliberately last. The map's destination says it ends when the dev **can
 decide** to launch, not when the launch happens — so this is the switch, not the journey.
 
