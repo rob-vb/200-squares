@@ -810,6 +810,26 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [42 — The withdrawal function](issues/42-the-withdrawal-function.md), which now blocks
   ticket 40 and, through it, the launch.
 
+- [39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
+  — **one real board visit costs exactly one Vercel invocation, and that is not the problem.**
+  Measured on staging: `/` is `PRERENDER`, the eight RSC prefetches are `PRERENDER`, the
+  chunks are `HIT`, and only `/api/auth/get-session` is a `MISS` — every load, for everyone.
+  Ticket 02's static front is standing. ⚠️ **Item 3 of the question was too big**: a query
+  string does **not** vary the cache key of a *static* route (`/?junk=zzz` answered `HIT`);
+  only the function route `/art/` has the query in its key, where each new string is one
+  invocation **and** a year in the cache. ⚠️ And the regex guard saves the Convex fetch, not
+  the Vercel invocation. Hobby's ceiling is **1M invocations** = 1M visits a month, so the
+  normal path is a success problem, not a cost one — and removing `get-session` buys $0.60
+  per million while paying with a real failure mode, and still leaves `/art/` open. **So:
+  make the flood free, not the normal path.** Blocked traffic bills nothing (ticket 02), and
+  `query` `ex` — *"any query string"*, from Vercel's own rule vocabulary — makes the one
+  unbounded hole expressible. ⚠️ **Not in `vercel.json`**: `has` matches a query key by name
+  and there is no rate-limit action there. **Zero code**, three new WAF rules and one dead
+  one dropped, all on [ticket 25](issues/25-launch.md). ⚠️ **Found on the way:
+  `200squares.com` is already public and serving `main`, 73 commits behind — every route
+  `MISS` and `no-store`, the pre-ticket-08 build, resale still in it.** No bill is possible
+  on Hobby, so ticket 39 left it; ticket 25 now knows it is switching a site **over**, not on.
+
 ## Not yet specified
 
 - **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
@@ -862,8 +882,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   follows it.
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day, and it is deliberately last — it is now **blocked by 39 and 40**, so the
-  frontier says so.
+  the day, and it is deliberately last — it is now **blocked by 40**, so the
+  frontier says so. ⚠️ [39](issues/39-what-an-invocation-costs.md) is **resolved
+  2026-08-26** and put a seven-rule firewall list and a ninth step on it; it produced no
+  build ticket, because a dashboard rule is not a build.
 
 - **The road to launch, charted (2026-08-26).** Ticket 25 was briefly the only open ticket
   on this map, which read as *finished* and was not: four patches of fog had gone sharp
@@ -877,15 +899,19 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   debt this map recorded and is the last thing before the switches. ⚠️ Ticket 37 put a fifth
   ticket on the road that nobody charted: **the copy cannot be made true until the
   withdrawal function exists**, so 42 sits between 37 and 40.
-  [39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
-  is the one cost decision left: tickets 18, 20, 28 and 36 each found a piece of it and each
-  said it belonged in one answer, not theirs.
+  ~~[39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
+  is the one cost decision left~~ — **resolved 2026-08-26**. It was one answer after all, and
+  the answer was seven firewall rules and no code.
 
-- **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
-  hand, which is right below the cross-border B2C threshold and wrong above it: the
-  Unieregeling brings 27 destination rates, a ten-year retention and a quarter-end ECB
-  rate. Something has to tell the dev the crossing is coming *before* it happens. It
-  belongs with monitoring, and it needs real sales first.
+- **Noticing a flood, and noticing the threshold.** Two patches that turned out to be one.
+  Ticket 06 wants something to say the €10,000 cross-border B2C threshold is coming *before*
+  it is crossed — the Unieregeling brings 27 destination rates, a ten-year retention and a
+  quarter-end ECB rate. [Ticket 39](issues/39-what-an-invocation-costs.md) (2026-08-26) adds
+  the other half: its firewall rules make an attack **free**, but nothing tells the dev one
+  happened. Vercel has firewall observability and Spend Management sends notice; ticket 39
+  deliberately did not decide whether that is enough, because it is a monitoring question and
+  not a cost one. Both need real traffic first.
+
 - **Who reads the flagged orders.** Ticket 06 accepts a country mismatch and flags the
   order rather than refusing it. Nothing yet looks at those flags. Ticket 11 has now given
   the site **an admin page** ([ticket 24](issues/24-build-removal.md)), so the surface

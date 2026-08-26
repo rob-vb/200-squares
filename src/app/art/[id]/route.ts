@@ -24,6 +24,16 @@
 // did nothing. Without it a reload asks the edge, the edge answers, and Convex is
 // still never touched.
 //
+// ⚠️ **Never put a query string on an `/art/` URL.** Not `?v=2`, not a cache
+// buster, not anything: the firewall denies it. Vercel's cache key includes the
+// query, so each distinct string is a fresh invocation *and* a fresh year-long
+// edge entry — an unbounded hole an attacker walks through with `?a=1`, `?a=2`,
+// `?a=3`. [Ticket 39](../../../../.scratch/200squares-v1/issues/39-what-an-invocation-costs.md)
+// closed it with a WAF rule — `path` `pre` `/art/` AND `query` `ex` — listed on
+// [ticket 25](../../../../.scratch/200squares-v1/issues/25-launch.md). The reflex
+// that adds a version parameter here would take the board down in production and
+// nowhere else, because the rule does not exist on a preview.
+//
 // ⚠️ `s-maxage` is what Vercel's edge reads; `max-age` is what the browser
 // reads. Only the pair keeps the file out of the function on the second request.
 // Do **not** split these into a separate `Vercel-CDN-Cache-Control` to give the

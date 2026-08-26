@@ -2,7 +2,7 @@
 
 Type: task
 Status: open
-Blocked by: 14, 39, 40 (2026-08-26 — the fog before the switches became tickets)
+Blocked by: 14, 39, 40 (39 resolved 2026-08-26 — it added the firewall list below)
 See also: [36](36-build-purge-on-release.md) — not a switch, but it lands before launch.
 Parent: ../map.md
 
@@ -17,6 +17,36 @@ The full list, in order, is Part 2 of
 1. ⚠️ **Vercel Pro first.** Commercial use is forbidden on Hobby, and a live Stripe key is
    where commercial use begins. Pro comes **before** step 4, not after.
 2. **Spend Management**: $5, *Pause production deployment* ON.
+
+2b. ⚠️ **The firewall rules, rewritten by [ticket 39](39-what-an-invocation-costs.md)
+   (2026-08-26).** Ticket 02 named five. One of them is dead and three are new, so the list
+   is **seven** and this is it, in order:
+
+   - ~~a Stripe-webhook bypass, first~~ — **dropped.** Ticket 02 wrote it because "webhooks
+     die" without it. [Ticket 14](14-environments-and-keys.md) then put the webhook on
+     `…convex.site/stripe/webhook`, which never passes Vercel. It guards nothing and costs a
+     place in the ordering.
+   - a checkout rate limit — 60 s / 5 / IP+JA4 / deny 15 min (ticket 02)
+   - a click-redirect rate limit — 10 s / 20 / IP / deny 1 min (ticket 02)
+   - a method allowlist (ticket 02)
+   - a junk-path deny (ticket 02)
+   - **`/art/` with a query string → deny.** `path` `pre` `/art/` **AND** `query` `ex`.
+     ⚠️ `query` + `ex` is *"any query string at all"*, which is the only form that closes
+     this: each distinct string is a fresh invocation **and** a year in the edge cache. No
+     honest request to `/art/<id>` carries one — and see the ⚠️ this put in
+     `src/app/art/[id]/route.ts`, because adding one later breaks the board.
+   - **`/art/` → rate limit per IP.** Not deny: a 404 is the right answer for a file that
+     was just released. A full board asks for a few hundred files once and is `HIT` after,
+     so a per-IP limit passes a visitor and stops an id-scanner.
+   - **`/api/auth/*` → rate limit per IP**, wide enough for real navigation.
+     `/api/auth/get-session` is the one function on the normal path (one invocation per
+     board load, measured), so it is also the easiest thing to point a script at.
+   - **`/api/purge` → a tight rate limit.** Its only honest caller is Convex, a few times a
+     day.
+
+   ⚠️ None of this can live in `vercel.json`: `has` matches a query key **by name**, and
+   `vercel.json` has no rate-limit action. It is dashboard or REST API, and it cannot be
+   proven on staging before the project is on Pro.
 3. **Three CNAME records** at Cloudflare, all **DNS only (grey cloud)**.
 4. **Vercel Production variables** — `CONVEX_DEPLOY_KEY`, the Turnstile site key,
    `STRIPE_SECRET_KEY` live, and ⚠️ `BUSINESS_VAT_ID`, which
@@ -52,6 +82,17 @@ The full list, in order, is Part 2 of
    On prod the invoice with no euro line is **the first real sale**, and the euro amount is
    what art. 35a lid 4 Wet OB asks for. One command before opening the doors, and it cannot
    be done afterwards.
+
+9. ⚠️ **Added by [ticket 39](39-what-an-invocation-costs.md) (2026-08-26): the old
+   prototype is already live on the real domain.** `https://200squares.com/` answers **200**
+   right now, publicly. It serves `main`, which is **73 commits behind** `staging` — the
+   build from before [ticket 08](08-accounts.md), which read `searchParams`, so **every
+   route there is `x-vercel-cache: MISS` and `no-store`**. Nothing is cached; the resale
+   market V1.0 dropped is still in it.
+
+   No bill is possible — Hobby pauses — so ticket 39 left it alone. But this list assumes it
+   is switching a site **on**, and it is really switching one **over**. Whoever works this
+   ticket checks what production is serving before touching anything.
 
 This ticket is deliberately last. The map's destination says it ends when the dev **can
 decide** to launch, not when the launch happens — so this is the switch, not the journey.

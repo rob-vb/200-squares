@@ -96,6 +96,10 @@ An **irrevocable** offer on the Banner for tomorrow. Placing the bid is the offe
 
 The highest bid so far on the running auction. It is not a separate thing that gets set: it is simply the largest bid placed. Being outbid means a higher bid arrived.
 
+## Declined bid
+
+A bid that was the highest at the close and could not be collected: the bank refused the charge. It is not the same as being outbid — nobody bid more. The bidder loses the Banner, the hold is released, and the site tells them the charge was refused and never why. The Banner then goes to the next bid down, for that bidder's own amount.
+
 ## House ad
 
 What the Banner shows when nobody has won it: a message inviting the first bid, not an empty area.
