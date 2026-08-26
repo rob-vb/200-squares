@@ -1,7 +1,7 @@
 # 30 — Making the auction feel like a contest
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: —
 Parent: ../map.md
 
@@ -217,3 +217,34 @@ day — which may be fine, or may be the whole list on a quiet week.
   bidding opens at $100, the minimum raise is $10, the top hold is captured first and every
   other hold is cancelled only after that capture succeeds, and with nothing standing the
   house ad takes the day.
+
+## Answer
+
+**Closed by the dev on 2026-08-26, unbuilt.** *"Laat ticket 30 zitten, close die maar."*
+
+The auction stays as [ticket 19](19-build-auction.md) shipped it. No last-five list, no bidder
+is named, no history strip, no restyling of the dock. `AuctionDock` keeps doing what it does:
+the countdown, the top bid, the bid count, and *You are top* / *You were outbid* for a
+signed-in viewer only.
+
+⚠️ **The gamification idea is closed, not deferred.** If it comes back it starts here, and
+everything above still applies — the four walls especially, because none of them moved:
+nothing may be invented, no bidder may be named without consent and a `/privacy` change, live
+reads are the bill on a Free Convex project, and the board is one screen.
+
+Three findings outlive the ticket, and they are the reason it was worth opening:
+
+- **The contest is already rendered.** The dock has the countdown, the price, the count and
+  the viewer's own standing. Whatever tension the auction lacks, it does not lack data.
+- **A paid bid would not remove the invoice.** The payment makes the paperwork, not the hold.
+  This retired the dev's original reason for wanting the outbid.lol model, and it will retire
+  it again.
+- ⚠️ **The last-five list is out, but `/terms` still promises a public record**: *"the day
+  stays in the public record with the winning bid on it."* A record of **winning** bids is
+  committed to and unbuilt. That is a debt on `/terms`, not on this ticket, and it belongs to
+  *making the copy true again*.
+
+**[Ticket 31](31-a-bid-that-does-not-stand.md) is not closed with this one.** It came out of
+here but it is not about tension — it is about the site telling three different stories about
+a withdrawn bid, one of which gives a consumer a cancellation right that `/terms` does not
+carry and that no code can honour. That stands on its own and it is still open.

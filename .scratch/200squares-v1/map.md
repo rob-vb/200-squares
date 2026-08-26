@@ -600,6 +600,23 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   the switcher are off `staging`, on the throwaway branch `prototype/27-label-and-sellout`;
   `convex/seed.ts` keeps `seed:soldout` so the full board can still be looked at.
 
+- [30 — Making the auction feel like a contest](issues/30-auction-tension.md) — **closed by
+  the dev, unbuilt.** It ran the whole way from *make the banner work like outbid.lol* to
+  *show the last five bidders on the board* to *laat maar zitten*, and it was worth every step
+  for what it settled on the way. ⚠️ **A paid bid would not remove the invoice** — the payment
+  makes the paperwork, not the card hold — which killed the outbid.lol model's stated reason;
+  and this site has no leaderboard, so a losing bid would buy nothing, which killed the model
+  itself. **Only the winner pays**, so [ticket 19](issues/19-build-auction.md)'s money path,
+  the VAT cases and the invoice all stand untouched. The last-five list died on the dev's own
+  objection: the banner block holds a winner's artwork for a day, and every other home for the
+  list trades loudness against board — the dock is the only surface everybody sees and it
+  already lies over the board's corner, while the bid panel shows a bidder only to rivals.
+  The lasting finding: **the contest is already rendered.** `AuctionDock` has the countdown,
+  the top bid, the bid count and the viewer's own standing; what it lacks is loudness, motion
+  and memory, not data. ⚠️ One debt is left behind on `/terms`, which promises *"the day stays
+  in the public record with the winning bid on it"* — a record of winning bids, committed to
+  and unbuilt. That belongs to *making the copy true again*, not to a closed ticket.
+
 - [29 — Which address the invoice may carry](issues/29-invoice-address.md) — **closed on
   the dev's own answer, and it was asking the wrong question.** It was raised while setting
   the `BUSINESS_` variables: the eenmanszaak is registered on the dev's home address. The
@@ -634,30 +651,6 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md).
   **Still open**:
-  [30 — Making the auction feel like a contest](issues/30-auction-tension.md), raised
-  2026-08-26 — the dev wants the bidding **gamified**, so there is tension about who takes
-  the banner. It started as *work like outbid.lol* and the dev dropped that themselves:
-  that site is a leaderboard with no clock where every bid buys a visible place, and this
-  site has **one banner, one day, one winner**, so a losing bid would buy nothing. Two
-  findings survive it — ⚠️ a paid bid would **not** remove the invoice (the payment makes
-  the paperwork, not the hold, so a paid board owes one document per *bid*), and paying
-  instead of holding would delete the 24-hour authorization and the declined capture, which
-  is a real trade if it is ever made on purpose. The surprise is that `AuctionDock` already
-  renders the countdown, the top bid, the bid count and the viewer's own *You were outbid*
-  — what is missing is loudness, motion and memory, not data. ⚠️ The walls are known:
-  nothing may be invented, no bidder may be named, live reads are the bill, and the board is
-  one screen. The dev's own answer to *what does a losing bid buy*: ⚠️ **show the last five
-  bidders — name, website, amount — and make a bid unwithdrawable, so placing one means
-  paying it.** That sells the tension instead of inventing it, and it turns a loser into an
-  advertiser. **Only the winner pays** — the dev settled that, so ticket 19's money path,
-  the invoice and the VAT cases all stand untouched and the outbid.lol economics are dead.
-  Two things are still open. ⚠️ **Where the list lives**: the dev ruled out the banner block
-  themselves, because a winner paid for that space for a day, and every remaining home trades
-  loudness against board — the dock is the only surface everybody sees and it already lies
-  over the board's corner, while the bid panel is free but shows a bidder only to rivals.
-  ⚠️ **A bid pulled just before the close**: there is no withdraw path in the build, but a
-  bidder can still kill the hold through their card, and ticket 19 handles that at the close
-  while nothing punishes it — that half moved to its own ticket. Beside them,
   [31 — A bid that does not stand](issues/31-a-bid-that-does-not-stand.md), opened 2026-08-26
   out of ticket 30 — **what happens when a standing bid stops standing**, and the site has
   three answers that disagree. The build says it cannot happen: there is no withdraw path
@@ -671,8 +664,7 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   decided: whether the contract is concluded **at the bid or at the close** (which decides
   whether a consumer can walk away for free while winning), what a cancelled winning bid does
   to a day already running, and whether the pro-rata is built or stays an inbox — ticket 07
-  put it in `/terms` unbuilt on purpose and it is still nobody's. Nothing is claimed and
-  nothing is built. Beside them,
+  put it in `/terms` unbuilt on purpose and it is still nobody's. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
