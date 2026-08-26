@@ -2,6 +2,7 @@
 
 Type: task
 Status: open
+Assignee: claude (session 2026-08-26)
 Blocked by: —
 Parent: ../map.md
 

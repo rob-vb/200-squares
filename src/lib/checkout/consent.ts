@@ -47,6 +47,13 @@ export const ORDER_BUTTON = "ORDER NOW — OBLIGES YOU TO PAY";
 // this box takes express consent to begin at once and acknowledges that the
 // right is lost on full performance, and the right really does end when the day
 // does (ticket 07).
+//
+// ⚠️ Ticket 31 sharpened the information line. *"If your banner day has already
+// started"* was a condition that is never false — the close and the start of the
+// day are the same instant — so it said nothing while reading as if it might not
+// apply. What replaced it says when the banner comes down and what is paid for,
+// and Art. 14(3) prices that from the moment the message was **sent**, not from
+// the moment it is read.
 
 /** The tick. A consumer cannot bid without it. */
 export const BANNER_WITHDRAWAL_TEXT =
@@ -57,7 +64,7 @@ export const BANNER_WITHDRAWAL_TEXT =
 export const BANNER_WITHDRAWAL_INFO =
   "You have 14 days to cancel, counted from the day you win. " +
   "To cancel, email hello@200squares.com and say so — a plain sentence is enough. " +
-  "If your banner day has already started, you pay for the part of it that has run.";
+  "Your banner comes down as soon as we have read your message, and you pay for the hours that had run when you sent it.";
 
 /**
  * ⚠️ What the bid button says. Under *Fuhrmann-2* only these words count, and a
@@ -67,9 +74,9 @@ export const BANNER_WITHDRAWAL_INFO =
 export const BID_BUTTON = "PLACE BID — OBLIGES YOU TO PAY IF YOU WIN";
 
 /**
- * The three sentences beside the box, and every one of them is literally true.
+ * The four sentences beside the box, and every one of them is literally true.
  *
- * ⚠️ The middle one is **not** ticket 07's wording. It said an outbid hold "is
+ * ⚠️ The second one is **not** ticket 07's wording. It said an outbid hold "is
  * released at once", which was that ticket's own inherited contradiction: a
  * runner-up with no hold cannot be promoted, and the third sentence promises
  * exactly that promotion. The dev settled it on 2026-08-25 in favour of the
@@ -80,4 +87,9 @@ export const BID_TRUTHS = [
   "A bid places a hold on your card. No money is taken unless you win.",
   "If you win, the hold is collected at 00:00 UTC. If you do not, it is released at the close, and your bank may take some days to show it.",
   "If the top bid cannot be collected, the banner goes to the next bid that can.",
+  // ⚠️ Ticket 31: the bid is the offer, the close at 00:00 UTC is the
+  // acceptance, and an offer naming a term for acceptance is irrevocable
+  // (6:219 lid 1 BW). So there is nothing to withdraw from until the close —
+  // said here in four words rather than in that reasoning.
+  "A bid cannot be withdrawn.",
 ];

@@ -6,7 +6,8 @@ import { P, Section } from "@/components/content/section";
 
 export const metadata: Metadata = {
   title: "Terms · 200 SQUARES",
-  description: "What you buy, what you may put on it, and what is not promised.",
+  description:
+    "What you buy, what you may put on it, and what is not promised.",
 };
 
 export default function Page() {
@@ -18,82 +19,105 @@ export default function Page() {
       >
         <Section title="What you buy">
           <P>
-            A square costs $250. You pay once, and the square is yours for as long as this site runs.
-            There is no subscription, no renewal and no invoice after the first one.
+            A square costs $250. You pay once, and the square is yours for as
+            long as this site runs. There is no subscription, no renewal and no
+            invoice after the first one.
           </P>
           <P>
-            A purchase of several squares at once is one block, at most 4 wide and 4 high. A block
-            carries one image and one link.
+            A purchase of several squares at once is one block, at most 4 wide
+            and 4 high. A block carries one image and one link.
           </P>
           <P>
-            Your square is not taken back, rented out or sold again while it is yours. That is a
-            promise about what this site does, not a rule about what you may do with what you
-            bought.
+            Your square is not taken back, rented out or sold again while it is
+            yours. That is a promise about what this site does, not a rule about
+            what you may do with what you bought.
           </P>
         </Section>
 
         <Section title="There is no way out">
           <P>
-            A square cannot be sold on through this site, and it cannot be handed back. Once it is
-            bought it is yours, and it stays yours. There is no refund and no exit.
+            A square cannot be sold on through this site, and it cannot be
+            handed back. Once it is bought it is yours, and it stays yours.
+            There is no refund and no exit.
           </P>
         </Section>
 
         <Section title="Your artwork and your link">
           <P>
-            You supply the image and the address. You keep every right you had in them, and you give
-            permission to show them on this page for as long as the square is yours. You can replace
-            either whenever you want.
+            You supply the image and the address. You keep every right you had
+            in them, and you give permission to show them on this page for as
+            long as the square is yours. You can replace either whenever you
+            want.
           </P>
           <P>
-            You confirm you may use what you upload. If somebody else owns the image, that is between
-            you and them.
+            You confirm you may use what you upload. If somebody else owns the
+            image, that is between you and them.
           </P>
           <P>
-            Not allowed: adult content; malware; impersonation; deceptive redirects; chat or invite
-            links such as Telegram, WhatsApp or Discord; and link shorteners. Link to a product, a
-            company or a profile on your own domain. Tracking parameters on your own address are
-            fine.
+            Not allowed: adult content; malware; impersonation; deceptive
+            redirects; chat or invite links such as Telegram, WhatsApp or
+            Discord; and link shorteners. Link to a product, a company or a
+            profile on your own domain. Tracking parameters on your own address
+            are fine.
           </P>
           <P>
-            Artwork or a link that breaks these rules is taken off the grid. The square stays yours:
-            put something else on it. A square is only emptied for the rule it broke, and you are
-            told which one.
+            Artwork or a link that breaks these rules is taken off the grid. The
+            square stays yours: put something else on it. A square is only
+            emptied for the rule it broke, and you are told which one.
           </P>
         </Section>
 
         <Section title="The daily banner">
           <P>
-            The banner is auctioned every day. Today you bid on tomorrow&rsquo;s banner. Bidding
-            closes at 00:00 UTC and starts at $100; each bid is at least $10 over the top bid.
+            The banner is auctioned every day. Today you bid on tomorrow&rsquo;s
+            banner. Bidding closes at 00:00 UTC and starts at $100; each bid is
+            at least $10 over the top bid.
           </P>
           <P>
-            A bid is binding while it stands. The highest bid at 00:00 UTC wins and is charged; every
-            other bid is not. The winner holds the banner from 00:00 to 00:00 UTC, and the day stays
-            in the public record with the winning bid on it.
+            A bid cannot be withdrawn. Bidding closes at 00:00 UTC and every bid
+            stands until it does.
           </P>
           <P>
-            The banner follows the same content rules as a square. A banner that breaks them is
-            removed for the rest of its day and the bid is not returned.
+            The banner goes to the highest bid that can be collected at 00:00
+            UTC. If the top bid cannot be collected, the next one takes the day.
+            Every other bid is released.
+          </P>
+          <P>
+            The winner holds the banner from 00:00 to 00:00 UTC, and the day
+            stays in the public record with the winning bid on it.
+          </P>
+          <P>
+            If you bid as a private person, you have 14 days to cancel, counted
+            from the close. A banner day is fully delivered at 00:00 UTC, so the
+            right ends there. To cancel, email hello@200squares.com. Your banner
+            comes down as soon as we have read your message, and you pay for the
+            hours that had run when you sent it.
+          </P>
+          <P>
+            The banner follows the same content rules as a square. A banner that
+            breaks them is removed for the rest of its day and the bid is not
+            returned.
           </P>
         </Section>
 
         <Section title="What is not promised">
           <P>
-            Nobody can promise a website runs forever, and this page will not pretend otherwise. This
-            is one project run by one person. If it stops, the squares stop with it, and that is
-            priced into the $250.
+            Nobody can promise a website runs forever, and this page will not
+            pretend otherwise. This is one project run by one person. If it
+            stops, the squares stop with it, and that is priced into the $250.
           </P>
           <P>
-            The site counts clicks and shows you your own count. That is a record of what happened,
-            not a promise of what will. No amount of traffic is promised or implied.
+            The site counts clicks and shows you your own count. That is a
+            record of what happened, not a promise of what will. No amount of
+            traffic is promised or implied.
           </P>
         </Section>
 
         <Section title="Changes">
           <P>
-            These terms can change — for the rules about content, most likely. A change never takes a
-            square away from somebody who already bought one.
+            These terms can change — for the rules about content, most likely. A
+            change never takes a square away from somebody who already bought
+            one.
           </P>
           <Contact lead="Questions about any of this:" />
         </Section>

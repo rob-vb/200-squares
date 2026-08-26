@@ -429,9 +429,21 @@ export default defineSchema({
     /** `YYYY-MM-DD` where a banner day was the thing removed. */
     bannerDate: v.optional(v.string()),
     ownerId: v.id("owners"),
-    /** Which rule of /terms was broken. */
-    rule: v.string(),
-    /** The reason as the admin wrote it. It goes to the owner verbatim. */
+    /**
+     * Which rule of /terms was broken.
+     *
+     * ⚠️ **Absent means nobody broke anything** — the row is a banner day the
+     * bidder withdrew from ([ticket 32](../.scratch/200squares-v1/issues/32-build-withdrawn-banner-day.md)),
+     * which takes no strike and sends no mail. It is one field rather than a
+     * rule plus a `withdrawn` flag, because two fields can disagree about the
+     * same row and this one cannot.
+     */
+    rule: v.optional(v.string()),
+    /**
+     * The reason as the admin wrote it. It goes to the owner verbatim — except
+     * on a withdrawal, where nothing is sent and this is the dev's own note for
+     * the ten-year record.
+     */
     reason: v.string(),
     /** Whether this removal was the one that froze the block. */
     froze: v.boolean(),

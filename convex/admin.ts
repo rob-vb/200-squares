@@ -101,7 +101,10 @@ export const board = query({
     const now = Date.now();
     const needle = (search ?? "").trim().toLowerCase();
 
-    const owners = new Map<string, { name: string; email: string; strikes: number }>();
+    const owners = new Map<
+      string,
+      { name: string; email: string; strikes: number }
+    >();
     for (const owner of await ctx.db.query("owners").collect()) {
       owners.set(owner._id, {
         name: owner.name,
@@ -112,7 +115,11 @@ export const board = query({
 
     const blocks = [];
     for (const block of await ctx.db.query("blocks").collect()) {
-      const owner = owners.get(block.ownerId) ?? { name: "", email: "", strikes: 0 };
+      const owner = owners.get(block.ownerId) ?? {
+        name: "",
+        email: "",
+        strikes: 0,
+      };
       const hay = `${owner.name} ${owner.email} ${block.url}`.toLowerCase();
       if (needle && !hay.includes(needle)) continue;
       blocks.push({
@@ -129,7 +136,9 @@ export const board = query({
     // The ones that can be acted on first: a frozen block is already dealt with,
     // and an empty one has nothing on it to remove.
     blocks.sort(
-      (a, b) => Number(a.frozen) - Number(b.frozen) || Number(!a.hasArtwork) - Number(!b.hasArtwork),
+      (a, b) =>
+        Number(a.frozen) - Number(b.frozen) ||
+        Number(!a.hasArtwork) - Number(!b.hasArtwork),
     );
 
     const date = todayUtc(now);
@@ -160,8 +169,24 @@ export const board = query({
 /** The reason goes to the owner as it was written, so it may not be empty. */
 function reasonOf(raw: string): string {
   const reason = raw.trim().slice(0, 500);
-  if (!reason) throw new ConvexError("A reason is needed. The owner is told what it says.");
+  if (!reason)
+    throw new ConvexError(
+      "A reason is needed. The owner is told what it says.",
+    );
   return reason;
+}
+
+/**
+ * A withdrawal's note. Nobody is sent it, so it may say anything — but it may
+ * not be nothing, because it is the only account of why a day went off.
+ */
+function noteOf(raw: string): string {
+  const note = raw.trim().slice(0, 500);
+  if (!note)
+    throw new ConvexError(
+      "A note is needed. Nothing else records why the day went off.",
+    );
+  return note;
 }
 
 /**
@@ -195,7 +220,11 @@ export const strip = mutation({
     const frozen = strikes >= 3;
 
     const old = block.artwork;
-    await ctx.db.patch(blockId, { artwork: null, url: "", frozen: block.frozen || frozen });
+    await ctx.db.patch(blockId, {
+      artwork: null,
+      url: "",
+      frozen: block.frozen || frozen,
+    });
     await ctx.db.patch(owner._id, { strikeAt });
     await ctx.db.insert("removals", {
       blockId,
@@ -245,7 +274,8 @@ export const removeBanner = mutation({
       .query("bannerDays")
       .withIndex("by_date", (q) => q.eq("date", date))
       .unique();
-    if (!day || !day.ownerId) throw new ConvexError("Nobody holds the banner that day.");
+    if (!day || !day.ownerId)
+      throw new ConvexError("Nobody holds the banner that day.");
     const owner = await ctx.db.get(day.ownerId);
     if (!owner) throw new ConvexError("That banner day has no owner.");
 
@@ -285,6 +315,68 @@ export const removeBanner = mutation({
 });
 
 /**
+ * Take a banner day off because the bidder withdrew from it.
+ *
+ * ⚠️ **`removeBanner` cannot be reused, and that is the whole reason this exists.**
+ * It has the right effect — the day goes off, the house ad stands in — but it
+ * also counts a strike, writes a `rule` and sends the *you broke rule X* mail.
+ * A withdrawal breaks nothing. [Ticket 31](../.scratch/200squares-v1/issues/31-a-bid-that-does-not-stand.md)
+ * settled what it is: a bid is an irrevocable offer, the close is the
+ * acceptance, and a consumer's 14 days are born at the close and die at full
+ * performance — so they live 24 hours, and this is the door they walk through.
+ *
+ * ⚠️ **The refund is not built.** The dev works out hours-run ÷ 24 × bid and
+ * refunds in the Stripe dashboard. Art. 14(3) fixes the amount at the moment the
+ * consumer *sent* the message, not the moment the dev reads it, so a late reply
+ * costs the house free banner hours and shortens nobody's refund. Pressing this
+ * button is therefore not the clock — the message was.
+ *
+ * ⚠️ **No mail.** Ticket 13 fixed the list at six messages and a build ticket
+ * may not add a seventh. The dev is already in the thread: they are answering
+ * the withdrawal by hand, which is where the refund is arranged anyway.
+ *
+ * The note is required for the same reason a removal's reason is: this row is
+ * the only thing the act leaves behind, and in 2036 *a day went off and nobody
+ * was struck* has to be explainable.
+ */
+export const withdrawBanner = mutation({
+  args: { date: v.string(), note: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { date, note: rawNote }) => {
+    await requireAdmin(ctx);
+    const note = noteOf(rawNote);
+
+    const day = await ctx.db
+      .query("bannerDays")
+      .withIndex("by_date", (q) => q.eq("date", date))
+      .unique();
+    if (!day || !day.ownerId)
+      throw new ConvexError("Nobody holds the banner that day.");
+    const owner = await ctx.db.get(day.ownerId);
+    if (!owner) throw new ConvexError("That banner day has no owner.");
+
+    const now = Date.now();
+    const old = day.artwork;
+    // The same three fields `removeBanner` patches, for the same reason: the
+    // board and the click counter already read `removedAt`, so the banner is off
+    // the moment this commits and the house ad takes the rest of the day.
+    await ctx.db.patch(day._id, { removedAt: now, artwork: null, url: "" });
+    // ⚠️ `owner.strikeAt` is **not** touched. Nothing was broken.
+    await ctx.db.insert("removals", {
+      bannerDate: date,
+      ownerId: owner._id,
+      // ⚠️ No `rule`, and its absence is the record: see `convex/schema.ts`.
+      reason: note,
+      froze: false,
+      removedAt: now,
+    });
+    await release(ctx, old);
+
+    return null;
+  },
+});
+
+/**
  * Unfreeze a block.
  *
  * ⚠️ It is not a right, it is not in `/terms`, and it is not advertised. Ticket
@@ -319,7 +411,9 @@ export const removals = query({
     v.object({
       what: v.string(),
       ownerName: v.string(),
+      /** ⚠️ Empty where the bidder withdrew: `withdrawn` says so instead. */
       rule: v.string(),
+      withdrawn: v.boolean(),
       reason: v.string(),
       froze: v.boolean(),
       removedAt: v.number(),
@@ -339,7 +433,10 @@ export const removals = query({
             ? `Square ${squareRange(block.rect)}`
             : "A block",
         ownerName: owner?.name || owner?.email || "",
-        rule: row.rule,
+        rule: row.rule ?? "",
+        // Derived, never stored. One field on the row cannot disagree with
+        // itself; two of them could.
+        withdrawn: row.rule === undefined,
         reason: row.reason,
         froze: row.froze,
         removedAt: row.removedAt,

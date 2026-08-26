@@ -38,7 +38,9 @@ const RULES = [
 ];
 
 const sayWhy = (error: unknown) =>
-  error instanceof ConvexError ? String(error.data) : "That did not save. Try again.";
+  error instanceof ConvexError
+    ? String(error.data)
+    : "That did not save. Try again.";
 
 export function AdminBoard() {
   const allowed = useQuery(api.admin.mayI, {});
@@ -77,7 +79,9 @@ export function AdminBoard() {
         <h2 className="font-display text-[20px]">
           Blocks{board ? ` (${board.blocks.length})` : ""}
         </h2>
-        {board?.blocks.map((block) => <BlockRow key={block.id} block={block} />)}
+        {board?.blocks.map((block) => (
+          <BlockRow key={block.id} block={block} />
+        ))}
         {board && board.blocks.length === 0 ? (
           <p className="text-faint py-4 text-[14px]">Nothing matches that.</p>
         ) : null}
@@ -98,7 +102,10 @@ export function AdminBoard() {
               </span>
             </div>
             <div className="pt-1">
-              {row.rule}
+              {/* ⚠️ A withdrawal has no rule, and the absence is the record.
+                  Ticket 32: nobody broke anything, so nothing may read as if
+                  they had. */}
+              {row.withdrawn ? "Withdrawn by the bidder · no strike" : row.rule}
               {row.froze ? " · froze the block" : ""}
             </div>
             <div className="text-faint pt-1">{row.reason}</div>
@@ -178,6 +185,64 @@ function StripForm({
   );
 }
 
+/**
+ * The form that takes a day off without blaming anybody.
+ *
+ * ⚠️ It is deliberately **not** `StripForm`. No rule picker, because there is no
+ * rule; and the note is a note to self rather than words the owner reads, which
+ * is the one thing `StripForm`'s placeholder promises. The refund is not here
+ * either: the dev works it out and pays it in the Stripe dashboard, and Art.
+ * 14(3) dates it from the bidder's message, not from this press.
+ */
+function WithdrawForm({
+  onWithdraw,
+}: {
+  onWithdraw: (note: string) => Promise<unknown>;
+}) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  const press = async () => {
+    // The same check the server makes, in the same words.
+    if (!note.trim()) {
+      setError("A note is needed. Nothing else records why the day went off.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await onWithdraw(note);
+      setNote("");
+      setDone(
+        "The day is off. No strike, and nothing was sent — reply by hand and refund at Stripe.",
+      );
+    } catch (caught) {
+      setError(sayWhy(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (done) return <div className="text-faint pt-2 text-[13px]">{done}</div>;
+
+  return (
+    <div className="flex flex-col gap-2 pt-2">
+      <textarea
+        className={`${inputClass} min-h-[72px]`}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="When they wrote, and what you refunded. Nobody is sent this."
+      />
+      <SecondaryButton onClick={() => void press()} disabled={busy}>
+        {busy ? "…" : "Take the day off — no strike"}
+      </SecondaryButton>
+      {error ? <div className="text-accent text-[12px]">{error}</div> : null}
+    </div>
+  );
+}
+
 function BannerRow({
   banner,
 }: {
@@ -192,6 +257,8 @@ function BannerRow({
   };
 }) {
   const removeBanner = useMutation(api.admin.removeBanner);
+  const withdrawBanner = useMutation(api.admin.withdrawBanner);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   return (
     <div className="border-hairline border-b py-3">
@@ -205,13 +272,33 @@ function BannerRow({
       <div className="truncate pt-1 text-[13px]">{banner.url || "No link"}</div>
       {banner.removed ? (
         <div className="text-accent pt-2 text-[13px] font-semibold">
-          Taken off for the rest of today. The house advertisement is standing in.
+          Taken off for the rest of today. The house advertisement is standing
+          in.
         </div>
       ) : (
-        <StripForm
-          label="Take the banner off"
-          onStrip={(rule, reason) => removeBanner({ date: banner.date, rule, reason })}
-        />
+        <>
+          <StripForm
+            label="Take the banner off"
+            onStrip={(rule, reason) =>
+              removeBanner({ date: banner.date, rule, reason })
+            }
+          />
+          {/* ⚠️ The second door, and it is not the same door. Ticket 32: a
+              withdrawal is not a rule break, so it takes no strike, names no
+              rule and sends no mail. It is kept shut by default because the
+              rule break is the case that happens at midnight in a hurry. */}
+          {withdrawing ? (
+            <WithdrawForm
+              onWithdraw={(note) => withdrawBanner({ date: banner.date, note })}
+            />
+          ) : (
+            <div className="pt-2">
+              <SecondaryButton onClick={() => setWithdrawing(true)}>
+                The bidder withdrew
+              </SecondaryButton>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -240,13 +327,21 @@ function BlockRow({
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
         <span className="font-display text-[15px]">{block.what}</span>
         <span>{block.ownerName || block.ownerEmail}</span>
-        <span className={block.strikes > 0 ? "text-accent font-semibold" : "text-faint"}>
+        <span
+          className={
+            block.strikes > 0 ? "text-accent font-semibold" : "text-faint"
+          }
+        >
           {block.strikes} of 3
         </span>
       </div>
       <div className="truncate pt-1 text-[13px]">{block.url || "No link"}</div>
       <div className="text-faint pt-1 text-[13px]">
-        {block.frozen ? "Frozen" : block.hasArtwork ? "Live" : "Waiting for artwork"}
+        {block.frozen
+          ? "Frozen"
+          : block.hasArtwork
+            ? "Live"
+            : "Waiting for artwork"}
       </div>
 
       {block.frozen ? (
