@@ -582,6 +582,24 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   the click counter already read. ⚠️ **`ADMIN_EMAILS` is unset**, so `/admin` admits nobody
   today, including the dev.
 
+- [27 — The resale label, and the day the board sells out](issues/27-label-and-sellout.md)
+  — **the label is dropped and the sold-out day is silence.** The dev looked at three
+  placements for *"When all 199 squares are sold, owners will be able to sell theirs on."*
+  and took none: on a phone the top bar has no room for it, and the only placement that
+  reaches a phone is a strip that costs canvas height on a board that must not scroll. So
+  ⚠️ **the site now promises resale nowhere** — not the top bar, not `/terms`
+  ([ticket 26](issues/26-strip-resale.md)) — and V1.1 starts from silence owing nobody a
+  thing. The two recorded risks of the hard wording are retired, not carried. On the day
+  `available` reaches zero, **nothing happens**: no sold-out branch on the board, the panel
+  or the dock; a drag selects nothing and no panel opens. The counter needed no change — it
+  already reads *"Every square is taken. The banner is still auctioned every day."* The
+  banner is still the one thing a sold-out board has. One thing did change on every day:
+  ⚠️ **the drag legend under the canvas is deleted** — *"Drag to select up to 4 × 4 · $250
+  per square"* — so nothing now tells a first visitor the board is drag-to-select, and on a
+  phone the price appears nowhere on the board screen. `TitleBlock` stays. The variants and
+  the switcher are off `staging`, on the throwaway branch `prototype/27-label-and-sellout`;
+  `convex/seed.ts` keeps `seed:soldout` so the full board can still be looked at.
+
 - [29 — Which address the invoice may carry](issues/29-invoice-address.md) — **closed on
   the dev's own answer, and it was asking the wrong question.** It was raised while setting
   the `BUSINESS_` variables: the eenmanszaak is registered on the dev's home address. The
@@ -616,9 +634,6 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md).
   **Still open**:
-  [27 — The resale label, and the day the board sells out](issues/27-label-and-sellout.md),
-  which graduated the sold-out fog and is the one **prototype** ticket in the set — it
-  wants the dev in the room. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
