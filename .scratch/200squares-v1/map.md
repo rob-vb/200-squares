@@ -646,7 +646,14 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   renders the countdown, the top bid, the bid count and the viewer's own *You were outbid*
   — what is missing is loudness, motion and memory, not data. ⚠️ The walls are known:
   nothing may be invented, no bidder may be named, live reads are the bill, and the board is
-  one screen. Nothing is claimed and nothing is built. Beside them,
+  one screen. The dev's own answer to *what does a losing bid buy*: ⚠️ **show the last five
+  bidders — name, website, amount — and make a bid unwithdrawable, so placing one means
+  paying it.** That sells the tension instead of inventing it, and it turns a loser into an
+  advertiser. It also turns a bid from a cancellable card hold into a **purchase at the
+  moment it is placed**, which brings the invoice finding straight back: one document, one
+  VAT decision and one frozen home address **per bid**. ⚠️ Whether losing bidders pay at all
+  is the unanswered half, and nothing may be built until the dev says. Nothing is claimed and
+  nothing is built. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
