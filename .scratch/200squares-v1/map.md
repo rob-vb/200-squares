@@ -85,6 +85,13 @@ real backend, and then makes the copy true again.
   searches for an owner and empties their first *Live* block with a rule and a reason. ⚠️
   There is no other way to press it — the button is admin-only. Built by
   [ticket 28](issues/28-prove-the-mail.md).
+- **Asking the edge what it is still serving**: `node scripts/art-check.mjs /art/<id> …`
+  makes **two** requests per URL and prints `x-vercel-cache`, because one request cannot tell
+  a cached 200 from a fresh one — `HIT` is the copy a purge has to reach, and `REVALIDATED`
+  on a 404 is the purge having reached it. ⚠️ Vercel's cache key includes the **deployment**,
+  so a fresh deploy starts with an empty edge cache: a proof has to cache and purge inside one
+  deployment or it proves nothing. Built by
+  [ticket 36](issues/36-build-purge-on-release.md).
 - **Reading a page, not looking at one**: `TEXT=1 node scripts/shot.mjs <path> out.png`
   prints the words as well as taking the picture, and `AUTH=1` goes in signed in. An invoice
   is checked line by line and a screenshot cannot be. Added by
@@ -749,6 +756,24 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   tested the bottom sheet; it is scoped to the visible panel now, gains `PHONE=1`, and shoots
   the panel *element* on a refusal, because a `fullPage` shot cannot show what a panel that
   scrolls inside itself is showing. That is why ticket 28's screenshot looked empty.
+- [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md)
+  — **built and proved on staging.** `/art/<id>` tags every 200 `art-<id>` and has lost
+  `immutable`; `release` books a scheduled action for exactly the ids it deleted, which POSTs
+  the tags to `/api/purge` on the site behind a shared secret, which calls
+  `dangerouslyDeleteByTag`. Measured both ways round: a picture cached at the edge (`HIT`)
+  answers 404 `REVALIDATED` after the strip **and** after a replacement. `purgedAt` lands
+  393 ms after `removedAt`. ⚠️ Ticket 34 named four callers of `release`; there are **six**,
+  and `withdrawBanner` is one of them — the release where nobody did anything wrong and the
+  picture still has to stop being served. ⚠️ **`dangerouslyDeleteByTag` resolves silently when
+  there is no purge API**, so the route reads Vercel's request context itself and answers 503
+  rather than reporting a purge that did not happen. A failed purge retries six times over
+  about eight hours and then stops; the `removals` row keeps no `purgedAt` and `/admin` says
+  *Still on the edge* for ever, which the four removals that predate this build now do —
+  truthfully. A replacement gets no such row on purpose: `removals` is the record of things
+  taken off after a report, not of an owner tidying up. ⚠️ **Production's `PURGE_URL` and
+  `PURGE_SECRET` are on [ticket 25](issues/25-launch.md)**; the wrong URL purges the wrong
+  environment and reports success. New: `@vercel/functions`, and `scripts/art-check.mjs`,
+  which asks twice because one request cannot tell a cached 200 from a fresh one.
 
 ## Not yet specified
 
@@ -791,15 +816,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md) and
   [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md).
   **Done** (2026-08-26, later):
-  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md) and
-  [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md).
+  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md),
+  [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md) and
+  [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md).
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day, and it is deliberately last.
-  [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md)
-  is ticket 34's build. ⚠️ It is not a launch switch and so is not on ticket 25, but it is the
-  one open item with an outside party standing in it — somebody who reported a picture and was
-  told it was gone. It lands before the doors open.
+  the day, and it is deliberately last. ⚠️ It is now the **only** open ticket on this map.
 - ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
   that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
   fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
@@ -820,8 +842,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   plausible-looking ids is invocations, which is what Hobby pauses on. ⚠️ [Ticket 34](issues/34-stripped-art-stays-cached.md) adds a **third** source
   (2026-08-26): the purge endpoint its answer needs is one more POST route on the site, and a
   flood of POSTs to it is invocations like any other. It is a small surface — one secret, one
-  call — but it belongs in this answer and not in ticket 34's. The three belong in one
-  answer: whatever protects `/api/auth/*` protects all of them.
+  call — but it belongs in this answer and not in ticket 34's.
+  [Ticket 36](issues/36-build-purge-on-release.md) has now built it: `/api/purge` exists and a
+  wrong secret costs one hash comparison, which is cheap but is still an invocation. The three
+  belong in one answer: whatever protects `/api/auth/*` protects all of them.
 
 - ⚠️ **Nobody tells a bidder their card was declined.** [Ticket 19](issues/19-build-auction.md)
   built the ladder: a bidder who held the top spot all day and whose capture failed at
