@@ -98,33 +98,35 @@ moment it is placed, by everybody who places one.
 
 ### What has to be settled before any of this is drawn
 
-**1. Do losing bidders pay? This is the whole ticket.** Two readings of *"niet meer
-withdrawen"*, and they are different products:
+**1. Only the winner pays.** Settled by the dev on 2026-08-26: *"Nee alleen winnaar
+betaalt."* So ticket 19's money path stands — a bid is a card hold, the top hold is captured
+at the close, every other hold is cancelled. Nothing about the invoice, the VAT cases or the
+consumer right of withdrawal changes. The outbid.lol economics are dead for good.
 
-- **A — only the winner pays, and cannot back out.** Close to what is already built. Ticket
-  19's button already reads *Place bid — obliges you to pay if you win*. This mostly deletes
-  the withdrawal text.
-- **B — every bid is charged when placed, win or lose.** This is what *"zo heeft het bieden
-  zelf ook nut"* implies: the listing is what the money buys. This is a rewrite of ticket 19's
-  money path.
+⚠️ **The listing is therefore a free gift to people who did not pay.** That is not an
+objection — it is what makes bidding worth doing, and it costs the site nothing but pixels.
+But it means the list must not be describable as a thing that was *bought*, anywhere in the
+copy, or a losing bidder has a claim to it.
 
-⚠️ Do not build either until the dev says which. Under B, everything below applies. Under A,
-the list still works — but it is a free gift to people who did not pay, and the tension is
-unchanged.
+**2. ⚠️ The dev's real worry: a bid pulled just before the close.** *"het moet niet zo zijn
+dat iemand biedt en vervolgens vlak voor de teller zijn bod intrekt als die aan het winnen
+is."* Two things to check before designing anything against it:
 
-**2. Under B, the invoice multiplies.** This is the finding from the outbid.lol pass arriving
-exactly where it was predicted: one document **per bid**, one VAT decision per bid, one
-frozen copy of the dev's home address per bid ([ticket 29](29-invoice-address.md)). Bidding
-becomes the site's highest-volume sale.
-
-**3. ⚠️ Under B, the consumer right of withdrawal is the wall, not the terms page.** A bid
-cannot be made non-refundable by saying so. `/terms` carries Art. 6(1)(h) and the bid panel
-carries the box ([ticket 03](03-checkout-fields.md), [ticket 19](19-build-auction.md)). The
-one honest route is that the service is **fully performed immediately** — the listing appears
-the second the bid lands — with express prior consent and an acknowledgement that the right
-is lost. That has to be true in the build, not only in the copy: if the listing is delayed,
-queued, or can be pushed off the list by later bidders, it was not fully performed. The
-alternative is **business buyers only**, which is a smaller market and a bigger form.
+- **There is no withdraw path in the build.** Nothing in `src/` or `convex/` cancels a
+  bidder's own bid. `withdrawalWaived` is the Art. 6(1)(h) consumer field, not a button. So
+  the exact move the dev fears may already be impossible **through the site**.
+- ⚠️ **It is not impossible through the card.** A bid is a `capture_method: manual`
+  PaymentIntent. A bidder who wants out can kill the hold outside the site — cancel the card,
+  have the issuer drop the authorization — and the site finds out at 00:00 UTC when the
+  capture is declined. Ticket 19 already built the answer to that: promote the next bid and
+  capture it for its own amount, and if all fail the house ad takes the day. So the failure
+  is handled; what is missing is a **consequence** for the bidder who caused it.
+  [Ticket 11](11-house-rules.md)'s strike counter on the `owners` row is the existing shape
+  for that, and `convex/admin.ts` already reasons in exactly these terms: *"this is the bidder
+  breaking the contract rather than withdrawing from it."*
+- **What the copy promises must match.** The button says *Place bid — obliges you to pay if
+  you win*. If a standing bid is genuinely binding, nothing needs adding. If a strike is the
+  answer, the bid panel has to say so before the bid, not after.
 
 **4. ⚠️ A bidder gets named, and today nobody is.** The dock's own comment: *"A stranger must
 never be told they were outbid, because the site does not know who a stranger is."* Publishing
@@ -140,10 +142,33 @@ website and amount, five times over, is not readable at any size the board rende
 board zooms to 4x, which is where it would be legible, and ticket 05 already fixed a
 readability floor (`NUMBER_MIN_PX`) for exactly this kind of problem.
 
-**6. ⚠️ The banner block belongs to the winner.** They paid for that space and the artwork is
-what they bought. Putting five rivals inside it takes what was sold. Decide where the list
-actually lives: inside the block, under it, in the dock, in the bid panel, or on `/bid`. Only
-one of those costs the winner anything.
+**6. ⚠️ The banner block is out. The dev killed it themselves**, on the same reasoning this
+ticket raised: *"het blok moet juist niet gebruikt worden voor dit want daar staat een dag
+lang iemand's afbeelding."* The winner paid for that space for a day and the artwork is what
+they bought. So **the list needs a home that costs the winner nothing**, and that is now the
+open design question on this ticket.
+
+What exists to put it in, and what each one costs:
+
+- **The auction dock.** Already the auction's home, already live on every board load, already
+  showing the countdown, the top bid and the bid count. It is the only surface **everybody**
+  sees. But it is one small card at `bottom-6 left-8`, it already lies over the board's
+  bottom-left corner ([ticket 27](27-label-and-sellout.md)), and five rows of name + website +
+  amount turns it into a panel.
+- **The bid panel.** Free space, no board cost, and it already carries the countdown and the
+  bidder's own state. But it opens only for someone who pressed BID — which is the wrong
+  audience. ⚠️ **A bidder is buying attention from visitors, not from rivals.** A list only
+  other bidders see is worth much less than the idea sounds.
+- **A click on the banner.** `src/components/canvas/canvas.tsx:176` already opens the bid flow
+  when a visitor clicks the banner — but only `if (!bannerToday)`, so the door is shut exactly
+  when somebody holds it. That shut door is free canvas and it is where curiosity already
+  goes. ⚠️ But an occupied banner's click belongs to the winner's website; one click cannot do
+  both.
+- **A page of its own**, or a strip on `/how-it-works`. Costs the board nothing and is the
+  only option with room for real history. But nobody is on it, so it advertises least.
+
+⚠️ The trade to name out loud: **the more the list is seen, the more board it takes.** There
+is no placement that is both loud and free.
 
 **7. The list is a second click surface.** The site counts clicks to owners' websites
 ([ticket 21](21-build-clicks.md)) and prints one public total. Five live links on the banner

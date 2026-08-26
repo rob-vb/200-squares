@@ -649,10 +649,16 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   one screen. The dev's own answer to *what does a losing bid buy*: ⚠️ **show the last five
   bidders — name, website, amount — and make a bid unwithdrawable, so placing one means
   paying it.** That sells the tension instead of inventing it, and it turns a loser into an
-  advertiser. It also turns a bid from a cancellable card hold into a **purchase at the
-  moment it is placed**, which brings the invoice finding straight back: one document, one
-  VAT decision and one frozen home address **per bid**. ⚠️ Whether losing bidders pay at all
-  is the unanswered half, and nothing may be built until the dev says. Nothing is claimed and
+  advertiser. **Only the winner pays** — the dev settled that, so ticket 19's money path,
+  the invoice and the VAT cases all stand untouched and the outbid.lol economics are dead.
+  Two things are still open. ⚠️ **Where the list lives**: the dev ruled out the banner block
+  themselves, because a winner paid for that space for a day, and every remaining home trades
+  loudness against board — the dock is the only surface everybody sees and it already lies
+  over the board's corner, while the bid panel is free but shows a bidder only to rivals.
+  ⚠️ **A bid pulled just before the close**: there is no withdraw path in the build, but a
+  bidder can still kill the hold through their card, and ticket 19 handles that at the close
+  while nothing punishes it — [ticket 11](issues/11-house-rules.md)'s strike counter is the
+  existing shape for that. Nothing is claimed and
   nothing is built. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
