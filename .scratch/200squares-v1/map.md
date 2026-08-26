@@ -657,8 +657,21 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   over the board's corner, while the bid panel is free but shows a bidder only to rivals.
   ⚠️ **A bid pulled just before the close**: there is no withdraw path in the build, but a
   bidder can still kill the hold through their card, and ticket 19 handles that at the close
-  while nothing punishes it — [ticket 11](issues/11-house-rules.md)'s strike counter is the
-  existing shape for that. Nothing is claimed and
+  while nothing punishes it — that half moved to its own ticket. Beside them,
+  [31 — A bid that does not stand](issues/31-a-bid-that-does-not-stand.md), opened 2026-08-26
+  out of ticket 30 — **what happens when a standing bid stops standing**, and the site has
+  three answers that disagree. The build says it cannot happen: there is no withdraw path
+  anywhere. The card says it can: a bidder kills the hold outside the site and ticket 19's
+  close survives it, but ⚠️ **nothing punishes it** ([ticket 11](issues/11-house-rules.md)'s
+  strike counter is the existing shape, though a strike lands on `owners` and this bidder was
+  never charged). And ⚠️ **the copy says it is allowed, twice, differently**: the bid panel
+  gives a consumer 14 days to cancel by email with a pro-rata refund, `/terms` says only
+  *"a bid is binding while it stands"* and never mentions the 14 days at all — so the two
+  surfaces tell two stories and the generous one wins. Three things under it have never been
+  decided: whether the contract is concluded **at the bid or at the close** (which decides
+  whether a consumer can walk away for free while winning), what a cancelled winning bid does
+  to a day already running, and whether the pro-rata is built or stays an inbox — ticket 07
+  put it in `/terms` unbuilt on purpose and it is still nobody's. Nothing is claimed and
   nothing is built. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
