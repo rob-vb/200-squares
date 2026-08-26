@@ -634,6 +634,15 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md).
   **Still open**:
+  [30 — The auction as a paid bid, not a card hold](issues/30-auction-like-outbid.md),
+  raised 2026-08-26 — the dev wants the banner to work like **outbid.lol**: pick an amount,
+  pay it now, never get it back, and let money be rank. It would delete the heaviest parts
+  of tickets 07 and 19 — the 24-hour card hold, the declined capture at the close, the
+  outbid release — but ⚠️ **it does not delete the invoice**, which is the reason the dev
+  gave for it. The hold never made the paperwork; the payment does, and a paid board owes
+  one document per *bid* instead of one per winner. It also collides with the banner being
+  a **day**: outbid.lol has no clock, and this site says *auctioned every day* in three
+  places. Nothing is claimed and nothing is built. Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
