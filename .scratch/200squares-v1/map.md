@@ -680,6 +680,16 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   rule, no mail. ⚠️ The artwork release was not re-exercised — neither winner carried a picture —
   and it is the identical call ticket 20 proved.
 
+- [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md) — **`MAX_BLOCK` is 3, and
+  the largest block costs $2,250 instead of $4,000.** Two constants, four comments and six
+  sentences of prose; the drag clamp, `rectIsSellable`, the price and the reservation ceiling
+  all read the constant, so they followed on their own. ⚠️ **The seed did make blocks 4 wide**
+  after all — the shapes live in `convex/seedData.ts`, not `convex/seed.ts` where the ticket
+  looked — so atlas, citadel and the viewer's own big block each lost their last column; the
+  full board keeps 140 of 199 squares. ⚠️ **`PRODUCT.md` did name the limit**, twice, and is
+  corrected. Proved on staging: a drag across 5 × 5 stops at *3 × 3 · 9 squares · $2,250*.
+  The artwork byte ceilings stay sized for a 4 × 4 picture on purpose — they are ceilings.
+
 ## Not yet specified
 
 - ⚠️ **The 6:219 ground under ticket 31 has never been read against a source.** *An offer
@@ -717,13 +727,9 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md).
   **Done** (2026-08-26):
-  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md).
+  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md) and
+  [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md).
   **Still open**:
-  [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md), opened 2026-08-26 — the
-  dev's own decision, made in passing during ticket 31 and unrelated to it. Two constants and
-  four pieces of prose; nothing to migrate, because nothing 4 wide exists. ⚠️ The largest
-  block drops from $4,000 to $2,250, which is the stunt buyer in `PRODUCT.md` getting smaller.
-  Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
