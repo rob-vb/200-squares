@@ -16,7 +16,7 @@ The fixed 5 x 5 area in the top-left of the canvas. It is not for sale. Its occu
 
 ## Block
 
-A contiguous rectangle of squares bought together, at most 4 wide and 4 high. A block renders as **one** image: the grid lines inside it disappear. A single square is a 1 x 1 block.
+A contiguous rectangle of squares bought together, at most 3 wide and 3 high. A block renders as **one** image: the grid lines inside it disappear. A single square is a 1 x 1 block.
 
 A block is the thing that is bought and owned. A square is never owned on its own: it is `taken` or `pending` because a block covers it.
 
@@ -28,7 +28,7 @@ A block can be **split**, and a split always produces blocks: rectangles, never 
 
 The party that bought a block or won the banner. An owner supplies artwork and a link for each thing they hold.
 
-One party is one owner, however many blocks they hold. Nothing limits how many blocks one owner may hold: the 4 x 4 limit is about one **image**, not about one owner's share of the canvas. A square owner and a past banner winner can be the same owner. An owner has no link of their own: the link belongs to the block or the banner day, so one owner can send each of their blocks somewhere else.
+One party is one owner, however many blocks they hold. Nothing limits how many blocks one owner may hold: the 3 x 3 limit is about one **image**, not about one owner's share of the canvas. A square owner and a past banner winner can be the same owner. An owner has no link of their own: the link belongs to the block or the banner day, so one owner can send each of their blocks somewhere else.
 
 An owner is not an account. A Better Auth **user** is a row in the auth component's own table, made the first time somebody follows a magic link, and an owner may point at one. The payment is what makes somebody an owner; the account is only how they come back. An owner who never followed their link is an owner all the same.
 

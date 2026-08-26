@@ -43,12 +43,12 @@ Confirmed:
 
 - The canvas is 16 × 14 cells. The banner is a fixed 5 × 5 block in the top-left and is never for sale. 199 squares + 1 banner = 200, which names the product.
 - A square costs $250, flat. Prices are in USD.
-- Squares are bought as a contiguous rectangle, at most 4 wide and 4 high. A block renders as one image; the grid lines inside it disappear.
+- Squares are bought as a contiguous rectangle, at most 3 wide and 3 high. A block renders as one image; the grid lines inside it disappear.
 - A square carries one of three states: `available`, `pending`, `taken`. A `pending` square is paid for but has no artwork yet, and must never read as empty.
 - The banner auction runs through the day for **tomorrow's** banner and closes **hard** at 00:00 UTC: no extension window, and the minimum raise is $10 over the top bid. Bidding starts at $100. With no winner the banner shows a house ad.
 - Clicking a taken block or the banner opens the owner's website in a new tab.
 - The product UI is English.
-- **Artwork**: the buyer may hand over PNG, JPEG, WebP or GIF, up to 10 MB. The site stores WebP only, at the size the board draws. **Nothing animates** — a GIF keeps its first frame. Any shape is accepted and the site crops to the block, centred, with a drag to reposition; refusing one of sixteen shapes would be hostile.
+- **Artwork**: the buyer may hand over PNG, JPEG, WebP or GIF, up to 10 MB. The site stores WebP only, at the size the board draws. **Nothing animates** — a GIF keeps its first frame. Any shape is accepted and the site crops to the block, centred, with a drag to reposition; refusing one of nine shapes would be hostile.
 - **The stack**: Better Auth for accounts, Stripe for payment, Convex file storage for images, served through 200squares.com and never straight from Convex.
 
 Undecided, and not to be invented:

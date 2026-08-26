@@ -42,7 +42,7 @@ const FAQ: [string, string][] = [
     "Yes. Every click on your block is counted, and the number sits on your row in My squares. It counts clicks, not people, so read it as rough. Your own tracking parameters tell you what happens after the click.",
   ],
   [
-    "Why 4 × 4 at most?",
+    `Why ${MAX_BLOCK} × ${MAX_BLOCK} at most?`,
     `The limit is on one image, not on one owner. A block shows a single image, and past ${MAX_BLOCK} × ${MAX_BLOCK} that image starts to be the grid rather than a place on it. Buy as many blocks as you like: each one stays its own image and its own link.`,
   ],
   [

@@ -10,7 +10,7 @@ export type Rect = { r: number; c: number; w: number; h: number };
 export const COLS = 16;
 export const ROWS = 14;
 export const BANNER: Rect = { r: 0, c: 0, w: 5, h: 5 };
-export const MAX_BLOCK = 4;
+export const MAX_BLOCK = 3;
 /** 199 squares plus one banner = 200, which names the product. */
 export const SQUARE_COUNT = COLS * ROWS - BANNER.w * BANNER.h;
 
@@ -56,7 +56,7 @@ export function remainderOf(rect: Rect, part: Rect): Rect[] {
  * Whether a rectangle is one the site could ever sell.
  *
  * Checked on the server, because the client's copy of the rules is a courtesy
- * to the visitor and not a control. A rectangle off the grid, bigger than 4 x 4
+ * to the visitor and not a control. A rectangle off the grid, bigger than 3 x 3
  * or lying over the banner is refused before anything is read.
  */
 export function rectIsSellable(rect: Rect): boolean {
@@ -80,7 +80,7 @@ export function rectIsSellable(rect: Rect): boolean {
  * The remainder of a rectangle with one bite out of it is up to four rectangles,
  * and biting repeatedly splits those again. So this walks every piece against
  * every taken rectangle and keeps the biggest thing still whole. The board is
- * 16 x 14 and a selection is at most 4 x 4, so the walk is tiny.
+ * 16 x 14 and a selection is at most 3 x 3, so the walk is tiny.
  */
 export function largestFreePart(rect: Rect, taken: Rect[]): Rect | null {
   let pieces: Rect[] = [rect];

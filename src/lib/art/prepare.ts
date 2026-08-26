@@ -76,8 +76,8 @@ export function release(source: Source | null) {
 /**
  * The largest window of the source that has the block's shape, centred.
  *
- * ⚠️ **The site crops; it does not refuse.** Sixteen block shapes exist between
- * 1x1 and 4x4 and demanding one of them from a buyer's picture would be hostile
+ * ⚠️ **The site crops; it does not refuse.** Nine block shapes exist between
+ * 1x1 and 3x3 and demanding one of them from a buyer's picture would be hostile
  * (ticket 09). Centre is the default and the buyer drags it from there.
  */
 export function centredWindow(source: Source, rect: Rect): Window {

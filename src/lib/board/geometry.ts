@@ -11,7 +11,7 @@ export const ROWS = 14;
 /** The 1px gap between squares — the whole grid. It scales with the transform. */
 export const SEAM = 1;
 export const BANNER: Rect = { r: 0, c: 0, w: 5, h: 5 };
-export const MAX_BLOCK = 4;
+export const MAX_BLOCK = 3;
 export const PRICE_PER_SQUARE = 250;
 /** The same number in whole cents. Money is an integer everywhere it is money. */
 export const PRICE_PER_SQUARE_CENTS = PRICE_PER_SQUARE * 100;
@@ -144,9 +144,9 @@ export function buildBoard(blocks: Block[], reserved: Rect[]): BoardModel {
 }
 
 /**
- * A contiguous rectangle from anchor to head. The span is clamped to 4 before it
- * is clamped into the grid, so the anchor corner stays put and the block stops
- * growing at 4 x 4 instead of sliding along under the pointer.
+ * A contiguous rectangle from anchor to head. The span is clamped to MAX_BLOCK
+ * before it is clamped into the grid, so the anchor corner stays put and the block stops
+ * growing at 3 x 3 instead of sliding along under the pointer.
  */
 export function rectFrom(anchor: { r: number; c: number }, head: { r: number; c: number }): Rect {
   const clampSpan = (a: number, b: number, limit: number) => {

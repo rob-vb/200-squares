@@ -24,8 +24,8 @@ export default function Page() {
             invoice after the first one.
           </P>
           <P>
-            A purchase of several squares at once is one block, at most 4 wide
-            and 4 high. A block carries one image and one link.
+            A purchase of several squares at once is one block, at most 3 wide
+            and 3 high. A block carries one image and one link.
           </P>
           <P>
             Your square is not taken back, rented out or sold again while it is

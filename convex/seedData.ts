@@ -96,12 +96,12 @@ export const FULL_BLOCKS: SeedBlock[] = [
   b("bluespruce", { r: 5, c: 4, w: 3, h: 2 }, { clicks: 733 }),
   b("halcyon", { r: 5, c: 8, w: 2, h: 2 }, { clicks: 1120 }),
   b("tick", { r: 5, c: 11, w: 1, h: 1 }, { clicks: 4 }),
-  b("atlas", { r: 5, c: 12, w: 4, h: 3 }, { clicks: 2015 }),
+  b("atlas", { r: 5, c: 12, w: 3, h: 3 }, { clicks: 2015 }),
   b("verge", { r: 6, c: 10, w: 2, h: 1 }, { clicks: 260 }),
   b("redcap", { r: 7, c: 0, w: 3, h: 2 }, { clicks: 1487 }),
   b("nib", { r: 7, c: 3, w: 1, h: 1 }, { clicks: 33 }),
   b("pixeldrop", { r: 7, c: 4, w: 2, h: 2 }, { clicks: 3260 }),
-  b("citadel", { r: 7, c: 7, w: 4, h: 3 }, { clicks: 1042 }),
+  b("citadel", { r: 7, c: 7, w: 3, h: 3 }, { clicks: 1042 }),
   b("nomad", { r: 8, c: 12, w: 2, h: 2 }, { clicks: 655 }),
   b("hollow", { r: 9, c: 0, w: 2, h: 1 }, { clicks: 71 }),
   b("longshore", { r: 9, c: 3, w: 3, h: 2 }, { clicks: 402 }),
@@ -109,9 +109,9 @@ export const FULL_BLOCKS: SeedBlock[] = [
   b("beacon", { r: 10, c: 7, w: 2, h: 2 }, { pending: true }),
   b("quarry", { r: 10, c: 14, w: 2, h: 2 }, { clicks: 187 }),
   // The viewer's big block, so My squares has more than a single square in it
-  // before the visitor buys anything. It is 4 x 2, which is the largest thing
+  // before the visitor buys anything. It is 3 x 2, which is the largest thing
   // the board still has room for.
-  b("vb", { r: 10, c: 9, w: 4, h: 2 }, { clicks: 2140 }),
+  b("vb", { r: 10, c: 9, w: 3, h: 2 }, { clicks: 2140 }),
   b("sable", { r: 11, c: 3, w: 3, h: 2 }, { clicks: 921 }),
   b("harbor", { r: 12, c: 0, w: 2, h: 2 }, { clicks: 58 }),
   b("reed", { r: 12, c: 6, w: 1, h: 2 }, { clicks: 129 }),

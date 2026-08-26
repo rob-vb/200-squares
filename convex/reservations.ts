@@ -31,7 +31,7 @@ import { RESERVATION_MS } from "./lib/time";
  *
  * The floor under it is this build's, not the ticket's. Ten percent of the free
  * squares is 19 while the board is empty and **zero** by the time nine are left,
- * which would refuse the last real buyers on the site's best day. One full 4 × 4
+ * which would refuse the last real buyers on the site's best day. One full 3 × 3
  * is always allowed through, so the endgame still sells.
  */
 export const reservationCeiling = (freeSquares: number) =>
