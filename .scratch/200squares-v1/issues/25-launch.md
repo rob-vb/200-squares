@@ -3,6 +3,7 @@
 Type: task
 Status: open
 Blocked by: 14
+See also: [36](36-build-purge-on-release.md) — not a switch, but it lands before launch.
 Parent: ../map.md
 
 ## Question

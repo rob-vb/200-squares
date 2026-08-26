@@ -716,6 +716,23 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   ([ticket 34](issues/34-stripped-art-stays-cached.md)); and a **refused bid says nothing
   where the bidder is looking** ([ticket 35](issues/35-a-refused-bid-says-nothing.md)).
 
+- [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md) —
+  **a released file is purged from the edge by cache tag, and `immutable` comes off the year.**
+  ⚠️ *Purge the path* — the ticket's own first option — **cannot be built**: Vercel's cache key
+  is not configurable and the only handle is a `Vercel-Cache-Tag` header the route sets on its
+  own answers. That kills three of the four options with it. It works on Hobby, costs nothing to
+  purge, and does not wait for ticket 25. Three sharpenings the question did not have: it fires
+  on **`release`**, not `strip`, because a **replacement** leaves the identical year-long copy of
+  the old picture and nobody was calling that a removal; it **deletes** rather than invalidates,
+  because Vercel's recommended *invalidate* serves the stale picture one more time per region,
+  which for adult content or impersonation is the removal not working; and the deployment purges
+  **itself** through `@vercel/functions` rather than Convex holding an account-wide `VERCEL_TOKEN`.
+  ⚠️ Cache tags are scoped per project **and** environment, so dev must call staging and prod the
+  real domain — the wrong URL purges the wrong environment silently. A failed purge is the whole
+  risk, so it is recorded on the `removals` row and shown on `/admin`. The browser half stays: no
+  purge reaches it, and only `immutable` comes off, so a reload asks the edge and Convex is never
+  touched. The build is [ticket 36](issues/36-build-purge-on-release.md).
+
 ## Not yet specified
 
 - ⚠️ **The 6:219 ground under ticket 31 has never been read against a source.** *An offer
@@ -756,12 +773,17 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md),
   [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md) and
   [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md).
+  **Done** (2026-08-26, later):
+  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md).
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day, and it is deliberately last. The two tickets ticket 28 surfaced —
-  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md)
-  and [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md) — are both
-  on the frontier and neither blocks the other.
+  the day, and it is deliberately last.
+  [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md) is on the
+  frontier and blocks nothing.
+  [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md)
+  is ticket 34's build. ⚠️ It is not a launch switch and so is not on ticket 25, but it is the
+  one open item with an outside party standing in it — somebody who reported a picture and was
+  told it was gone. It lands before the doors open.
 - ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
   that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
   fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
@@ -779,8 +801,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   `?anything` turns even a *good* id into a fresh invocation, every time, for ever. The
   guard turns away rubbish paths and nothing else. The regex turns obvious rubbish away without a fetch, and the
   cache absorbs every real file after the first request per region — but a flood of
-  plausible-looking ids is invocations, which is what Hobby pauses on. The two belong in one
-  answer: whatever protects `/api/auth/*` protects this.
+  plausible-looking ids is invocations, which is what Hobby pauses on. ⚠️ [Ticket 34](issues/34-stripped-art-stays-cached.md) adds a **third** source
+  (2026-08-26): the purge endpoint its answer needs is one more POST route on the site, and a
+  flood of POSTs to it is invocations like any other. It is a small surface — one secret, one
+  call — but it belongs in this answer and not in ticket 34's. The three belong in one
+  answer: whatever protects `/api/auth/*` protects all of them.
 
 - ⚠️ **Nobody tells a bidder their card was declined.** [Ticket 19](issues/19-build-auction.md)
   built the ladder: a bidder who held the top spot all day and whose capture failed at

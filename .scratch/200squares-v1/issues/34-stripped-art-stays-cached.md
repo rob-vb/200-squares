@@ -1,7 +1,7 @@
 # 34 — A stripped picture stays at its /art URL
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: —
 Parent: ../map.md
 
@@ -53,3 +53,97 @@ string is part of Vercel's cache key, so **any** id — including a good one —
 into a function invocation by appending one. That is the same invocation-flood concern the
 map's *board view is no longer free* fog item already carries for `/api/auth/*` and `/art`,
 and the regex guard does not touch it. It belongs in that one answer, not in this ticket.
+
+## Answer
+
+**A released file is purged from Vercel's edge by cache tag, and `immutable` comes off the
+year.** Four decisions, taken 2026-08-26.
+
+### ⚠️ The first option in the question does not exist
+
+*Purge the path* cannot be built. Vercel's
+[cache key](https://vercel.com/docs/caching/cdn-cache/purge) is the method, the URL, the
+host, the deployment and the scheme, and **it is not configurable**. The docs say it in one
+line: *"Cache keys are not configurable. To purge the cache you must configure cache tags."*
+
+So the route has to **tag its own answers** on the way out — a `Vercel-Cache-Tag` response
+header — and the purge names the tag, never the path. That is not a worse version of option
+one; it is the only version of it. The rest is cheap: **256 characters per tag, 128 tags per
+response, 16 tags per bulk call**, no plan gate anywhere in the documentation, and Vercel
+does not bill the purge event. It works on Hobby, so it does not wait for
+[ticket 25](25-launch.md).
+
+The three other options in the question fall away with it. *Shorten the year* was already
+almost certainly wrong. *An id that changes* buys nothing a tag does not. *Accept it and say
+so* was the fallback if no mechanism existed, and one does.
+
+### 1. It fires on `release`, not on `strip`
+
+The question framed this as a removal problem. It is not. `release` in `convex/art.ts:82` is
+the place where a file **stops being pointed at**, and `strip` is one of its four callers.
+The other three are replacements — `setBlockArtwork`, `setBidArtwork`, `stripBanner` — and
+each of them leaves the same year-long copy of the **old** picture on the edge. An owner who
+replaces a picture *because* it was the wrong one has the identical hole, and nobody would
+have called that a removal.
+
+So `release` schedules the purge itself, for **exactly the ids it deleted** — not for the
+ids it was handed. ⚠️ The guard that keeps a shared file alive when a cut block still points
+at it is the same guard that must keep its URL alive: purging a file that is still on the
+board only costs an invocation to fetch it back. One place, four callers, and the day resale
+cuts blocks again it is already right.
+
+### 2. Delete, not invalidate
+
+Vercel offers both and recommends **invalidate**. That recommendation is written for content
+that has *changed*, not content that is *gone*: invalidate marks the tag stale, and *"the
+next request serves the stale content instantly while revalidation happens in the
+background"*. For a picture taken down for adult content or impersonation, serving it
+instantly one more time — in every region that holds it — is the removal not working.
+
+`dangerouslyDeleteByTag` revalidates in the **foreground**: the next request goes to the
+origin, Convex has no such file, and the visitor gets the 404. The stampede the docs warn
+about is a tag spread over many paths; this tag is one file that is now gone and has no
+traffic.
+
+### 3. The deployment purges itself, and a failed purge is visible
+
+A Convex mutation may not reach the network, so this is a scheduled action, the same shape
+as the removal mail. Two ways to make the call, and they differ in what a leaked secret
+costs:
+
+- Convex holds a **`VERCEL_TOKEN`** and calls the REST API. That token can do everything on
+  the account.
+- Convex calls **a route on the site itself** with a shared secret, and the route calls
+  `dangerouslyDeleteByTag` from `@vercel/functions`. No account token exists anywhere, and
+  a leaked secret buys an attacker the right to clear a cache.
+
+Take the second. ⚠️ **Cache tags are scoped to the project *and* the environment**, and
+`@vercel/functions` reads the environment from the deployment URL that invoked it — so the
+Convex dev deployment must call the staging URL and prod must call `200squares.com`. One
+variable, and getting it wrong purges the wrong environment silently.
+
+A failed purge is the whole risk of this design: the picture is still public and nobody
+knows. So the action **records** it — `purgedAt` on the `removals` row — reschedules itself
+with backoff, and `/admin` shows any removal that has not been purged. A removal that half
+happened must look different from one that happened.
+
+### 4. `immutable` comes off; the year stays
+
+No purge can reach the copy in a browser. `max-age=31536000, immutable` means the browser
+**does not even ask on a reload** — so the person who reported the picture presses reload,
+sees it, and concludes the report did nothing.
+
+Drop `immutable` alone. Normal visits are unchanged, a reload asks the edge, the edge
+answers, and Convex is never touched — [ticket 09](09-artwork-storage.md)'s defence is about
+Convex egress and survives whole. ⚠️ **Do not split `Cache-Control` from
+`Vercel-CDN-Cache-Control` to give the browser a short life.** Every returning visitor would
+re-fetch every picture on the board from the edge, and that is Fast Data Transfer, which
+Hobby counts.
+
+### What this costs elsewhere
+
+⚠️ The purge route is **one more function endpoint**, and a flood of POSTs to it is
+invocations — the same class of thing as `/api/auth/*` and `/art`. It belongs in the map's
+*board view is no longer free* answer, with the other two, and is not decided here.
+
+The build is [ticket 36](36-build-purge-on-release.md).

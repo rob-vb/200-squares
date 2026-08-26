@@ -40,7 +40,7 @@ Artwork is **two files, not one**: a `1x` set and a `4x` set, both WebP, both pr
 
 A **crop** is a window on the file, in fractions of it. A fresh upload has none — the browser already cropped to the block's shape — and one appears when a block is split: the pieces keep the file they had and narrow the window instead, because the split happens where there is no browser to re-cut anything.
 
-Artwork is served from `/art/<storageId>` on 200squares.com and **never from Convex to a visitor**. A new file is a new id is a new URL, so the answer is cacheable for a year and nothing is ever busted.
+Artwork is served from `/art/<storageId>` on 200squares.com and **never from Convex to a visitor**. A new file is a new id is a new URL, so the answer is cacheable for a year. Replacing artwork therefore busts nothing; **releasing** it must, because the file is gone and the old URL is the one somebody reported.
 
 ## Order
 
