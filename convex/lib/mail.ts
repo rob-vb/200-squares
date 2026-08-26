@@ -101,17 +101,72 @@ export const outbidMail = (input: { yours: number; top: number; date: string }) 
  * no preparation time: a prepared bidder's image is already up, and an
  * unprepared one is looking at the house ad until they upload.
  */
-export const wonMail = (input: { amount: number; date: string; hasArtwork: boolean }) => ({
+export const wonMail = (input: {
+  amount: number;
+  date: string;
+  hasArtwork: boolean;
+  promoted: boolean;
+}) => ({
   subject: `You have the 200 squares banner on ${input.date}`,
   text: [
     `Your bid of ${usd(input.amount)} won the banner for ${input.date}.`,
     `We collected the hold on your card at 00:00 UTC. The day runs to the next 00:00 UTC.`,
+    // ⚠️ Ticket 38's mirror case. This reader was not the top bid and is not
+    // expecting this message at all, so the mail says why it reached him — and
+    // says the amount is his own in the same breath, because that is the first
+    // thing he will look for.
+    ...(input.promoted
+      ? [
+          "",
+          "You were not the highest bid. The bid above yours could not be collected,",
+          "so the banner is yours, for your own amount and nothing more.",
+        ]
+      : []),
     "",
     input.hasArtwork
       ? "Your image is on the board now."
       : "You attached no image, so the house advertisement is standing in your place. Sign in on 200squares.com and upload one; it goes up the moment you do.",
     "",
     "Your invoice follows.",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/**
+ * Your card was declined at the close.
+ *
+ * ⚠️ **The seventh message**, and it grows
+ * [ticket 13](../../.scratch/200squares-v1/issues/13-email.md)'s deliberately
+ * closed list of six. [Ticket 38](../../.scratch/200squares-v1/issues/38-declined-bidder-hears-nothing.md)
+ * decided that rare is the reason to send it, not the reason to skip it: this is
+ * the only path on the site where a person loses something and hears nothing.
+ *
+ * ⚠️ **It never says why the card was refused.** Stripe hands back a decline
+ * code and that code is between the bidder and his bank. Stay vague and he looks
+ * for the fault in the auction; repeat the code and the site explains a bank it
+ * does not speak for. So: the charge was refused, and for the reason, ask the
+ * bank.
+ *
+ * ⚠️ **It is not the outbid mail.** *You have been outbid* is false here —
+ * nobody outbid him — and this is the one message that has to be honest.
+ *
+ * The last line is factual and nothing more. Ticket 38 refused a mail that
+ * sells, which is the tone `/terms` refuses.
+ */
+export const declinedMail = (input: { amount: number; date: string }) => ({
+  subject: `Your card was declined for the 200 squares banner on ${input.date}`,
+  text: [
+    `Your bid of ${usd(input.amount)} was the highest for the banner on ${input.date}.`,
+    "At 00:00 UTC we asked your bank for the money and your bank refused the charge.",
+    "",
+    "We do not know why, and we will not guess. Your bank can tell you.",
+    "",
+    "The banner went to the next bid that could be collected. The hold on your card",
+    "is released and nothing was taken from you. Your bank may take some days to",
+    "show it.",
+    "",
+    "The auction for the next day is running on 200squares.com.",
     "",
     "If something is wrong, reply to this message. A person reads it.",
   ].join("\n"),

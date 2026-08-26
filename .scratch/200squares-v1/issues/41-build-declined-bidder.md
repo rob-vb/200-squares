@@ -1,7 +1,7 @@
 # 41 — Build: the declined bidder hears it
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 38
 Parent: ../map.md
 

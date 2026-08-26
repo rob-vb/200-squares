@@ -45,7 +45,7 @@ import { artwork } from "./schema";
 import { currentOwner, normalise } from "./auth";
 import { midnightOf, nextDate, nextMidnightUtc, todayUtc, RESERVATION_MS } from "./lib/time";
 import { vatInsideCents } from "./lib/vat";
-import { outbidMail, sendMail, wonMail } from "./lib/mail";
+import { declinedMail, outbidMail, sendMail, wonMail } from "./lib/mail";
 
 /** The floor bid, and the step over the top bid. Both in cents. */
 export const BID_FLOOR_CENTS = 100_00;
@@ -378,7 +378,11 @@ export const land = internalMutation({
       .withIndex("by_date", (q) => q.eq("date", bid.date))
       .unique();
     if (now >= closesAt || day?.closedAt) {
-      await ctx.db.patch(bidId, { status: "failed", paymentIntentId: args.paymentIntentId });
+      await ctx.db.patch(bidId, {
+        status: "failed",
+        failure: "closed",
+        paymentIntentId: args.paymentIntentId,
+      });
       return { status: "closed" as const, cancel: [] };
     }
 
@@ -389,6 +393,7 @@ export const land = internalMutation({
     if (args.captureBefore <= closesAt) {
       await ctx.db.patch(bidId, {
         status: "failed",
+        failure: "late",
         paymentIntentId: args.paymentIntentId,
         captureBefore: args.captureBefore,
       });
@@ -526,7 +531,12 @@ export const bidBySession = query({
         v.literal("failed"),
       ),
       /** Why a `failed` bid failed, in the one word the page branches on. */
-      reason: v.union(v.literal("late"), v.literal("closed"), v.null()),
+      reason: v.union(
+        v.literal("late"),
+        v.literal("closed"),
+        v.literal("declined"),
+        v.null(),
+      ),
       amountCents: v.number(),
       date: v.string(),
       closesAt: v.number(),
@@ -545,14 +555,21 @@ export const bidBySession = query({
     const held = await heldBids(ctx, bid.date);
     const top = ladder(held)[0] ?? null;
     const closesAt = midnightOf(bid.date);
-    // A failed bid is one of exactly two things, and the page says different
-    // words for each: a card whose hold dies too early, and a day already gone.
+    // A failed bid is one of exactly three things, and the page says different
+    // words for each: a card whose hold dies too early, a day already gone, and
+    // a hold the bank refused at the close.
+    //
+    // ⚠️ The row says which, since ticket 41. The derivation below is only for
+    // rows written before that field existed, where the third case is not
+    // recoverable and reads as `closed` — the wrong words, but only for the
+    // handful of closes run while ticket 19's build was being proved.
     const reason =
       bid.status !== "failed"
         ? null
-        : (bid.captureBefore ?? 0) > 0 && (bid.captureBefore ?? 0) <= closesAt
-          ? ("late" as const)
-          : ("closed" as const);
+        : (bid.failure ??
+          ((bid.captureBefore ?? 0) > 0 && (bid.captureBefore ?? 0) <= closesAt
+            ? ("late" as const)
+            : ("closed" as const)));
 
     return {
       status: bid.status,
@@ -645,6 +662,11 @@ const candidate = v.object({
   paymentIntentId: v.string(),
   amountCents: v.number(),
   stripeSessionId: v.string(),
+  /**
+   * Who to write to if this bid's capture is refused (ticket 41). Empty where
+   * the bid has no owner row behind it, which the seed can produce.
+   */
+  email: v.string(),
 });
 
 /**
@@ -664,14 +686,21 @@ export const planClose = internalQuery({
       .withIndex("by_date", (q) => q.eq("date", date))
       .unique();
     if (day?.closedAt) return null;
-    return ladder(await heldBids(ctx, date))
-      .filter((b) => Boolean(b.paymentIntentId) && Boolean(b.stripeSessionId))
-      .map((b) => ({
+    const rungs = ladder(await heldBids(ctx, date)).filter(
+      (b) => Boolean(b.paymentIntentId) && Boolean(b.stripeSessionId),
+    );
+    const out = [];
+    for (const b of rungs) {
+      const owner = b.ownerId ? await ctx.db.get(b.ownerId) : null;
+      out.push({
         bidId: b._id,
         paymentIntentId: b.paymentIntentId!,
         amountCents: b.amountCents,
         stripeSessionId: b.stripeSessionId!,
-      }));
+        email: owner?.email ?? "",
+      });
+    }
+    return out;
   },
 });
 
@@ -768,12 +797,20 @@ export const recordWin = internalMutation({
   },
 });
 
-/** A hold that could not be collected. It is out of the ladder, not retried. */
+/**
+ * A hold the bank refused at the close. It is out of the ladder, not retried.
+ *
+ * ⚠️ `failure: "declined"` is the whole point of ticket 41. Without it this row
+ * is indistinguishable from a bid that arrived after the day was decided, and
+ * the bidder's own status page tells him the day was settled while he was
+ * paying — which is untrue twice over. The word is written here because here is
+ * the only place that knows it.
+ */
 export const recordFailure = internalMutation({
   args: { bidId: v.id("bids") },
   returns: v.null(),
   handler: async (ctx, { bidId }) => {
-    await ctx.db.patch(bidId, { status: "failed" });
+    await ctx.db.patch(bidId, { status: "failed", failure: "declined" });
     return null;
   },
 });
@@ -867,6 +904,10 @@ async function closeOne(ctx: ActionCtx, date: string) {
 
   const api = stripe();
   let won: { bidId: Id<"bids">; index: number } | null = null;
+  // Every rung the bank refused, in ladder order. Ticket 41: each one owes its
+  // bidder a cancelled hold and a message, and neither may happen before
+  // somebody has paid.
+  const refused: typeof candidates = [];
 
   for (const [index, bid] of candidates.entries()) {
     let collected = false;
@@ -891,6 +932,7 @@ async function closeOne(ctx: ActionCtx, date: string) {
     }
     if (!collected) {
       await ctx.runMutation(internal.auction.recordFailure, { bidId: bid.bidId });
+      refused.push(bid);
       continue;
     }
 
@@ -920,7 +962,14 @@ async function closeOne(ctx: ActionCtx, date: string) {
     won = { bidId: bid.bidId, index };
 
     if (winner.email) {
-      const mail = wonMail({ amount: bid.amountCents, date, hasArtwork: winner.hasArtwork });
+      const mail = wonMail({
+        amount: bid.amountCents,
+        date,
+        hasArtwork: winner.hasArtwork,
+        // Anything but the top rung means the ladder was walked to reach him,
+        // and ticket 38 owes him a sentence saying so.
+        promoted: index > 0,
+      });
       // The one mail that may not take the close down with it. The money is
       // collected and the banner is up; a Resend outage is not a reason to leave
       // every other hold frozen.
@@ -948,19 +997,49 @@ async function closeOne(ctx: ActionCtx, date: string) {
   }
 
   if (!won) {
+    // Nobody could be collected, so the house ad takes the day — and the whole
+    // ladder is in `refused`, which is the third shape of the close ticket 38
+    // named. The pass below still runs.
     await ctx.runMutation(internal.auction.closeEmpty, { date });
-    return;
+  } else {
+    // Only now. Everything above the winner already failed and was recorded; every
+    // hold below it is released, in full, the moment somebody has paid.
+    for (const bid of candidates.slice(won.index + 1)) {
+      try {
+        await api.paymentIntents.cancel(bid.paymentIntentId);
+      } catch {
+        // An already-cancelled hold is the expected answer on a retry, and it is
+        // the outcome we wanted. The row is marked either way.
+      }
+      await ctx.runMutation(internal.auction.recordRelease, { bidId: bid.bidId });
+    }
   }
 
-  // Only now. Everything above the winner already failed and was recorded; every
-  // hold below it is released, in full, the moment somebody has paid.
-  for (const bid of candidates.slice(won.index + 1)) {
+  // ⚠️ The refused rungs, last of all, and money before words. Ticket 19 left
+  // their authorizations frozen on the card until they expired by themselves:
+  // only the holds *below* the winner were ever cancelled. Ticket 07's rule is
+  // that nothing is released until somebody has paid, and by here either
+  // somebody has or nobody can, so both are the moment to let go.
+  for (const bid of refused) {
     try {
       await api.paymentIntents.cancel(bid.paymentIntentId);
     } catch {
-      // An already-cancelled hold is the expected answer on a retry, and it is
-      // the outcome we wanted. The row is marked either way.
+      // Let it go. An authorization dies by itself, and the close may not be
+      // held open waiting for one — the same rule the releases above follow.
     }
-    await ctx.runMutation(internal.auction.recordRelease, { bidId: bid.bidId });
+  }
+
+  // ⚠️ Words after every hold is gone, never before, and for the reason ticket
+  // 38 gave: a Resend outage may not hold the close open or leave other holds
+  // frozen. Same `try`/`catch` as the won mail, one per bidder, ladder order.
+  for (const bid of refused) {
+    if (!bid.email) continue;
+    const mail = declinedMail({ amount: bid.amountCents, date });
+    try {
+      await sendMail({ to: bid.email, subject: mail.subject, text: mail.text });
+    } catch {
+      // Nothing to do. The hold is already released and the board already shows
+      // whose day it is.
+    }
   }
 }

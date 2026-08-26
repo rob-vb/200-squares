@@ -387,6 +387,24 @@ export default defineSchema({
       v.literal("released"),
       v.literal("failed"),
     ),
+    /**
+     * Why a `failed` bid failed. `late` is a card whose hold would die before
+     * the close, `closed` is a day that was decided while the bidder was on
+     * Stripe, `declined` is a hold the bank refused at the capture.
+     *
+     * ⚠️ **Stored, not derived**, and ticket 41 is the reason. The first two are
+     * written at the keyboard and could be told apart afterwards by looking at
+     * `captureBefore`; the third cannot be told from the second at all, because
+     * a refused capture also leaves a `failed` bid whose hold outlived the
+     * close. Deriving it read the declined bidder the wrong words for a whole
+     * ticket ([38](../.scratch/200squares-v1/issues/38-declined-bidder-hears-nothing.md)).
+     *
+     * Absent on rows written before ticket 41. `bidBySession` falls back to the
+     * old derivation for those, which is right for every row that existed then.
+     */
+    failure: v.optional(
+      v.union(v.literal("late"), v.literal("closed"), v.literal("declined")),
+    ),
     /** The Checkout Session the hold was taken through. One session, one bid. */
     stripeSessionId: v.optional(v.string()),
     /** A pending bid dies fifteen minutes after it was opened, like a hold. */

@@ -52,6 +52,7 @@ export function MySquares() {
   const squares = blocks.reduce((n, b) => n + cellCount(b.rect), 0);
   const viewerBannerDays = mine?.bannerDays ?? [];
   const myBids = mine?.bids ?? [];
+  const settled = mine?.settled ?? [];
   const invoices = mine?.invoices ?? [];
   const strikes = mine?.strikes ?? 0;
 
@@ -156,12 +157,48 @@ export function MySquares() {
           <div className="text-faint pb-2 text-[13px]">Your bids on tomorrow&rsquo;s banner</div>
           {myBids.length === 0 ? (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[14px]">You have not bid.</span>
+              {/*
+                ⚠️ Two sentences, because one of them would be false. *You have
+                not bid.* under a row saying he bid $400 yesterday is the same
+                kind of untruth ticket 38 came here to remove.
+              */}
+              <span className="text-[14px]">
+                {settled.length > 0 ? "You have no bid standing." : "You have not bid."}
+              </span>
               <SecondaryButton onClick={openBid}>Bid</SecondaryButton>
             </div>
           ) : (
             myBids.map((bid) => <BidRow key={bid.id} bid={bid} now={now} />)
           )}
+
+          {/*
+            ⚠️ The auction that already closed, and the panel's whole debt to
+            ticket 38. Without it the morning after a close reads *You have not
+            bid.* to somebody who held the top bid all day, and a bidder whose
+            bank refused the charge finds no trace of it anywhere he can look.
+            One row per bid and nothing else: the date, the amount, the word.
+          */}
+          {settled.length > 0 ? (
+            <div className="border-hairline mt-3 border-t pt-3">
+              <div className="text-faint pb-2 text-[13px]">The auction that closed</div>
+              {settled.map((bid) => (
+                <div
+                  key={bid.id}
+                  className="flex items-baseline justify-between gap-3 py-1 text-[13px]"
+                >
+                  <span className="font-mono text-[12px]" data-numeric>
+                    {now ? dayLabel(bid.date, now) : " "}
+                  </span>
+                  <span className={bid.outcome === "declined" ? "text-accent" : "text-faint"}>
+                    {bid.outcome === "declined" ? "Declined" : "Not won"}
+                  </span>
+                  <span className="font-display text-[15px]" data-numeric>
+                    {usd(bid.amountCents)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </>

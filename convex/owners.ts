@@ -78,6 +78,24 @@ export const mine = query({
           artwork: v.boolean(),
         }),
       ),
+      /**
+       * The auction that has already closed, and how it ended for this owner.
+       *
+       * ⚠️ One row and no more — ticket 38's words. `bids` above holds only
+       * standing holds on tomorrow's banner, so the morning after a close this
+       * panel said *You have not bid.* to somebody who bid all day and lost. A
+       * full bidding history is somebody else's question; this is the one row
+       * that stops the panel forgetting him.
+       */
+      settled: v.array(
+        v.object({
+          id: v.string(),
+          date: v.string(),
+          amountCents: v.number(),
+          /** `declined` is a bank that refused; `not-won` is an ordinary release. */
+          outcome: v.union(v.literal("declined"), v.literal("not-won")),
+        }),
+      ),
     }),
   ),
   handler: async (ctx) => {
@@ -156,12 +174,12 @@ export const mine = query({
       });
     }
 
-    const bids = (
-      await ctx.db
-        .query("bids")
-        .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
-        .collect()
-    )
+    const bidRows = await ctx.db
+      .query("bids")
+      .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
+      .collect();
+
+    const bids = bidRows
       .filter((r) => r.date === nextDate(today) && r.status === "held")
       .map((r) => ({
         id: r._id as string,
@@ -169,6 +187,26 @@ export const mine = query({
         placedAt: r.placedAt,
         url: r.url ?? "",
         artwork: Boolean(r.artwork),
+      }));
+
+    // ⚠️ `today`, not yesterday. The close at 00:00 UTC this morning decided
+    // **today's** banner, so the bid it settled carries today's date.
+    //
+    // ⚠️ Only these two endings. A `late` or `closed` failure never held any
+    // money and the bidder was told so at the keyboard, on the screen he was
+    // already looking at; putting *Declined* beside it would invent a refusal
+    // that never happened.
+    const settled = bidRows
+      .filter(
+        (r) =>
+          r.date === today &&
+          (r.status === "released" || (r.status === "failed" && r.failure === "declined")),
+      )
+      .map((r) => ({
+        id: r._id as string,
+        date: r.date,
+        amountCents: r.amountCents,
+        outcome: r.status === "released" ? ("not-won" as const) : ("declined" as const),
       }));
 
     return {
@@ -179,6 +217,7 @@ export const mine = query({
       bannerDays,
       invoices,
       bids,
+      settled,
     };
   },
 });

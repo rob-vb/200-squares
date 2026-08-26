@@ -107,6 +107,31 @@ export function BidPlaced() {
     );
   }
 
+  // ⚠️ Before the two below it, because it is the case they used to swallow.
+  // Ticket 38: this bidder held the top spot all day and the page told him the
+  // banner was decided while he was paying and that nothing was held. Both
+  // untrue. He is here because his own bank refused the charge at the close.
+  if (bid.status === "failed" && bid.reason === "declined") {
+    return (
+      <Section title="Your card was declined at the close">
+        <p className="max-w-[62ch] text-[17px] leading-snug">
+          {money(bid.amountCents)} was the highest bid for the banner on {bid.date}. At 00:00 UTC
+          your bank refused the charge, so the banner went to the next bid that could be
+          collected. We do not know why it was refused, and we will not guess — your bank can
+          tell you.
+        </p>
+        <p className="text-faint max-w-[62ch] pt-3 text-[15px] leading-snug">
+          The hold on your card is released and nothing was taken. Your bank may take some days
+          to show it.{" "}
+          <Link href="/" className="underline">
+            The board
+          </Link>{" "}
+          has the next day&rsquo;s auction running already.
+        </p>
+      </Section>
+    );
+  }
+
   if (bid.status === "failed" || bid.status === "released") {
     return (
       <Section title="That auction has closed">
