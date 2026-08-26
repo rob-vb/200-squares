@@ -775,23 +775,56 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   environment and reports success. New: `@vercel/functions`, and `scripts/art-check.mjs`,
   which asks twice because one request cannot tell a cached 200 from a fresh one.
 
-## Not yet specified
+- [38 — Nobody tells a bidder their card was declined](issues/38-declined-bidder-hears-nothing.md)
+  — **a seventh mail, and three defects hiding behind the silence.** Ticket 13's list of six
+  grows on purpose: this is the only path on the site where somebody loses something and
+  hears nothing, and rare is the reason to send it rather than to skip it. It says the
+  charge was refused and ⚠️ **never why** — a decline code is between the bidder and his
+  bank — and it is emphatically **not** the outbid mail, because nobody outbid him. Reading
+  the code to answer it found the rest: ⚠️ a `failed` bid's PaymentIntent is **never
+  cancelled**, so the loser's money stays frozen until the authorization expires by itself;
+  ⚠️ the status page tells him the day *"was decided while you were paying"* and that
+  *"nothing is held"*, both untrue, because `failed` covers three different endings and only
+  one of them has a `reason`; and ⚠️ **My squares forgets him** the next morning — it lists
+  only tomorrow's `held` bids, so it says *"You have not bid."* to somebody who bid all day.
+  One row for yesterday fixes that, with one word for the ending. The mirror case gets one
+  sentence too: a **promoted** runner-up is charged his own amount and did not expect to win
+  at all. `/terms` now owes ticket 40 the line that the highest bid does not always win.
+  [41 — Build: the declined bidder hears it](issues/41-build-declined-bidder.md) follows.
 
-- ⚠️ **The 6:219 ground under ticket 31 has never been read against a source.** *An offer
-  naming a term for acceptance cannot be revoked* is what makes *a bid cannot be withdrawn*
-  true, and it is [ticket 31](issues/31-a-bid-that-does-not-stand.md)'s own reasoning, not a
-  citation. Ticket 03's research covered the withdrawal right and the auction exemption; it
-  never had to ask **when an auction contract is concluded**. It is the load-bearing sentence
-  of the whole arrangement and it wants an hour of a research ticket before launch. Not a
-  blocker: if it does not hold, the fallback is the same 24-hour pro-rata window moved earlier
-  in the day, and the site still works — it is simply more generous than intended.
+- [37 — When a bid binds, read against a source](issues/37-when-a-bid-binds.md) — **a bid is
+  irrevocable against a business and not against a consumer, and the site has been saying
+  otherwise.** Art. 6:219 lid 1 does hold — the close at 00:00 UTC is a named term — but
+  ⚠️ **art. 6:230q lid 1 BW derogates from it expressly** for a consumer's offer to a trader,
+  and the memorie van toelichting records that the Raad van State raised *exactly* the
+  named-term case and the bill was amended to defeat it. Mandatory (art. 6:230i lid 1), so no
+  wording restores it. [ADR 0003](../../docs/adr/0003-a-bid-is-an-irrevocable-offer.md)'s own
+  ⚠️ came true and it now carries a superseding note: **conclusion at the close survives** and
+  is sourced, **irrevocability against a consumer does not**. When the contract is concluded is
+  left by Dutch law to the auction's own terms — so `/terms` must say it, and the research
+  recommends the ADR's own structure. Ticket 03's banner finding **stands unchanged**. The
+  auction is **outside** the *openbare veiling* exemption on two limbs, so the whole regime
+  applies. ⚠️ **The largest find is not what the ticket asked**: art. 6:230oa BW / art. 11a CRD
+  has required an on-site **withdrawal function** since 19 June 2026 and the site has none —
+  and the price of missing it is a **twelve-month** withdrawal tail, not a fee. Graduated as
+  [42 — The withdrawal function](issues/42-the-withdrawal-function.md), which now blocks
+  ticket 40 and, through it, the launch.
+
+## Not yet specified
 
 - **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
   left it at nothing, on the dev's *"laten we afwachten of dit echt gaat gebeuren"*. The ladder
   already protects the day and the attack wins the bidder nothing, so this needs a real
   incident first. ⚠️ Whoever picks it up starts from ticket 31's correction: the `owners` row
   exists, so a strike would land — it is ticket 11's **consequence** that has no target,
-  because a third strike freezes a block and a bidder has none.
+  because a third strike freezes a block and a bidder has none. ⚠️ And from
+  [ticket 37](issues/37-when-a-bid-binds.md) (2026-08-26): against a **consumer** there is
+  effectively **no claim at all**, at any stage, and a *non-refundable* clause dies on
+  art. 6:230i lid 1 and art. 6:237 sub i. A strike barring future bidding is defensible only
+  if published in advance and never fired by the exercise of a statutory right
+  (art. 6:237 sub h) — and the site cannot tell a lawful revocation from an abandoned hold.
+  Against a **business** bidder there is a claim, and a penalty clause would probably hold;
+  none is written.
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
   grounds that it is legally sufficient and costs nothing. The moment a real business
@@ -819,41 +852,34 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md),
   [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md) and
   [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md).
+  **Done** (2026-08-26, later still):
+  [41 — Build: the declined bidder hears it](issues/41-build-declined-bidder.md) is created
+  and open — ticket 38's build.
+  **Open** (2026-08-26, later still):
+  [42 — The withdrawal function](issues/42-the-withdrawal-function.md) is a decision before it
+  is a build — art. 6:230oa asks for a button that is available *"te allen tijde"*, and nobody
+  has settled whether a **square's** withdrawal right ever dies (ticket 03 §5.5). Its build
+  follows it.
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day, and it is deliberately last. ⚠️ It is now the **only** open ticket on this map.
-- ⚠️ **The board view is no longer free.** [Ticket 18](issues/18-build-accounts.md) found
-  that `ConvexBetterAuthProvider` calls `useSession()` for everybody, so every board load
-  fetches `/api/auth/get-session` — one Vercel function invocation per visitor, where ticket
-  02's static front had none. The HTML is still byte-identical and still comes off the edge
-  cache, so *static* survives; *free* does not, and under a flood the invocations are what
-  Hobby pauses on. Two escapes, both with a price: a **Vercel edge rewrite** of `/api/auth/*`
-  straight to `.convex.site`, which moves the cost to Edge Requests but loses the header
-  fix-up the Next handler exists to do; or a **signed-in marker** in `localStorage` gating
-  the provider, which needs a landing route to set it on the device that opens the mail.
-  It is a cost decision under ticket 02's rule, and it wants measuring before it is made.
-  ⚠️ [Ticket 20](issues/20-build-artwork.md) adds a **second** invocation source to the same
-  decision: `/art/<storageId>` is a Vercel function on a cache miss, and an id that does not
-  exist misses every time. ⚠️ **[Ticket 28](issues/28-prove-the-mail.md) found the hole the
-  regex does not cover** (2026-08-26): a **query string is part of Vercel's cache key**, so
-  `?anything` turns even a *good* id into a fresh invocation, every time, for ever. The
-  guard turns away rubbish paths and nothing else. The regex turns obvious rubbish away without a fetch, and the
-  cache absorbs every real file after the first request per region — but a flood of
-  plausible-looking ids is invocations, which is what Hobby pauses on. ⚠️ [Ticket 34](issues/34-stripped-art-stays-cached.md) adds a **third** source
-  (2026-08-26): the purge endpoint its answer needs is one more POST route on the site, and a
-  flood of POSTs to it is invocations like any other. It is a small surface — one secret, one
-  call — but it belongs in this answer and not in ticket 34's.
-  [Ticket 36](issues/36-build-purge-on-release.md) has now built it: `/api/purge` exists and a
-  wrong secret costs one hash comparison, which is cheap but is still an invocation. The three
-  belong in one answer: whatever protects `/api/auth/*` protects all of them.
+  the day, and it is deliberately last — it is now **blocked by 39 and 40**, so the
+  frontier says so.
 
-- ⚠️ **Nobody tells a bidder their card was declined.** [Ticket 19](issues/19-build-auction.md)
-  built the ladder: a bidder who held the top spot all day and whose capture failed at
-  00:00 loses the banner and is told nothing. Ticket 13 fixed the list at **six** messages
-  and this is not one of them, so adding a seventh inside a build ticket would have been
-  deciding ticket 13's question somewhere it does not belong. It is a small question with a
-  real answer — the outbid mail is the wrong words for it — and it wants naming before
-  launch, because it is the one path where somebody loses something and hears nothing.
+- **The road to launch, charted (2026-08-26).** Ticket 25 was briefly the only open ticket
+  on this map, which read as *finished* and was not: four patches of fog had gone sharp
+  while the build tickets were being worked. They are tickets now.
+  Both [37 — When a bid binds](issues/37-when-a-bid-binds.md) (research, **resolved
+  2026-08-26** — it added [42](issues/42-the-withdrawal-function.md)) and
+  [38 — Nobody tells a bidder their card was declined](issues/38-declined-bidder-hears-nothing.md)
+  (grilling, **resolved 2026-08-26** — it added
+  [41](issues/41-build-declined-bidder.md)) fed
+  [40 — Making the copy true again](issues/40-copy-true-again.md), which collects every copy
+  debt this map recorded and is the last thing before the switches. ⚠️ Ticket 37 put a fifth
+  ticket on the road that nobody charted: **the copy cannot be made true until the
+  withdrawal function exists**, so 42 sits between 37 and 40.
+  [39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
+  is the one cost decision left: tickets 18, 20, 28 and 36 each found a piece of it and each
+  said it belonged in one answer, not theirs.
 
 - **Watching the €10,000 threshold.** Ticket 06 turned Stripe Tax off and computed VAT by
   hand, which is right below the cross-border B2C threshold and wrong above it: the
@@ -865,55 +891,6 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   the site **an admin page** ([ticket 24](issues/24-build-removal.md)), so the surface
   exists — what is left is whether the flags get a list on it, and what the dev does when
   they read one.
-- **Making the copy true again.** `/how-it-works`, `/terms`, `/privacy` and the FAQ
-  describe a site that fakes everything. Real accounts, real payment, real refunds
-  and a real removal policy all break lines that are true today. This is the same
-  shape as 07 → 10, 11 → 13 and 14 → 16, and it comes last. ⚠️ Ticket 16 added two
-  specific debts, and ticket 18 a third — ⚠️ `/terms` still owes ticket 08's three
-  sentences about a lost inbox: the email is the key, losing it is not the end, and getting
-  back in means proving the payment to a person. `/privacy` must say that a **reservation
-  keeps a salted hash of the visitor's address for fifteen minutes** — the price of *one hold per visitor*, and the
-  first thing on the board path that is about a visitor at all — and that an **order keeps
-  the IP, the tick-box wording and the address for ten years**. ⚠️ Ticket 19 added three
-  more and ticket 31 took two of them away: the false *"The highest bid at 00:00 UTC
-  wins and is charged"* and ticket 07's unbuilt **mid-day pro-rata** both sat in the
-  daily-banner paragraph, and [ticket 32](issues/32-build-withdrawn-banner-day.md)
-  **rewrote that paragraph whole on 2026-08-26** — both are now done. What is left of the
-  three is that `/privacy` must say a **pending bid keeps the same salted address hash** a
-  reservation does, for the same fifteen minutes. ⚠️ And one debt survived the rewrite
-  untouched, because it is not ticket 31's or 32's: the same paragraph still promises
-  *"the day stays in the public record with the winning bid on it"*, which
-  [ticket 30](issues/30-auction-tension.md) committed to and nobody built. Either build the
-  record of past winners or take the sentence out — it is the one line on `/terms` that is
-  false because of something the site does **not** have. ⚠️ Ticket 21 adds two more: `/privacy` and the FAQ
-  describe a click count without saying **what it is** — counted in the visitor's browser,
-  not audited, a **floor** and not a census, which ticket 10 named and left to the copy; and
-  `/privacy`'s *Who else sees it* names the payment provider and Vercel but not **Cloudflare**,
-  which a visitor who only clicks a block now loads a script from. Buying and bidding were
-  always deliberate acts; clicking is not. ⚠️ Tickets 22 and 24 add the last of them:
-  `/privacy` must say that **Resend is a processor** and that the **address is now a key**
-  and not only a contact — plus the one sentence that keeps both promises true at once, that
-  an email address belongs to an **owner** while the clicks promise is about a **visitor**;
-  and `/terms` owes four lines — *nothing is refunded*, the freeze rule and what frozen
-  means, *the site does not check where a link goes*, and `hello@200squares.com` as the
-  place to report a block.
-- **Monitoring and alarms.** What tells the dev that the 00:00 UTC rollover failed,
-  that a capture was declined, or that a webhook never arrived. It needs the cron and
-  the captures to exist first.
-- **Backups and loss.** What happens if Convex data is lost, and what the site owes
-  people if it is.
-- **Bot clicks.** Ticket 10 covers counting clicks safely; whether a rough number
-  must later be filtered is a separate question with its own privacy cost.
-- **Click counts over time.** Old fog, and more expensive since `/privacy` now
-  promises that no time is written down.
-- **An archive of past banner winners** older than the site shows today.
-- **SEO and share images.**
-- **Artwork rules on the public pages.** ⚠️ Half of this is **done**: ticket 20 put the
-  rules beside the picker, in all three places a picture is chosen and *before* a file is
-  picked — which is where ticket 09 said no-animation had to be said. What is left is the
-  public half: `/how-it-works` and the FAQ describe artwork to somebody who has not bought
-  anything yet, and they say nothing about WebP, 10 MB or the crop. It rides with
-  **making the copy true again**.
 
 ## Out of scope
 

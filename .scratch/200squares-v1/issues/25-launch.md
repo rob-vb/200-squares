@@ -2,7 +2,7 @@
 
 Type: task
 Status: open
-Blocked by: 14
+Blocked by: 14, 39, 40 (2026-08-26 — the fog before the switches became tickets)
 See also: [36](36-build-purge-on-release.md) — not a switch, but it lands before launch.
 Parent: ../map.md
 

@@ -75,3 +75,34 @@ is concluded, and this ADR's reasoning is the ticket's own. It is the load-beari
 of the whole arrangement and it is worth an hour before launch. If it does not hold, the
 fallback is the same 24-hour pro-rata window moved earlier in the day — the site still works,
 it is simply more generous than intended.
+
+## Superseded in part — 2026-08-26
+
+[Ticket 37](../../.scratch/200squares-v1/issues/37-when-a-bid-binds.md) spent the hour this
+ADR asked for. The warning above came true, on the half it warned about.
+
+**The conclusion at the close stands, and is now sourced.** Dutch law leaves the moment of
+conclusion to the auction's own terms (art. 6:217 lid 2 BW); a Dutch court read an
+internet-auction bid the same way (ECLI:NL:RBMNE:2026:695 §3.7); and `/terms` must now say so
+in words, because saying nothing is what left it open.
+
+⚠️ **The irrevocability does not stand against a consumer.** Art. 6:230q lid 1 BW: *"In
+afwijking van artikel 219 kan een aanbod van de consument tot het aangaan van een overeenkomst
+aan de handelaar op de in artikel 230o bepaalde wijze worden herroepen."* The memorie van
+toelichting (kst-33520-3) records that the Raad van State raised precisely the named-term case
+and that the bill was amended to defeat it. Art. 12(b) of Directive 2011/83 is the EU basis;
+art. 6:230i lid 1 makes it mandatory, so no wording restores it. **The sentence above — *"That
+ground binds a consumer as firmly as a business"* — is wrong**, and `/terms` may not keep
+saying *a bid cannot be withdrawn*. The residual exposure is what this ADR already called the
+fallback: the same pro-rata window, moved earlier in the day.
+
+**A business bidder is still bound.** Art. 6:219 lid 1 does exactly what this ADR says for a
+bidder acting for business purposes, who is outside afdeling 6.5.2B altogether
+(art. 6:230g lid 1 sub a).
+
+⚠️ **And one duty this ADR could not have known.** *The refund stays manual* is no longer the
+whole story: art. 6:230oa BW / art. 11a CRD, in force since 19 June 2026, requires an on-site
+withdrawal function. See [ticket 42](../../.scratch/200squares-v1/issues/42-the-withdrawal-function.md).
+
+Sources, each with the date it was read:
+[`research/37-when-a-bid-binds.md`](../../.scratch/200squares-v1/research/37-when-a-bid-binds.md).
