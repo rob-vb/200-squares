@@ -855,6 +855,23 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [ADR 0005](../../docs/adr/0005-fourteen-days-and-a-button.md); its build is
   [43](issues/43-build-withdrawal-function.md), and **ticket 40 is re-pointed at 43**.
 
+- [41 — Build: the declined bidder hears it](issues/41-build-declined-bidder.md) — **built and
+  proved through three shapes of the close.** The seventh mail exists: *Your card was declined
+  for the banner on …*, no decline code, one factual last line. ⚠️ Ticket 38's `reason` had to
+  become a **stored** `bids.failure`, not a derived one — a refused capture and a day already
+  decided both leave a `failed` bid whose hold outlived the close, so no reading of the row
+  could tell them apart. With it, the status page stops telling this bidder the day was settled
+  while he was paying, and My squares carries one row — **Declined** or **Not won** — where it
+  used to say *You have not bid.* to somebody who bid all day. The refused hold is cancelled
+  after the day is decided, winner or house ad; `wonMail` gains one sentence for a promoted
+  runner-up. ⚠️ **Unprovable on staging: the cancel itself.** Forcing a capture decline in test
+  mode means cancelling the hold first, so the close's own cancel always lands on an
+  already-cancelled intent — Stripe publishes no card that authorizes and then refuses capture.
+  ⚠️ **The mail count is now seven, and [43](issues/43-build-withdrawal-function.md) makes it
+  eight** — ticket 42 called its confirmation "a seventh mail" before this one landed.
+  `CONTEXT.md` and `PRODUCT.md` still say six; that is
+  [ticket 40](issues/40-copy-true-again.md)'s, along with the `/terms` line ticket 38 left it.
+
 ## Not yet specified
 
 - **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
