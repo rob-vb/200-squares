@@ -26,6 +26,7 @@ import type * as lib_time from "../lib/time.js";
 import type * as lib_vat from "../lib/vat.js";
 import type * as mail from "../mail.js";
 import type * as owners from "../owners.js";
+import type * as purge from "../purge.js";
 import type * as reservations from "../reservations.js";
 import type * as seed from "../seed.js";
 import type * as seedData from "../seedData.js";
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   "lib/vat": typeof lib_vat;
   mail: typeof mail;
   owners: typeof owners;
+  purge: typeof purge;
   reservations: typeof reservations;
   seed: typeof seed;
   seedData: typeof seedData;

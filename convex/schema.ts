@@ -448,6 +448,21 @@ export default defineSchema({
     /** Whether this removal was the one that froze the block. */
     froze: v.boolean(),
     removedAt: v.number(),
+    /**
+     * When the picture stopped being served from Vercel's edge.
+     *
+     * ⚠️ **Absent means the removal only half happened.** Deleting the file from
+     * Convex does not touch the copy `/art/<id>` caches for a year, so until the
+     * tag is purged the reported picture is still public at the address that was
+     * reported ([ADR 0004](../docs/adr/0004-a-year-is-a-cache-not-a-promise.md)).
+     * `/admin` lists any row that has no date here, because a removal that half
+     * happened must not look like one that happened.
+     *
+     * It is set on a removal that had nothing to purge as well — an empty block,
+     * or a file another block still shares — since in both cases nothing is left
+     * serving and there is nothing to chase.
+     */
+    purgedAt: v.optional(v.number()),
   })
     .index("by_owner", ["ownerId"])
     .index("by_block", ["blockId"]),

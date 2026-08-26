@@ -17,11 +17,13 @@
 // an orphan, and `sweepOrphans` takes it.
 
 import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation, mutation } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { currentOwner, requireOwner } from "./auth";
 import { LARGE_MAX_BYTES, SMALL_MAX_BYTES, STORED_TYPE } from "./lib/art";
+import { tagFor } from "./purge";
 
 /** The pair of ids every setter takes: the `1x` and the `4x` the browser made. */
 const pair = { small: v.id("_storage"), large: v.id("_storage") };
@@ -78,9 +80,30 @@ async function accept(
  * artwork must not take the other pieces' picture with it. Nothing cuts a block
  * in V1.0 — resale is out of scope — and the rule is written here because the
  * day it comes back is not the day to remember it.
+ *
+ * ⚠️ **Deleting the file is only half of it.** `/art/<id>` is cached at Vercel's
+ * edge for a year, so a file that is gone from Convex still answers at its own
+ * URL — which is a removal that did not remove
+ * ([ADR 0004](../../docs/adr/0004-a-year-is-a-cache-not-a-promise.md)). So this
+ * books the purge too, and it books it **for exactly the ids it deleted**, never
+ * for the ids it was handed: the guard that spares a file a cut block still shares
+ * has to spare its URL with it. Purging a file that is still on the board would
+ * cost one fetch to bring it back, and every visitor would pay for it.
+ *
+ * `removalId` is the `removals` row the press wrote, where there is one. A
+ * replacement has none, and `convex/purge.ts` says why it gets none.
  */
-export async function release(ctx: MutationCtx, old: Doc<"blocks">["artwork"] | undefined) {
-  if (!old || old.kind !== "upload") return;
+export async function release(
+  ctx: MutationCtx,
+  old: Doc<"blocks">["artwork"] | undefined,
+  removalId?: Id<"removals">,
+) {
+  const done = async () => {
+    // Nothing is left serving, so the row is not waiting on anything.
+    if (removalId) await ctx.db.patch(removalId, { purgedAt: Date.now() });
+  };
+  if (!old || old.kind !== "upload") return await done();
+
   const stillUsed = new Set<string>();
   const note = (art: { kind: string; small?: unknown; large?: unknown } | null | undefined) => {
     if (art && art.kind === "upload") {
@@ -92,9 +115,19 @@ export async function release(ctx: MutationCtx, old: Doc<"blocks">["artwork"] | 
   for (const day of await ctx.db.query("bannerDays").collect()) note(day.artwork);
   for (const bid of await ctx.db.query("bids").collect()) note(bid.artwork);
 
+  const deleted: string[] = [];
   for (const id of [old.small, old.large]) {
-    if (!stillUsed.has(String(id))) await ctx.storage.delete(id);
+    if (stillUsed.has(String(id))) continue;
+    await ctx.storage.delete(id);
+    deleted.push(String(id));
   }
+  if (deleted.length === 0) return await done();
+
+  await ctx.scheduler.runAfter(0, internal.purge.purgeArt, {
+    tags: deleted.map(tagFor),
+    removalId,
+    attempt: 0,
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -15,6 +15,12 @@
 // touched — which is the entire argument against doing this in the Convex
 // dashboard.
 //
+// ⚠️ **The fifth thing it books is the one that can fail after the press.** The
+// picture also has to stop being served from Vercel's edge, and that is a
+// network call the transaction cannot make (ADR 0004). So the list at the bottom
+// of this page carries the only warning on the screen: a removal with no
+// `purgedAt` is one the reporter can still open.
+//
 // The reason is required here **and** on the server. It goes to the owner as it
 // was written, so an empty one would be a removal nobody can explain.
 
@@ -48,6 +54,7 @@ export function AdminBoard() {
   const board = useQuery(api.admin.board, allowed ? { search } : "skip");
   const removals = useQuery(api.admin.removals, allowed ? {} : "skip");
   const now = useClientDate();
+  const unpurged = removals?.filter((row) => !row.purged).length ?? 0;
 
   if (allowed === undefined) return null;
   if (!allowed) {
@@ -89,6 +96,19 @@ export function AdminBoard() {
 
       <div className="pt-8">
         <h2 className="font-display text-[20px]">What has been taken off</h2>
+        {/* ⚠️ The one thing on this page that is not a record but an alarm.
+            Deleting the file does not reach the copy Vercel's edge keeps for a
+            year, so until the purge goes through the picture somebody reported
+            is still public at the address they reported (ADR 0004). The retries
+            stop after about eight hours; this does not. */}
+        {unpurged > 0 ? (
+          <p className="text-accent py-2 text-[14px] font-semibold">
+            {unpurged === 1
+              ? "1 removal is still being served from the edge."
+              : `${unpurged} removals are still being served from the edge.`}{" "}
+            The picture is still public at its /art URL.
+          </p>
+        ) : null}
         {removals?.length === 0 ? (
           <p className="text-faint py-4 text-[14px]">Nothing yet.</p>
         ) : null}
@@ -109,6 +129,11 @@ export function AdminBoard() {
               {row.froze ? " · froze the block" : ""}
             </div>
             <div className="text-faint pt-1">{row.reason}</div>
+            {row.purged ? null : (
+              <div className="text-accent pt-1 font-semibold">
+                Still on the edge · the picture has not been purged
+              </div>
+            )}
           </div>
         ))}
       </div>

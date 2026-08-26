@@ -83,6 +83,8 @@ These never reach the browser.
 | `BOARD_LIVE` | `true` | `true` | The [ADR 0001](adr/0001-live-board-clicks-outside-it.md) kill switch. Set to `false` and the board falls back to a cached snapshot, with no deploy. |
 | `ADMIN_EMAILS` | optional | set | Comma-separated. `requireAdmin(ctx)` compares the session's address against it ([ticket 08](../.scratch/200squares-v1/issues/08-accounts.md)). ⚠️ Unset admits **nobody**, which is the safe way round — a deployment with no admin has no admin page. |
 | `RESERVATION_IP_SALT` | optional | optional | Salts the hash a reservation keeps instead of an IP ([ticket 16](../.scratch/200squares-v1/issues/16-build-checkout.md)'s *one hold per visitor*). Unset, `BETTER_AUTH_SECRET` is used instead, which is fine — it is a salt, not a key. |
+| `PURGE_URL` | the staging branch URL + `/api/purge` | `https://200squares.com/api/purge` | ⚠️ **Which environment gets purged is decided here.** Cache tags are scoped per project *and* environment, and the route reads its environment from the deployment it runs in — so dev pointing at production would purge production. Set it wrong and the purge reports success. See [ADR 0004](adr/0004-a-year-is-a-cache-not-a-promise.md). |
+| `PURGE_SECRET` | own value | own value | `openssl rand -base64 32`. Must match the `PURGE_SECRET` on the Vercel environment `PURGE_URL` points at. Different per deployment, like `BETTER_AUTH_SECRET`. |
 
 ### In the Vercel project
 
@@ -97,6 +99,11 @@ Set per environment in **Settings → Environment Variables**.
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the real site key | ⚠️ Cloudflare's **dummy** always-passes site key | yes |
 | `STRIPE_SECRET_KEY` | `sk_live_…` | `sk_test_…` | **no** |
 | `BUSINESS_VAT_ID` | set | set | no |
+| `PURGE_SECRET` | own value | own value | **no** |
+
+⚠️ `PURGE_SECRET` is one string held in two places: here, where `/api/purge` checks it, and
+on the Convex deployment that calls it. Production and Preview hold **different** pairs, so
+a leaked staging secret buys nothing on the live site.
 
 `NEXT_PUBLIC_` is a promise: the value is compiled into the browser bundle. A secret
 with that prefix is a leaked secret.

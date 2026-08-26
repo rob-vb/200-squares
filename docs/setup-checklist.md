@@ -151,6 +151,7 @@ ready to take money.
    | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the **real** Turnstile site key — non-sensitive |
    | `STRIPE_SECRET_KEY` | `sk_live_…` |
    | `BUSINESS_VAT_ID` | ⚠️ the eenmanszaak's own BTW-id, e.g. `NL…B01` — needed **here**, not only on Convex: VIES returns the `requestIdentifier` only to a caller that identifies itself, and that reference is the art. 18(1)(a) proof. Without it the check works and nothing is kept. |
+   | `PURGE_SECRET` | ⚠️ a **new** value, `openssl rand -base64 32` — not the preview one. It is the whole guard on `/api/purge`, and the same string goes on Convex prod in step 5. Sensitive. |
 
 5. **Convex prod variables**:
 
@@ -161,9 +162,18 @@ ready to take money.
    npx convex env set --prod STRIPE_SECRET_KEY sk_live_...
    npx convex env set --prod RESEND_API_KEY re_...
    npx convex env set --prod TURNSTILE_SECRET_KEY ...
+   npx convex env set --prod PURGE_URL https://200squares.com/api/purge
+   npx convex env set --prod PURGE_SECRET ...
    ```
 
    ⚠️ `BETTER_AUTH_SECRET` must differ from dev.
+
+   ⚠️ `PURGE_SECRET` must be **the same string** as the one on Vercel Production in step 4,
+   and different from the preview pair. `PURGE_URL` must be the **production** address:
+   cache tags are scoped per project *and* environment, so prod pointing at the staging URL
+   purges staging, reports success, and leaves the reported picture live on the real site
+   ([ADR 0004](adr/0004-a-year-is-a-cache-not-a-promise.md)). A removal that did not purge
+   shows on `/admin`; a removal that purged the wrong environment does not.
 
 6. **The live Stripe webhook**, Test mode OFF, pointing at
 

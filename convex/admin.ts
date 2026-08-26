@@ -12,6 +12,13 @@
 // from `convex/art.ts` (ticket 20) and the picture is gone with the press,
 // rather than a day later when the orphan sweep happens to look.
 //
+// ⚠️ **And deleting the file is not the end of it either.** `/art/<id>` is cached
+// at Vercel's edge for a year, so a file gone from Convex still answers at the
+// address that was reported. `release` books the purge against the `removals` row
+// it is given, and `purgedAt` is what says it worked — a removal with no date
+// there is a removal that half happened, and the list below shows it as one.
+// [ADR 0004](../docs/adr/0004-a-year-is-a-cache-not-a-promise.md).
+//
 // ⚠️ **Strikes count on the owner, the third one freezes only the block that
 // caused it, and a strike expires after twelve months.** All three are ticket
 // 11's, and each of them is load-bearing: per-block counting hands a four-block
@@ -226,7 +233,7 @@ export const strip = mutation({
       frozen: block.frozen || frozen,
     });
     await ctx.db.patch(owner._id, { strikeAt });
-    await ctx.db.insert("removals", {
+    const removalId = await ctx.db.insert("removals", {
       blockId,
       ownerId: owner._id,
       rule,
@@ -236,7 +243,11 @@ export const strip = mutation({
     });
     // After the patch: `release` asks what is still pointed at, and the row it is
     // asking about has to have moved on first.
-    await release(ctx, old);
+    //
+    // ⚠️ The row goes in first because `release` books the edge purge against it
+    // (ADR 0004): the press is not finished until `/art/<id>` stops answering, and
+    // `purgedAt` on this row is what says whether it did.
+    await release(ctx, old, removalId);
 
     await ctx.scheduler.runAfter(0, internal.mail.removed, {
       to: owner.email,
@@ -289,7 +300,7 @@ export const removeBanner = mutation({
     // is what was reported, and leaving it in storage leaves it reachable.
     await ctx.db.patch(day._id, { removedAt: now, artwork: null, url: "" });
     await ctx.db.patch(owner._id, { strikeAt });
-    await ctx.db.insert("removals", {
+    const removalId = await ctx.db.insert("removals", {
       bannerDate: date,
       ownerId: owner._id,
       rule,
@@ -299,7 +310,7 @@ export const removeBanner = mutation({
       froze: false,
       removedAt: now,
     });
-    await release(ctx, old);
+    await release(ctx, old, removalId);
 
     await ctx.scheduler.runAfter(0, internal.mail.removed, {
       to: owner.email,
@@ -362,7 +373,7 @@ export const withdrawBanner = mutation({
     // the moment this commits and the house ad takes the rest of the day.
     await ctx.db.patch(day._id, { removedAt: now, artwork: null, url: "" });
     // ⚠️ `owner.strikeAt` is **not** touched. Nothing was broken.
-    await ctx.db.insert("removals", {
+    const removalId = await ctx.db.insert("removals", {
       bannerDate: date,
       ownerId: owner._id,
       // ⚠️ No `rule`, and its absence is the record: see `convex/schema.ts`.
@@ -370,7 +381,10 @@ export const withdrawBanner = mutation({
       froze: false,
       removedAt: now,
     });
-    await release(ctx, old);
+    // ⚠️ Purged like any other release, and it is not about the picture being
+    // objectionable — nobody broke anything here. The day is off, so what it
+    // showed must stop answering at its own URL like anything else taken off.
+    await release(ctx, old, removalId);
 
     return null;
   },
@@ -417,6 +431,12 @@ export const removals = query({
       reason: v.string(),
       froze: v.boolean(),
       removedAt: v.number(),
+      /**
+       * ⚠️ False while the picture is still being served from the edge. It is the
+       * only sign the dev gets that a removal did not finish, and the retries
+       * behind it stop after about eight hours ([ADR 0004](../docs/adr/0004-a-year-is-a-cache-not-a-promise.md)).
+       */
+      purged: v.boolean(),
     }),
   ),
   handler: async (ctx) => {
@@ -440,6 +460,7 @@ export const removals = query({
         reason: row.reason,
         froze: row.froze,
         removedAt: row.removedAt,
+        purged: Boolean(row.purgedAt),
       });
     }
     return out;
