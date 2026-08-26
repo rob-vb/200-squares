@@ -90,7 +90,7 @@ One day of banner occupancy: which owner held it, with which artwork and link, a
 
 ## Bid
 
-An offer on the Banner for tomorrow. The highest bid at 00:00 UTC wins.
+An **irrevocable** offer on the Banner for tomorrow. Placing the bid is the offer and the close at 00:00 UTC is the acceptance, so no contract exists until the auction closes. A bid cannot be withdrawn. The Banner goes to the highest bid that **can be collected** at the close, which is not always simply the highest.
 
 ## Top bid
 

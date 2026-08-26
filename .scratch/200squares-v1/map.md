@@ -630,7 +630,48 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   is a choice to make **before** the first real sale, and it is recorded on
   [ticket 28](issues/28-prove-the-mail.md).
 
+- [31 — A bid that does not stand](issues/31-a-bid-that-does-not-stand.md) — **a bid cannot be
+  withdrawn, because there is nothing to withdraw from until the auction closes.** The bid is
+  an **offer**; the close at 00:00 UTC is the **acceptance**; no contract exists before it. So
+  the dev's fear — *intrekken vlak voor de teller, terwijl je wint* — is answered by one
+  sentence in `/terms` and no code at all. The offer is irrevocable on 6:219 lid 1 BW, an offer
+  naming a term for acceptance, which this auction does. ⚠️ **Two shortcuts were tried and both
+  fail**: outbid.lol's *"bids are non-refundable"* box (American, and it describes the
+  pay-every-bid model ticket 30 dropped), and abandoning the auction for a direct claim on the
+  banner — a day is still a day, and selling the banner **permanently** is *worse*, because
+  ticket 03 found a perpetual service is never fully performed. **The banner day is the safest
+  thing on the site precisely because it ends.** What survives is small: a consumer's 14 days
+  are born at the close and die at full performance, so they **live 24 hours**, pro rata, one
+  bid in size. Everyone may keep bidding; business-only was the lever that removes it entirely
+  and it was declined. A withdrawn day falls to the **house ad**, never the runner-up — ticket
+  07 has released every other hold by then. The refund stays **manual**, and ⚠️ Art. 14(3)
+  fixes the amount at the moment the consumer *sends the message*, not when the dev acts, so a
+  late reply costs the house free banner hours and shortens nobody's refund. Two code findings
+  outlive the ticket: ⚠️ **`removeBanner` cannot be reused** (`convex/admin.ts:226` counts a
+  strike and sends the *you broke rule X* mail), and ⚠️ **the ticket's own strike premise was
+  wrong** — `convex/auction.ts:407` gives a bidder an `owners` row the moment the hold lands,
+  so the row exists; what is missing is the **target**, because ticket 11's third strike freezes
+  a *block* and a bidder has none. Written up as
+  [ADR 0003](../../docs/adr/0003-a-bid-is-an-irrevocable-offer.md), with `CONTEXT.md`'s **Bid**
+  entry sharpened to match. Hands on [ticket 32](issues/32-build-withdrawn-banner-day.md).
+
 ## Not yet specified
+
+- ⚠️ **The 6:219 ground under ticket 31 has never been read against a source.** *An offer
+  naming a term for acceptance cannot be revoked* is what makes *a bid cannot be withdrawn*
+  true, and it is [ticket 31](issues/31-a-bid-that-does-not-stand.md)'s own reasoning, not a
+  citation. Ticket 03's research covered the withdrawal right and the auction exemption; it
+  never had to ask **when an auction contract is concluded**. It is the load-bearing sentence
+  of the whole arrangement and it wants an hour of a research ticket before launch. Not a
+  blocker: if it does not hold, the fallback is the same 24-hour pro-rata window moved earlier
+  in the day, and the site still works — it is simply more generous than intended.
+
+- **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
+  left it at nothing, on the dev's *"laten we afwachten of dit echt gaat gebeuren"*. The ladder
+  already protects the day and the attack wins the bidder nothing, so this needs a real
+  incident first. ⚠️ Whoever picks it up starts from ticket 31's correction: the `owners` row
+  exists, so a strike would land — it is ticket 11's **consequence** that has no target,
+  because a third strike freezes a block and a bidder has none.
 
 - **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
   grounds that it is legally sufficient and costs nothing. The moment a real business
@@ -651,20 +692,16 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [23 — Build: the invoice document](issues/23-build-invoice.md) and
   [24 — Build: the admin page and removal](issues/24-build-removal.md).
   **Still open**:
-  [31 — A bid that does not stand](issues/31-a-bid-that-does-not-stand.md), opened 2026-08-26
-  out of ticket 30 — **what happens when a standing bid stops standing**, and the site has
-  three answers that disagree. The build says it cannot happen: there is no withdraw path
-  anywhere. The card says it can: a bidder kills the hold outside the site and ticket 19's
-  close survives it, but ⚠️ **nothing punishes it** ([ticket 11](issues/11-house-rules.md)'s
-  strike counter is the existing shape, though a strike lands on `owners` and this bidder was
-  never charged). And ⚠️ **the copy says it is allowed, twice, differently**: the bid panel
-  gives a consumer 14 days to cancel by email with a pro-rata refund, `/terms` says only
-  *"a bid is binding while it stands"* and never mentions the 14 days at all — so the two
-  surfaces tell two stories and the generous one wins. Three things under it have never been
-  decided: whether the contract is concluded **at the bid or at the close** (which decides
-  whether a consumer can walk away for free while winning), what a cancelled winning bid does
-  to a day already running, and whether the pro-rata is built or stays an inbox — ticket 07
-  put it in `/terms` unbuilt on purpose and it is still nobody's. Beside them,
+  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md), opened
+  2026-08-26 out of ticket 31 — the smallest build on the map: one admin mutation beside
+  `removeBanner` that takes a banner day off **without** a strike and without the removal
+  mail, plus the `/terms` and `consent.ts` wording ticket 31 already wrote. ⚠️ It carries
+  ticket 19's `/terms` debt with it, because that is the same paragraph.
+  [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md), opened 2026-08-26 — the
+  dev's own decision, made in passing during ticket 31 and unrelated to it. Two constants and
+  four pieces of prose; nothing to migrate, because nothing 4 wide exists. ⚠️ The largest
+  block drops from $4,000 to $2,250, which is the stunt buyer in `PRODUCT.md` getting smaller.
+  Beside them,
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md)
   is the one thing tickets 22 and 23 could not do for themselves: no message has reached a
@@ -713,12 +750,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   back in means proving the payment to a person. `/privacy` must say that a **reservation
   keeps a salted hash of the visitor's address for fifteen minutes** — the price of *one hold per visitor*, and the
   first thing on the board path that is about a visitor at all — and that an **order keeps
-  the IP, the tick-box wording and the address for ten years**. ⚠️ Ticket 19 adds three
-  more: `/terms` says *"The highest bid at 00:00 UTC wins and is charged"*, which is now
-  **false in the case the whole mechanism exists for** — it must say the banner goes to the
-  highest bid that **can be collected**, and that a hold stays on the card until the close;
-  `/terms` also still owes ticket 07's **mid-day pro-rata refund**, stated and never built;
-  and `/privacy` must say a **pending bid keeps the same salted address hash** a reservation
+  the IP, the tick-box wording and the address for ten years**. ⚠️ Ticket 19 added three
+  more and ticket 31 has taken two of them away: the false *"The highest bid at 00:00 UTC
+  wins and is charged"* and ticket 07's unbuilt **mid-day pro-rata** both sit in the
+  daily-banner paragraph, which [ticket 32](issues/32-build-withdrawn-banner-day.md) now
+  rewrites whole in words ticket 31 already settled. What is left of the three is that
+  `/privacy` must say a **pending bid keeps the same salted address hash** a reservation
   does, for the same fifteen minutes. ⚠️ Ticket 21 adds two more: `/privacy` and the FAQ
   describe a click count without saying **what it is** — counted in the visitor's browser,
   not audited, a **floor** and not a census, which ticket 10 named and left to the copy; and

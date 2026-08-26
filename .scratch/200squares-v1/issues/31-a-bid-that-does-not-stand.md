@@ -1,7 +1,7 @@
 # 31 — A bid that does not stand
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: —
 Parent: ../map.md
 
@@ -117,3 +117,130 @@ problems are elsewhere:
   with the winning bid on it."* A public record of winning bids is committed to; a list of
   **losing** bids is not.
 - Nothing is claimed and nothing is built.
+
+## Answer
+
+**A bid cannot be withdrawn, because there is nothing to withdraw from until the auction
+closes.** The contract is concluded at the close, not at the bid. Everything else on this
+ticket follows from that one sentence, and most of it costs nothing to build.
+
+### 1. The contract is concluded at the close
+
+A bid is an **offer**. The close at 00:00 UTC is the acceptance. Before the close there is no
+contract, so there is no withdrawal period to run and nothing for a consumer to walk away
+from — which is the dev's exact fear, gone, at the price of one sentence in `/terms`.
+
+And the offer itself is **irrevocable**: an offer that names a term for acceptance cannot be
+revoked (6:219 lid 1 BW), and this auction names one — 00:00 UTC, fixed, published, no
+extension window. That ground works against a consumer as well as a business, because it is
+about the offer stage and not about the withdrawal right.
+
+⚠️ **The 6:219 reasoning is this ticket's, not a read source.** Ticket 03's research covered
+the withdrawal right and the auction exemption; it never had to ask when an auction contract
+is concluded. The sentence *a bid cannot be withdrawn* is load-bearing, so it is worth an
+hour of checking before launch. It is on the map as fog, not as a blocker: the fallback if it
+does not hold is the same 24-hour pro-rata window described below, moved earlier in the day.
+
+### 2. The consumer's 14 days survive, and they are 24 hours long
+
+They cannot be tick-boxed away. ⚠️ **The dev asked for outbid.lol's checkbox** — *"bids are
+non-refundable"* — and it does not work here, for three reasons:
+
+- **outbid.lol is American.** The CRD does not reach it. Their box has nothing to remove.
+- **Their box describes a model this site dropped.** Every bidder pays immediately there and
+  nobody is refunded. [Ticket 30](30-auction-tension.md) settled that **only the winner pays**,
+  so *"bids are non-refundable"* has almost no content here: a loser is never charged.
+- **This site's box already does the maximum.** `BANNER_WITHDRAWAL_TEXT` is the Art. 16(1)(a)
+  wording. Full performance is a fact about the world, which is ticket 03's finding, and no
+  tick changes a fact.
+
+What survives is small. The right is born at the close and dies at full performance, which is
+the end of the same banner day. **It lives 24 hours.** It belongs to consumers only. And it is
+**pro rata**: withdraw at 12:00 and you pay half. The exposure is the un-run hours of one bid,
+once, on one day.
+
+⚠️ **The dev also proposed dropping the auction** — claim the banner block directly, *"dan heb
+je direct volledige levering"* — and it does not work either. A day claimed at a fixed price is
+still a day: full performance still lands at 00:00 UTC and the 24 hours are unchanged. Selling
+the banner **permanently** is worse: ticket 03 found a perpetual service is never fully
+performed, so the right would live the full 14 days with a pro-rata offset of *"close to
+nothing"*. **The banner day is the safest thing on this site precisely because it ends.**
+The auction stays.
+
+### 3. Everyone may bid
+
+Business-only was the one lever that removes the 14 days completely, and it was declined.
+The risk it buys off is 24 hours long, pro rata, and one bid in size; the price is bidders,
+and fewer bidders is a lower price every day. `buyerType` is already collected in the bid
+panel and already rides in the Stripe session metadata, so the lever stays available if the
+judgement ever changes.
+
+### 4. A withdrawn winning day falls to the house ad, and the money goes by hand
+
+Withdrawal stops the service, so the banner comes off and the house ad takes the rest of the
+day. It cannot fall to the runner-up: ticket 07 releases every other hold the moment the top
+capture succeeds, so by then there is nobody left to promote.
+
+The refund is **not built**. The dev computes the hours and refunds in the Stripe dashboard,
+as tickets 07 and 19 both intended. Two findings make that safe:
+
+- ⚠️ **The money is fixed at the mail, not at the takedown.** Art. 14(3) CRD: the consumer pays
+  in proportion to what was supplied *"until the time the consumer has informed the trader"*.
+  So a dev who reads the mail eight hours late has given away eight hours of banner and has
+  **not** shortened anybody's refund. The inbox delay costs the house, not the bidder — which
+  is why no self-service cancel button was built. ⚠️ Art. 13(1) still applies: refund within
+  **14 days** of the message.
+- ⚠️ **`removeBanner` cannot be reused.** `convex/admin.ts:226` does take a banner day off for
+  the rest of its day, but it also counts a **strike**, sends the **removal mail** (*you broke
+  rule X*) and writes a `removals` row with a rule that does not exist. Withdrawal is not a
+  rule break — the file says so itself. A separate, smaller mutation is needed.
+
+### 5. A dead hold earns nothing, for now
+
+*"Laten we afwachten of dit echt gaat gebeuren."* The ladder already protects the day, and the
+attack costs the bidder a real hold on a real card and wins them nothing.
+
+⚠️ **This ticket's own premise was wrong and it is worth recording.** It said a strike could
+not be attached because the bidder was never charged. `convex/auction.ts:407` makes an `owners`
+row the moment the hold lands — *"an owner exists the moment money is on the line"* — so the
+row is there and a strike would land fine. What is missing is not the row, it is the
+**target**: ticket 11's third strike freezes a *block*, and a bidder has none. Whoever revisits
+this starts from that, not from the ticket's question.
+
+### 6. The words
+
+`/terms`, the daily banner paragraph, four sentences instead of three:
+
+> A bid cannot be withdrawn. Bidding closes at 00:00 UTC and every bid stands until it does.
+>
+> The banner goes to the highest bid that **can be collected** at 00:00 UTC. If the top bid
+> cannot be collected, the next one takes the day. Every other bid is released.
+>
+> The winner holds the banner from 00:00 to 00:00 UTC, and the day stays in the public record
+> with the winning bid on it.
+>
+> If you bid as a private person, you have 14 days to cancel, counted from the close. A banner
+> day is fully delivered at 00:00 UTC, so the right ends there. To cancel, email
+> `hello@200squares.com`. Your banner comes down as soon as we have read your message, and you
+> pay for the hours that had run when you sent it.
+
+Sentence one is the whole decision. Sentence two also settles ticket 19's debt — *"the highest
+bid at 00:00 UTC wins and is charged"* is false in the case the ladder exists for, and it is
+the same paragraph. ⚠️ Sentence three stays and is **still untrue**: ticket 30 left a promise of
+a public record that nobody has built. That debt is not this ticket's.
+
+`src/lib/checkout/consent.ts`, two changes:
+
+- A **fourth line on `BID_TRUTHS`**, above the button: *"A bid cannot be withdrawn."*
+- **`BANNER_WITHDRAWAL_INFO` is sharpened.** *"If your banner day has already started"* is a
+  condition that is never false — the close and the start of the day are the same instant. It
+  becomes: *"Your banner comes down as soon as we have read your message, and you pay for the
+  hours that had run when you sent it."*
+- **`BANNER_WITHDRAWAL_TEXT` does not change.** The tick is already correct.
+
+### What this hands on
+
+- [Ticket 32 — Build: a withdrawn banner day](32-build-withdrawn-banner-day.md): the mutation
+  and these words.
+- The 6:219 check, on the map as fog.
+- Nothing else. No strike work, no pro-rata engine, no cancel button, no change to the auction.
