@@ -69,7 +69,12 @@ real backend, and then makes the copy true again.
 - **Driving a real bid**: `node scripts/bid.mjs <email> [amount] [prefix]` places one bid end
   to end on staging in Stripe test mode. ⚠️ Give each run a **different address** — Stripe's
   email is what makes an owner, and a bidder who raises their own bid has their earlier hold
-  released, so a one-address run can never build the ladder the close needs.
+  released, so a one-address run can never build the ladder the close needs. `PHONE=1` runs the
+  same bid in the **bottom sheet** instead of the side panel, and an amount below the floor is
+  the cheap way to see a refusal — it never reaches Stripe and leaves no pending row. A refused
+  run writes `<prefix>-2c-panel.png`, the panel **element**: ⚠️ `fullPage` scrolls the *page*
+  and this panel scrolls **inside itself**, so a page shot cannot show what the visitor is
+  looking at ([ticket 35](issues/35-a-refused-bid-says-nothing.md)).
 - **Driving a withdrawal**: `node scripts/withdraw.mjs [prefix]` starts from the session
   `scripts/signin.mjs` leaves in `.auth.json`, opens `/admin` and presses *The bidder withdrew*
   on today's banner. ⚠️ There is no other way to press it — the button is admin-only and the
@@ -733,6 +738,17 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   purge reaches it, and only `immutable` comes off, so a reload asks the edge and Convex is never
   touched. [ADR 0004](../../docs/adr/0004-a-year-is-a-cache-not-a-promise.md) records it; the build is
   [ticket 36](issues/36-build-purge-on-release.md).
+- [35 — A refused bid says nothing where the bidder is looking](issues/35-a-refused-bid-says-nothing.md)
+  — **a refused bid scrolls to the reason.** One `fail()` helper sets the amount error and
+  brings the field into view after paint, so all three refusals — below the minimum, somebody
+  bid while you were typing, whole dollars — land where the bidder is looking instead of at the
+  top of a panel that scrolls inside itself. The button **stays live** below the minimum on
+  purpose: a disabled button cannot say the other two. ⚠️ The `notice` messages were already
+  above the button and were left alone. ⚠️ `scripts/bid.mjs` had a real bug this exposed — every
+  CSS selector took the **hidden** copy of the double-mounted panel, so it could never have
+  tested the bottom sheet; it is scoped to the visible panel now, gains `PHONE=1`, and shoots
+  the panel *element* on a refusal, because a `fullPage` shot cannot show what a panel that
+  scrolls inside itself is showing. That is why ticket 28's screenshot looked empty.
 
 ## Not yet specified
 
@@ -775,12 +791,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md) and
   [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md).
   **Done** (2026-08-26, later):
-  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md).
+  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md) and
+  [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md).
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and it is deliberately last.
-  [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md) is on the
-  frontier and blocks nothing.
   [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md)
   is ticket 34's build. ⚠️ It is not a launch switch and so is not on ticket 25, but it is the
   one open item with an outside party standing in it — somebody who reported a picture and was
