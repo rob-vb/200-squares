@@ -228,12 +228,19 @@ function WithdrawForm({
   if (done) return <div className="text-faint pt-2 text-[13px]">{done}</div>;
 
   return (
-    <div className="flex flex-col gap-2 pt-2">
+    <div className="border-hairline mt-3 flex flex-col gap-2 border-t pt-3">
+      {/* ⚠️ Two textareas under one another, and pressing the wrong one costs a
+          strike and a *you broke rule X* mail. So the second one says which it
+          is, above the box, before it is typed in. */}
+      <div className="text-[13px] font-semibold">
+        The bidder withdrew — no strike, no mail
+      </div>
       <textarea
         className={`${inputClass} min-h-[72px]`}
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="When they wrote, and what you refunded. Nobody is sent this."
+        aria-label="What happened. Nobody is sent this."
       />
       <SecondaryButton onClick={() => void press()} disabled={busy}>
         {busy ? "…" : "Take the day off — no strike"}
