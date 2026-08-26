@@ -830,6 +830,31 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   `MISS` and `no-store`, the pre-ticket-08 build, resale still in it.** No bill is possible
   on Hobby, so ticket 39 left it; ticket 25 now knows it is switching a site **over**, not on.
 
+- [42 — The withdrawal function, which the law now requires](issues/42-the-withdrawal-function.md)
+  — **the law fixes how long the right lasts; the button only fixes whether the site obeys.**
+  ⚠️ That reframe decided it. The ticket asked how long a square's withdrawal right runs, as if
+  the button set it. Building the function lengthens nothing — what it decides is art. 6:230oa
+  compliance and, through art. 6:230m lid 1 sub h, whether the period stays 14 days or is
+  extended by up to **twelve months**. So: **14 days from the day of purchase, and the site
+  makes no claim that a square is ever fully performed.** It does not need one — the ordinary
+  period runs and ends, and the sub h information closes the tail that research 03 §5.6 called
+  the number worth caring about. The *"never dies"* reading is safest in law and buys nothing
+  the above does not, while putting a permanent refund right on every square. The banner is
+  unchanged (research 37 §3.1). **The function**: `/withdraw/<token>` on its own new token,
+  consumer orders only, entry points on `/thanks` and My squares — ⚠️ **not the invoice token**,
+  which the schema says exists so an owner can hand it to their bookkeeper. Pressing it writes
+  a row in a new `withdrawals` table, takes a **banner down at that instant** through ticket
+  32's `withdrawBanner`, and mails the consumer the lid 4 confirmation — ⚠️ **a seventh mail**,
+  obligatory rather than chosen, because ticket 32's *"the dev is already in the thread"* has
+  no thread behind a button. A square does not move; the refund stays manual (ADR 0003) and a
+  new mutation then **deletes the block**, so the rectangle returns to the market. `/admin`
+  lists what is not yet refunded, because art. 6:230r lid 1 puts a 14-day clock on each
+  declaration. ⚠️ **One button, not two**: art. 6:230oa reaches concluded contracts only, so
+  the pre-close revocation ticket 37 found stays an email — friction that protects the ladder
+  tickets 30 and 31 built. The copy still changes either way. Recorded as
+  [ADR 0005](../../docs/adr/0005-fourteen-days-and-a-button.md); its build is
+  [43](issues/43-build-withdrawal-function.md), and **ticket 40 is re-pointed at 43**.
+
 ## Not yet specified
 
 - **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
@@ -876,10 +901,12 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [41 — Build: the declined bidder hears it](issues/41-build-declined-bidder.md) is created
   and open — ticket 38's build.
   **Open** (2026-08-26, later still):
-  [42 — The withdrawal function](issues/42-the-withdrawal-function.md) is a decision before it
-  is a build — art. 6:230oa asks for a button that is available *"te allen tijde"*, and nobody
-  has settled whether a **square's** withdrawal right ever dies (ticket 03 §5.5). Its build
-  follows it.
+  ~~[42 — The withdrawal function](issues/42-the-withdrawal-function.md) is a decision before it
+  is a build~~ — **resolved 2026-08-26**. It settled the square at **14 days from purchase with
+  no full-performance claim**, and its build is
+  [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md), which is
+  **open and on the frontier**. ⚠️ 43 is the only thing on this map that is **in force and
+  missing**, and it blocks 40 and through it the launch.
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
   the day, and it is deliberately last — it is now **blocked by 40**, so the
@@ -898,7 +925,10 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [40 — Making the copy true again](issues/40-copy-true-again.md), which collects every copy
   debt this map recorded and is the last thing before the switches. ⚠️ Ticket 37 put a fifth
   ticket on the road that nobody charted: **the copy cannot be made true until the
-  withdrawal function exists**, so 42 sits between 37 and 40.
+  withdrawal function exists**, so 42 sits between 37 and 40. ⚠️ And 42 (**resolved
+  2026-08-26**) put a sixth on it: the copy cannot be true until the function is **built**
+  either, so [43](issues/43-build-withdrawal-function.md) — not 42 — is what 40 now waits on.
+  The road to launch is **43 → 41 → 40 → 25**, and 41 is unblocked and takeable now.
   ~~[39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
   is the one cost decision left~~ — **resolved 2026-08-26**. It was one answer after all, and
   the answer was seven firewall rules and no code.

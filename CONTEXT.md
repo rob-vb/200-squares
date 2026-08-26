@@ -100,6 +100,18 @@ The highest bid so far on the running auction. It is not a separate thing that g
 
 A bid that was the highest at the close and could not be collected: the bank refused the charge. It is not the same as being outbid — nobody bid more. The bidder loses the Banner, the hold is released, and the site tells them the charge was refused and never why. The Banner then goes to the next bid down, for that bidder's own amount.
 
+## Withdrawal
+
+A consumer taking back a purchase within the period the law gives them. A consumer buying a Square has fourteen days from the day of purchase. A consumer who wins a Banner day has until that day ends, because a day that ends is a thing that can be finished. A business buyer has no withdrawal at all. It is not the same as a Removal: a Removal is the site taking artwork off for a broken rule, and the buyer keeps the Square.
+
+## Declaration
+
+What a consumer sends to withdraw. It is the act itself, and its moment is what the refund is priced from — not the moment the site reads it. The site keeps every declaration with the words the consumer was shown and the exact time it was made, and confirms it back to them in writing.
+
+## Withdrawal function
+
+The button on the site that sends a Declaration. The law asks for it in those terms: a function on the interface, plainly labelled, available for the whole period. An email address is not one. Only a consumer sees it, and only for the order it belongs to.
+
 ## House ad
 
 What the Banner shows when nobody has won it: a message inviting the first bid, not an empty area.
