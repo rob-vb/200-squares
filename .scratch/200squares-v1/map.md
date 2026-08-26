@@ -731,7 +731,8 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   real domain — the wrong URL purges the wrong environment silently. A failed purge is the whole
   risk, so it is recorded on the `removals` row and shown on `/admin`. The browser half stays: no
   purge reaches it, and only `immutable` comes off, so a reload asks the edge and Convex is never
-  touched. The build is [ticket 36](issues/36-build-purge-on-release.md).
+  touched. [ADR 0004](../../docs/adr/0004-a-year-is-a-cache-not-a-promise.md) records it; the build is
+  [ticket 36](issues/36-build-purge-on-release.md).
 
 ## Not yet specified
 

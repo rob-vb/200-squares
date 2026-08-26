@@ -146,4 +146,6 @@ Hobby counts.
 invocations — the same class of thing as `/api/auth/*` and `/art`. It belongs in the map's
 *board view is no longer free* answer, with the other two, and is not decided here.
 
-The build is [ticket 36](36-build-purge-on-release.md).
+Written up as [ADR 0004 — *A year on /art is a cache, not a promise*](../../../docs/adr/0004-a-year-is-a-cache-not-a-promise.md),
+because a future reader will look at a route that calls itself `immutable`, see a cache tag on
+it, and wonder. The build is [ticket 36](36-build-purge-on-release.md).
