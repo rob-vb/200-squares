@@ -16,9 +16,11 @@
 //
 // What to check afterwards, and none of it is on this screen:
 //
-//   /art/<the small id>         → 404, and it was 200 before
+//   node scripts/art-check.mjs /art/<id>   → 404, and it was a cached 200 before
 //   npx convex data owners      → the owner's strikeAt has one more entry
-//   npx convex data removals    → a row carrying the rule and the reason
+//   npx convex data removals    → a row carrying the rule, the reason, and
+//                                 `purgedAt` — without which the picture is
+//                                 still being served from the edge
 //
 // ⚠️ Run it from the repo root. Playwright resolves from node_modules.
 import { chromium } from "playwright";
@@ -54,7 +56,13 @@ await page.screenshot({ path: `${out}-2-found.png`, fullPage: true });
 // The rows are siblings under one list. A row that is *Live* has a picture on
 // it, which is the only kind worth emptying to prove /art goes with it.
 const row = page.locator("div.border-hairline").filter({ hasText: "Live" }).first();
-console.log("row:", (await row.innerText()).replace(/\n/g, " · "));
+const before = (await row.innerText()).replace(/\n/g, " · ");
+console.log("row:", before);
+// ⚠️ Hold on to *which* row by its name. After the press the block reads
+// "Waiting for artwork", so the locator above stops matching it — and reading it
+// again through that locator is a 30-second timeout and a stack trace that looks
+// like the strip failed when it worked.
+const named = before.split(" · ")[0];
 
 await row.getByRole("button", { name: "Strip", exact: true }).click();
 await page.waitForTimeout(400);
@@ -65,6 +73,15 @@ await page.screenshot({ path: `${out}-3-filled.png`, fullPage: true });
 await row.getByRole("button", { name: "Strip", exact: true }).click();
 await page.waitForTimeout(3000);
 await page.screenshot({ path: `${out}-4-done.png`, fullPage: true });
-console.log("after:", (await row.innerText()).replace(/\n/g, " · "));
+const after = page.locator("div.border-hairline").filter({ hasText: named }).first();
+console.log("after:", (await after.innerText()).replace(/\n/g, " · "));
+
+// ⚠️ The press is not finished when the board goes clean. `/art/<id>` is cached
+// at Vercel's edge for a year and the purge is a scheduled action that can fail
+// after the transaction has committed, so the list at the bottom of `/admin` is
+// where a removal that half happened shows up. `node scripts/art-check.mjs
+// /art/<id>` is the other half of the proof ([ADR 0004](../docs/adr/0004-a-year-is-a-cache-not-a-promise.md)).
+const unpurged = await page.getByText("Still on the edge").count();
+console.log("removals still on the edge:", unpurged);
 
 await browser.close();
