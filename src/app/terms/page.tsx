@@ -35,7 +35,7 @@ export default function Page() {
           </P>
         </Section>
 
-        <Section title="There is no way out">
+        <Section title="No resale, and no take-back">
           <P>
             A square cannot be sold on through this site, and this site will not
             buy one back. Once it is bought it is yours, and it stays yours.
@@ -103,10 +103,12 @@ export default function Page() {
             a way to get the money back.
           </P>
           <P>
-            Three removals in twelve months freeze the block. Frozen means it is
-            still yours and still on the board, but you can no longer set
-            artwork or a link on it. Every removal message says where you stand,
-            so a freeze never arrives without warning.
+            Three removals in twelve months freeze a block. They are counted
+            across everything you own, and the freeze lands on the block that
+            caused the third one. Frozen means it is still yours and still on
+            the board, but you can no longer set artwork or a link on it. Every
+            removal message says where you stand, so a freeze never arrives
+            without warning.
           </P>
           <P>
             The site does not check where a link goes. Nobody follows it before
@@ -134,14 +136,15 @@ export default function Page() {
           </P>
           <P>
             The banner goes to the highest bid that can be collected at 00:00
-            UTC. If the top bid cannot be collected, the next one takes the day.
-            Every other bid is released.
+            UTC. If the top bid cannot be collected, the next one takes the day,
+            and is charged its own amount and not the one above it. Every other
+            bid is released.
           </P>
           <P>
-            So the highest bid does not always win. A bid the bank refuses at
+            So the highest bid does not always win. A bid your bank refuses at
             the close loses the day without ever having been outbid, and we
-            email that bidder to say the charge was refused. We are not told
-            why, and neither guess is ours to make: your bank knows.
+            email you to say the charge was refused. We are told that it was,
+            never why — for the reason, ask your bank.
           </P>
           <P>
             The winner holds the banner from 00:00 to 00:00 UTC, and the day

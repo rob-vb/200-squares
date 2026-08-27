@@ -70,8 +70,9 @@ export default function Page() {
             zero, bare.
           </P>
           <P>
-            None of this contradicts the paragraph above about your email address. An address
-            belongs to an <strong className="font-semibold">owner</strong>, who bought something.
+            None of this contradicts what the section above says about your email address. An
+            address belongs to an <strong className="font-semibold">owner</strong>, who bought
+            something.
             The promise about clicks is about a <strong className="font-semibold">visitor</strong>,
             who did not.
           </P>
