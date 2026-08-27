@@ -2,6 +2,7 @@
 
 Type: task
 Status: open
+Assignee: rob-vb (claimed 2026-08-27)
 Blocked by: 14, 39, 40 (all resolved — 40 on 2026-08-27, so this is now on the frontier and is the last ticket on the map)
 See also: [36](36-build-purge-on-release.md) — not a switch, but it lands before launch.
 Parent: ../map.md
@@ -27,14 +28,31 @@ The full list, in order, is Part 2 of
      `…convex.site/stripe/webhook`, which never passes Vercel. It guards nothing and costs a
      place in the ordering.
    - a checkout rate limit — 60 s / 5 / IP+JA4 / deny 15 min (ticket 02)
-   - a click-redirect rate limit — 10 s / 20 / IP / deny 1 min (ticket 02)
+   - ~~a click-redirect rate limit~~ — **dropped** (2026-08-27). Ticket 02 wrote it against
+     a redirect [ticket 10](10-clicks-for-real.md) then designed away. A click is a native
+     anchor plus a mutation to `…convex.site/clicks` (`src/lib/board/clicks.ts`): no Vercel
+     invocation, no `/r/` route, nothing to limit. Its rate limiting is the Turnstile permit
+     — about 30 clicks per token — and that is on Convex. Same reason the webhook bypass
+     died: the traffic never passes Vercel.
+   - **`/api/bid` → rate limit**, 60 s / 5 / IP+JA4 / deny 15 min. **Added 2026-08-27**, and
+     nobody had noticed it: `/api/bid` is `/api/checkout` with `capture_method: "manual"` —
+     the same VIES call, the same Stripe call, the same cost per request.
    - a method allowlist (ticket 02)
    - a junk-path deny (ticket 02)
-   - **`/art/` with a query string → deny.** `path` `pre` `/art/` **AND** `query` `ex`.
-     ⚠️ `query` + `ex` is *"any query string at all"*, which is the only form that closes
-     this: each distinct string is a fresh invocation **and** a year in the edge cache. No
-     honest request to `/art/<id>` carries one — and see the ⚠️ this put in
-     `src/app/art/[id]/route.ts`, because adding one later breaks the board.
+   - ~~**`/art/` with a query string → deny.**~~ ⚠️ **Cannot be built** (2026-08-27, working
+     this ticket). Ticket 39 wrote `path` `pre` `/art/` **AND** `query` `ex`, and knew it
+     could not live in `vercel.json` because `has` matches a query key **by name** — but
+     assumed the dashboard was free of that limit. It is not. The condition list holds no
+     field that sees the query string as a whole: `Query` is *"query parameter key and
+     value"* and **its key field is required**, and both path fields — `Request Path` and
+     `Raw Path` — say *"excluding query"* in their own descriptions.
+
+     The guard moved into **`src/app/art/[id]/route.ts`**, which answers `400` with
+     `no-store` to any query string at all. It costs one cheap invocation per attempt
+     instead of zero — no Convex read, no stream — and the `/art/` per-IP rate limit caps
+     how many one address gets. In exchange it holds on **preview** deployments too, so the
+     trap the old note described ("adding `?v=2` breaks production and nowhere else") no
+     longer exists.
    - **`/art/` → rate limit per IP.** Not deny: a 404 is the right answer for a file that
      was just released. A full board asks for a few hundred files once and is `HIT` after,
      so a per-IP limit passes a visitor and stops an id-scanner.
@@ -44,9 +62,20 @@ The full list, in order, is Part 2 of
    - **`/api/purge` → a tight rate limit.** Its only honest caller is Convex, a few times a
      day.
 
-   ⚠️ None of this can live in `vercel.json`: `has` matches a query key **by name**, and
-   `vercel.json` has no rate-limit action. It is dashboard or REST API, and it cannot be
-   proven on staging before the project is on Pro.
+   ⚠️ None of this can live in `vercel.json`: it has no rate-limit action. It is dashboard
+   or REST API.
+
+   ⚠️ **Rate limiting is metered**, which ticket 02 and ticket 39 both recorded only half of.
+   Vercel charges **$0.50 per 1M allowed requests** on a rate-limit rule; blocked requests
+   are free, and so are the deny rules. Ticket 02's rule survives whole — an attack is
+   blocked and blocked is free — but normal traffic on the three path limits costs something.
+   `/art/` is the volume: about 200 files to a fresh visitor on a full board, so $5 is
+   roughly 50,000 fresh visitors, and step 2's Spend Management wall stands in front of it.
+   ⚠️ **Unverified**: whether an edge-cache `HIT` on `/art/` counts as an allowed request.
+   That is a factor of a hundred on that one rule. Read the Vercel usage page after the
+   first week.
+
+   **Done 2026-08-27**: the seven rules are in place on the project.
 3. **Three CNAME records** at Cloudflare, all **DNS only (grey cloud)**.
 4. **Vercel Production variables** — `CONVEX_DEPLOY_KEY`, the Turnstile site key,
    `STRIPE_SECRET_KEY` live, and ⚠️ `BUSINESS_VAT_ID`, which

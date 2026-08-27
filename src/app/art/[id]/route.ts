@@ -25,14 +25,25 @@
 // still never touched.
 //
 // ⚠️ **Never put a query string on an `/art/` URL.** Not `?v=2`, not a cache
-// buster, not anything: the firewall denies it. Vercel's cache key includes the
-// query, so each distinct string is a fresh invocation *and* a fresh year-long
-// edge entry — an unbounded hole an attacker walks through with `?a=1`, `?a=2`,
-// `?a=3`. [Ticket 39](../../../../.scratch/200squares-v1/issues/39-what-an-invocation-costs.md)
-// closed it with a WAF rule — `path` `pre` `/art/` AND `query` `ex` — listed on
-// [ticket 25](../../../../.scratch/200squares-v1/issues/25-launch.md). The reflex
-// that adds a version parameter here would take the board down in production and
-// nowhere else, because the rule does not exist on a preview.
+// buster, not anything: this route answers 400 to any of them, everywhere.
+// Vercel's cache key includes the query, so each distinct string is a fresh
+// invocation *and* a fresh year-long edge entry — an unbounded hole an attacker
+// walks through with `?a=1`, `?a=2`, `?a=3`.
+// [Ticket 39](../../../../.scratch/200squares-v1/issues/39-what-an-invocation-costs.md)
+// meant to close it with a WAF rule — `path` `pre` `/art/` AND `query` `ex` — and
+// ⚠️ **that rule cannot be built.** Working
+// [ticket 25](../../../../.scratch/200squares-v1/issues/25-launch.md) on 2026-08-27
+// found Vercel's firewall has no condition that sees the query string as a whole:
+// `Query` is *"query parameter key and value"* and the key is required, exactly the
+// limitation that kept the rule out of `vercel.json`. Both path fields — `Request
+// Path` and `Raw Path` — say *"excluding query"*. So the guard is here instead, and
+// being here it holds on a preview too, where the old note said it would not.
+//
+// ⚠️ The 400 is `no-store` **on purpose**: an answer the edge keeps is an edge
+// entry per distinct string, which is half of what the attack was buying. This
+// costs one cheap invocation per attempt — no Convex read, no stream — and the
+// `/art/` per-IP rate limit on the firewall caps how many of those one address
+// gets.
 //
 // ⚠️ `s-maxage` is what Vercel's edge reads; `max-age` is what the browser
 // reads. Only the pair keeps the file out of the function on the second request.
@@ -58,7 +69,19 @@ const missing = () =>
     headers: { "Cache-Control": "public, max-age=30" },
   });
 
-export async function GET(_request: NextRequest, ctx: RouteContext<"/art/[id]">) {
+/** Any query string at all. See the ⚠️ above: this is the whole of that defence. */
+const queried = () =>
+  new Response("No query string on /art/.", {
+    status: 400,
+    headers: { "Cache-Control": "no-store" },
+  });
+
+export async function GET(
+  request: NextRequest,
+  ctx: RouteContext<"/art/[id]">,
+) {
+  if (request.nextUrl.search) return queried();
+
   const { id } = await ctx.params;
   if (!looksLikeId(id)) return missing();
 
@@ -67,7 +90,9 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/art/[id]">)
 
   let upstream: Response;
   try {
-    upstream = await fetch(`${site}/art?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+    upstream = await fetch(`${site}/art?id=${encodeURIComponent(id)}`, {
+      cache: "no-store",
+    });
   } catch {
     return missing();
   }
