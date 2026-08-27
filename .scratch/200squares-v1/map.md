@@ -1003,6 +1003,24 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   deliberately did not decide whether that is enough, because it is a monitoring question and
   not a cost one. Both need real traffic first.
 
+- **Cloudflare in front, doing the filtering.** The dev asked for it while working
+  [ticket 25](issues/25-launch.md) (2026-08-27) and chose Vercel *for now*, so ticket 02's
+  DNS-only answer stands — but the question is not closed, and three facts moved under it
+  that ticket 02 did not have. **For it**: Cloudflare terminates the connection, so its
+  limits see the real client IP, which Vercel's cannot behind a proxy; it caches `/art/`
+  itself, which does more for that path than any rate limit; and its filtering is not
+  metered, where Vercel charges **$0.50 per 1M allowed requests** on a rate-limit rule.
+  **Against it**: Cloudflare Free allows 5 custom rules and **one** rate-limiting rule and
+  this site needs five, so the real shape is Cloudflare **Pro** at $20 *on top of* Vercel
+  Pro — which stays compulsory for commercial use whatever fronts it — against a ceiling of
+  about $20. ⚠️ And the practical wall, **unverified**: Vercel issues and renews TLS over
+  HTTP, an orange cloud is the classic way that breaks, and Vercel's own page offers a
+  Cloudflare Origin CA certificate as the fix *for Enterprise only*. Whoever picks this up
+  measures that first, because it decides whether the rest is worth pricing. ⚠️ And
+  Cloudflare's **Bot Fight Mode** stays off for the same reason Vercel's Bot Protection
+  does: it challenges headless Chromium, and headless Chromium is the only way anybody
+  working on this site can see it.
+
 - **Who reads the flagged orders.** Ticket 06 accepts a country mismatch and flags the
   order rather than refusing it. Nothing yet looks at those flags. Ticket 11 has now given
   the site **an admin page** ([ticket 24](issues/24-build-removal.md)), so the surface
