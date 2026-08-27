@@ -1,7 +1,7 @@
 # 40 — Making the copy true again
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 38, 43 (both resolved — 43 on 2026-08-27, so this is now on the frontier)
 Parent: ../map.md
 
@@ -105,3 +105,132 @@ promise that nothing else drifted.
 
 Proved the way ticket 28 proved the mail: `TEXT=1 node scripts/shot.mjs <path> out.png`
 reads the words rather than looking at them.
+
+## Answer
+
+**Written and read back on staging on 2026-08-27. Commits `6444c6a`, `622e771`, `3c4f028`,
+`719d4f4`.** Every debt on the list above is paid. Three of them turned out not to be debts,
+and reading the pages whole — which this ticket demanded and was right to — found four more
+that the map never recorded.
+
+### ⚠️ The public record of banner days already exists
+
+The list above, and [research 37](../research/37-when-a-bid-binds.md) §7 under it, both say
+`/terms`'s *"the day stays in the public record with the winning bid on it"* is **false**
+because [ticket 30](30-auction-tension.md) committed to a record nobody built. It was built.
+`src/components/content/banner-record.tsx` has been in the tree since
+[ticket 15](15-build-schema.md) (`9254110`), it is wired into the *daily banner* section of
+`/how-it-works`, and it reads its own `api.auction.record` query — deliberately not the
+board's, because a day that is over is not something the board draws.
+
+So the sentence stays and **gains its other half**: it now says where the record is, and
+links to it. The choice the ticket offered — *either build the record of past winners or take
+the sentence out* — was never live. Read back on staging: six past days, each with its date,
+its holder and the bid that won it.
+
+⚠️ Whoever reads research 37 §7 again should read this beside it. That table marks the
+sentence *"**Stays**, and is **still untrue** on its second half"*, and it is not untrue.
+
+### The two other stale entries
+
+- **"The mail count is eight. `CONTEXT.md` and `PRODUCT.md` still say six."** Neither file
+  states a count, so there was nothing to correct. For the record, `convex/lib/mail.ts` now
+  builds **eleven** messages, one of which is the dev's own copy and one of which has three
+  variants. A count in a document is a thing that goes stale; neither file gained one.
+- **"`PRODUCT.md` and `CONTEXT.md` have no word for a withdrawal."** `CONTEXT.md` has had
+  **Withdrawal**, **Declaration** and **Withdrawal function** since
+  [ticket 43](43-build-withdrawal-function.md). Only `PRODUCT.md` was missing it.
+
+### What `/terms` says now
+
+- **"There is no way out" is now "No resale, and no take-back".** Ticket 42 §5 asked for the
+  section to be rewritten rather than deleted, and it was — but the **heading** had to go too.
+  A heading that says *there is no way out* directly above a section headed *Cancelling, if
+  you buy as a private person* is the sub h failure wearing a different hat: a consumer who
+  skims headings stops at the first one. What the section promises about the **site** is
+  unchanged and now stands on its own — no resale, and the site does not buy a square back —
+  followed by one sentence handing the reader to the next section.
+- **The consumer's fourteen days have their own section.** The right, the button, **where the
+  button is** (art. 6:230m lid 1 sub h — the thank-you page and under the order in My
+  squares), the immediate acknowledgement (art. 6:230o lid 4), the 14-day refund deadline
+  (art. 6:230r lid 1), the pro-rata charge priced from *when you sent it*, and that a business
+  buyer has none of it.
+- **A cancelled square goes back on the market.** Ticket 43 deletes the block once the refund
+  is paid, and no page had ever allowed for a rectangle returning to sale.
+- **The daily banner** gains the moment of conclusion (*a bid is an offer, accepted at 00:00
+  UTC*), that an overtaken bid **stays open** until the close, and that the promoted
+  runner-up is charged **its own amount** — which is money and had never been on the page.
+  *"A bid cannot be withdrawn."* is gone, replaced by `BID_TRUTHS[3]`'s shipped split, minus
+  its trailing clause about the banner's own button, which `/terms` states at length two
+  paragraphs later.
+- **The declined top bid** (ticket 38's debt): the highest bid does not always win, a refused
+  charge loses the day without being outbid, we say so by mail, and we are never told why.
+- *"As soon as we have read your message"* is gone. Nobody reads anything.
+- **Removal** (ticket 24's four lines): nothing is refunded, three removals in twelve months
+  freeze **the block that caused the third one** — counted across everything the owner holds,
+  which the first draft got wrong — the site does not check where a link goes, and where to
+  report one.
+- **The email address is the key** (ticket 08's three sentences), and orders are kept ten
+  years, so the proof outlives almost any inbox.
+
+### What `/privacy` says now
+
+The fifteen-minute salted hash behind *one hold per visitor*, and the same one for a pending
+bid. The ten years an order keeps, and the three things in it. **Resend** as a processor.
+**Cloudflare**, named because a visitor who only clicks now loads a script from it and did not
+set out to. The click count as a **floor and not a census**, with a bare zero. And the sentence
+that keeps both promises at once: an address belongs to an **owner**, the clicks promise is
+about a **visitor**.
+
+### `consent.ts`
+
+One re-word, the last one research 37 §7 asked for: `BANNER_WITHDRAWAL_INFO` counts from **the
+close**, not from *the day you win*. §7 made that conditional on `/terms` saying the contract
+is concluded at the close, and `/terms` now does. ⚠️ The docblock says so, because one may not
+be changed back without the other.
+
+### Found by reading the pages whole
+
+The ticket's own warning — *this list is not a promise that nothing else drifted* — earned its
+place four times.
+
+1. ⚠️ **The contact block offered only an X handle.** `/terms` sends a person to
+   `hello@200squares.com` three times — to withdraw, to report a block, and to recover a dead
+   inbox — and `consent.ts` freezes that address onto every order. The one place a visitor
+   looks for a way to reach somebody named neither it. It does now, beside the handle. It is
+   the same address the site sends from ([ticket 13](13-email.md): never a `no-reply@`).
+2. **`/privacy` appeared to contradict itself.** *No third-party tracking scripts* sat three
+   paragraphs above the new Cloudflare paragraph. Both true, and a reader cannot see why, so
+   the first now says what the second is.
+3. **`PRODUCT.md`'s Operating Context described a prototype** with no backend, no payment and
+   no accounts, and pointed at the closed frontend map. It also listed **three** square states
+   where [ticket 05](05-convex-model.md) made four, and carried two *undecided* items that the
+   code had long since decided — how long a square is held, and whether owner links are
+   followed (they are: `noopener noreferrer`, no `nofollow`). Its claim that the top bar
+   promises resale *when all 199 squares are sold* has been false since
+   [ticket 26](26-strip-resale.md).
+4. **`CONTEXT.md` called a bid flatly irrevocable** and repeated *A bid cannot be withdrawn* —
+   the same sentence this ticket removed from `/terms`, in the file the copy is supposed to
+   take its words from. It now splits by buyer type and says an overtaken bid stays open.
+
+### Proved
+
+`TEXT=1 node scripts/shot.mjs` on staging, the way [ticket 28](28-prove-the-mail.md) proved
+the mail — read, not looked at: `/terms` (`t40-terms.png`), `/privacy` (`t40-privacy.png`),
+`/how-it-works` with the FAQ and the six past banner days (`t40-hiw.png`). `tsc --noEmit` and
+`eslint` clean; `next build` keeps `/terms`, `/privacy` and `/how-it-works` **static**, which
+is [ticket 02](02-ddos-and-the-bill.md)'s cheapest defence and the thing
+[ticket 08](08-accounts.md) found switched off.
+
+### What this does not do
+
+- ⚠️ **Not legal review.** These are the words the map's own research asked for, written by
+  the same effort that did the research. [Ticket 25](25-launch.md) already carries having the
+  art. 6:230oa scope confirmed before launch; the pages are now what a reviewer would read.
+- **`/about` and the board copy were read and left alone.** Nothing on them had drifted.
+- ⚠️ **One flagged sentence stays flagged**: *"A banner that breaks the rules is removed for
+  the rest of its day and the bid is not returned."* Research 37 §6 item 5 marked it
+  *flagged, not researched* against art. 6:237 sub i, and this ticket is not the place to
+  decide it. It is now in the map's **Not yet specified**.
+
+[25 — The launch switches](25-launch.md) is the last ticket on this map, and it is unblocked.

@@ -2,7 +2,7 @@
 
 Type: task
 Status: open
-Blocked by: 14, 39, 40 (39 resolved 2026-08-26 — it added the firewall list below)
+Blocked by: 14, 39, 40 (all resolved — 40 on 2026-08-27, so this is now on the frontier and is the last ticket on the map)
 See also: [36](36-build-purge-on-release.md) — not a switch, but it lands before launch.
 Parent: ../map.md
 

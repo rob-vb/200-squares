@@ -892,6 +892,26 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   still false**: `/terms` still promises the banner comes down *"as soon as we have read your
   message"*.
 
+- [40 — Making the copy true again](issues/40-copy-true-again.md) — **the last debt is paid,
+  and three of its entries were not debts at all.** ⚠️ **The public record of banner days
+  already exists** — `banner-record.tsx` has been in the tree since ticket 15 and is wired
+  into `/how-it-works` — so `/terms`'s *"the day stays in the public record"* was true all
+  along, and the sentence gained a link rather than a deletion. Research 37 §7 marks it
+  *still untrue*; read this beside it. `/terms` now carries the consumer's fourteen days in
+  their own section, with **where the button is** (art. 6:230m lid 1 sub h), the immediate
+  acknowledgement, the 14-day refund deadline, and that a **cancelled square's rectangle goes
+  back on the market** — which no page had ever allowed for. The banner section gains the
+  moment of conclusion, the overtaken bid that **stays open**, the promoted runner-up's **own
+  amount**, and ticket 38's declined top bid. ⚠️ **"There is no way out" is now "No resale,
+  and no take-back"** — ticket 42 §5 rewrote the section and the heading had to follow, or a
+  consumer who skims headings stops at the first one. `/privacy` gains the fifteen-minute
+  salted hash, the ten years, Resend, **Cloudflare**, and the click count as a **floor**.
+  ⚠️ Reading the pages whole — which the ticket demanded — found four drifts the map never
+  recorded, the sharpest being that **the contact block offered only an X handle** while
+  `/terms` sent people to `hello@200squares.com` three times. `PRODUCT.md` had still described
+  a prototype with no backend; `CONTEXT.md` still called a bid flatly irrevocable.
+  Proved by reading the three pages back on staging.
+
 ## Not yet specified
 
 - **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
@@ -944,10 +964,14 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md), which is
   **open and on the frontier**. ⚠️ 43 is the only thing on this map that is **in force and
   missing**, and it blocks 40 and through it the launch.
+  **Done** (2026-08-27):
+  [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md) and
+  [40 — Making the copy true again](issues/40-copy-true-again.md).
   **Still open**:
   [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day, and it is deliberately last — it is now **blocked by 40**, so the
-  frontier says so. ⚠️ [39](issues/39-what-an-invocation-costs.md) is **resolved
+  the day, and it is deliberately last. ⚠️ **It is the only open ticket left on this map**,
+  and unlike the last time that was true (2026-08-26), the fog ahead of it has been walked:
+  what remains below needs real traffic, a real complaint or a lawyer, not a decision. ⚠️ [39](issues/39-what-an-invocation-costs.md) is **resolved
   2026-08-26** and put a seven-rule firewall list and a ninth step on it; it produced no
   build ticket, because a dashboard rule is not a build.
 
@@ -965,7 +989,7 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   withdrawal function exists**, so 42 sits between 37 and 40. ⚠️ And 42 (**resolved
   2026-08-26**) put a sixth on it: the copy cannot be true until the function is **built**
   either, so [43](issues/43-build-withdrawal-function.md) — not 42 — is what 40 now waits on.
-  The road to launch is **43 → 41 → 40 → 25**, and 41 is unblocked and takeable now.
+  The road to launch was **43 → 41 → 40 → 25**. All but 25 are walked (2026-08-27).
   ~~[39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
   is the one cost decision left~~ — **resolved 2026-08-26**. It was one answer after all, and
   the answer was seven firewall rules and no code.
@@ -984,6 +1008,17 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   the site **an admin page** ([ticket 24](issues/24-build-removal.md)), so the surface
   exists — what is left is whether the flags get a list on it, and what the dev does when
   they read one.
+
+- **A banner removed for a broken rule, and the bid that is not returned.** `/terms` says a
+  banner that breaks the content rules is removed for the rest of its day and the bid is not
+  returned. [Research 37](research/37-when-a-bid-binds.md) §6 item 5 marked that
+  **flagged, not researched** against art. 6:237 sub i — the grey-list clause on forfeiting
+  what has been paid — and research 03 §5.9 flagged it before that.
+  [Ticket 40](issues/40-copy-true-again.md) left it standing on purpose: it is a
+  question about whether the clause holds, not about whether the page describes the site,
+  and it is the only sentence on `/terms` that was read and deliberately not changed. It
+  needs the same lawyer [ticket 25](issues/25-launch.md) already carries for the art. 6:230oa
+  scope, so it costs nothing to ask both at once.
 
 ## Out of scope
 
