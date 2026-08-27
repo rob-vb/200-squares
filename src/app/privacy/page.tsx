@@ -36,8 +36,8 @@ export default function Page() {
           </P>
           <P>
             An order keeps more than that, because a sale has to be provable years later: the
-            invoice name and address, the exact words of the boxes you ticked, and the internet
-            address your browser came from. Tax law asks for ten years, so ten years is what it
+            name and billing address you gave Stripe, the exact words of the boxes you ticked, and
+            the internet address your browser came from. Tax law asks for ten years, so ten years is what it
             gets.
           </P>
           <P>

@@ -145,10 +145,8 @@ function Complete({ sessionId, order }: { sessionId: string; order: Order }) {
       <Section title={`Square ${squareRange(order.rect)} is yours`}>
         <p className="max-w-[62ch] text-[17px] leading-snug">
           {order.squares === 1 ? "One square" : `${order.squares} squares`}, paid in full at{" "}
-          {money(order.totalCents)}
-          {order.vatCase === "nl21" ? `, including ${money(order.vatCents)} Dutch VAT` : ""}
-          {order.vatCase === "reverse" ? ", VAT reverse-charged" : ""}. It is on the board now and
-          it stays there. Your invoice comes by email.
+          {money(order.totalCents)}, tax included. It is on the board now and it stays there. Your
+          receipt and invoice come from Stripe by email.
         </p>
         <p className="text-faint max-w-[62ch] pt-3 text-[15px] leading-snug">
           Until you put a picture on it, the square is marked as waiting for artwork. There is no

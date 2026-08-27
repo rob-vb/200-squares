@@ -416,20 +416,10 @@ function declaredFrom(metadata: Record<string, string> | null) {
     reservationId: m.reservationId ?? "",
     rect: { r, c, w, h },
     buyerType: m.buyerType === "business" ? ("business" as const) : ("consumer" as const),
-    country: m.country ?? "",
     name: m.name ?? "",
-    vatNumber: m.vatNumber || undefined,
-    viesRequestIdentifier: m.viesRequestIdentifier || undefined,
     withdrawalWaived: m.withdrawalWaived === "true",
     withdrawalText: m.withdrawalText ?? "",
     invoiceText: m.invoiceText ?? "",
-    vatCase:
-      m.vatCase === "reverse"
-        ? ("reverse" as const)
-        : m.vatCase === "none"
-          ? ("none" as const)
-          : ("nl21" as const),
-    vatRateBps: Number(m.vatRateBps ?? 0),
     ip: m.ip ?? "",
   };
 }

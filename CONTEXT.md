@@ -59,14 +59,12 @@ payment can never produce two.
 
 ## Invoice
 
-The document that says what VAT was owed on an Order and to whom. It is not the receipt
-Stripe mails: a receipt says money moved, an invoice is a tax document, and only one of
-them satisfies the law.
+The tax document behind an Order. Since ADR 0006 Stripe issues it: under Managed
+Payments Stripe (Link) is the merchant of record, calculates and remits the tax and mails
+the receipt and the invoice itself. The site issues nothing and computes no VAT.
 
-A consumer is owed no invoice; a business always is. The site issues its own, because the
-VAT amount must appear in euros even when the sale is in dollars. An invoice is rendered
-from the Order and never recomputed — a rate that changes next year must not change last
-year's invoice.
+Invoices the site issued before 2026-08-27 stay readable at their private links; that
+is the only invoice code left.
 
 ## Bid hold
 

@@ -122,21 +122,19 @@ export function MySquares() {
         ) : null}
 
         {/*
-          ⚠️ The second place an invoice is delivered (ticket 17). The first is
-          the order-confirmed mail, and a mail is lost more easily than an
-          account. The link is the permanent token URL, so it can be handed to a
-          bookkeeper without handing over the account with it.
+          Your orders. ⚠️ Since ADR 0006 Stripe mails the invoice, so an order
+          written after 2026-08-27 has no number here. The invoices the site
+          issued before that day keep their link — a bookkeeper's URL, handed
+          over without the account. What this list is really for now is the
+          withdrawal link under each row (ticket 43).
         */}
         {invoices.length > 0 ? (
           <div className="border-hairline border-t px-4 py-3">
-            <div className="text-faint pb-2 text-[13px]">Your invoices</div>
+            <div className="text-faint pb-2 text-[13px]">Your orders</div>
             {invoices.map((invoice) => (
               <div key={invoice.what + invoice.issuedAt} className="py-1">
                 <div className="flex items-baseline justify-between gap-3 text-[13px]">
-                  {/* ⚠️ An order whose invoice is still being written shows the
-                      row without a number rather than not at all: the
-                      withdrawal link below hangs on this row and may not wait
-                      for a bookkeeping document (ticket 43). */}
+                  {/* A number only for an invoice the site itself issued. */}
                   {invoice.url ? (
                     <a
                       href={invoice.url}
@@ -147,9 +145,7 @@ export function MySquares() {
                     >
                       {invoice.number}
                     </a>
-                  ) : (
-                    <span className="text-faint font-mono text-[12px]">Invoice on its way</span>
-                  )}
+                  ) : null}
                   <span className="text-faint min-w-0 truncate">{invoice.what}</span>
                   <span className="font-display text-[15px]" data-numeric>
                     {usd(invoice.totalCents)}

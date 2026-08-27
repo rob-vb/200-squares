@@ -59,7 +59,7 @@ if (amount) {
 }
 await panel.getByRole("button", { name: "A private person" }).click();
 await panel.locator("select").first().selectOption("NL");
-await panel.getByPlaceholder("As it goes on the invoice").fill("Test Bieder");
+await panel.getByPlaceholder("Your name").fill("Test Bieder");
 await panel.locator('input[type="checkbox"]').first().check();
 await page.waitForTimeout(300);
 await page.screenshot({ path: `${out}-2-filled.png`, fullPage: true });

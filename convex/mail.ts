@@ -29,7 +29,6 @@ import { internalAction, internalQuery } from "./_generated/server";
 import { cellCount, squareRange } from "./lib/board";
 import {
   artworkReminderMail,
-  bannerInvoiceMail,
   orderConfirmedMail,
   refundedMail,
   removedMail,
@@ -112,14 +111,12 @@ export const forOrder = internalQuery({
 });
 
 /**
- * The mail a buyer keeps: what was bought, the invoice, and the way back to the
- * artwork.
+ * The mail a buyer keeps: what was bought, where the invoice comes from, and
+ * the way back to the artwork.
  *
- * ⚠️ **The invoice is issued here, not before.** Issuing it is the first thing
- * this does, so the mail either carries a live link or is not sent at all —
- * a receipt that points at a document which does not exist yet is worse than a
- * receipt that arrives a minute later, and `invoices.sweepMissing` is what
- * catches the minute.
+ * ⚠️ Until ADR 0006 this issued the site's own invoice first. Stripe mails the
+ * receipt and the invoice now, so this is a confirmation and nothing else — and
+ * a banner winner, who already had `wonMail`, gets nothing more.
  */
 export const orderConfirmed = internalAction({
   args: { orderId: v.id("orders") },
@@ -128,21 +125,15 @@ export const orderConfirmed = internalAction({
     const order = await ctx.runQuery(internal.mail.forOrder, { orderId });
     if (!order || !order.email || order.refunded) return null;
 
-    const url = await ctx.runAction(internal.invoices.issue, { orderId });
-    if (!url) return null;
+    // ⚠️ No invoice is issued here any more. Under Managed Payments (ADR 0006)
+    // Stripe sends the receipt and the invoice itself, from Link; the banner
+    // winner already had `wonMail`, and there is nothing left to tell them.
+    if (order.kind === "banner") return null;
 
-    const mail =
-      order.kind === "banner"
-        ? bannerInvoiceMail({
-            date: order.bannerDate,
-            totalCents: order.totalCents,
-            invoiceUrl: url,
-          })
-        : orderConfirmedMail({
+    const mail = orderConfirmedMail({
             what: order.what,
             squares: order.squares,
             totalCents: order.totalCents,
-            invoiceUrl: url,
             artworkUrl: artworkUrl(order.stripeSessionId),
             // ⚠️ Art. 6:230m lid 1 sub h. The banner's half is on `wonMail`
             // instead — that day is over before this invoice mail matters.

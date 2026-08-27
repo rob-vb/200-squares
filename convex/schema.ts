@@ -74,7 +74,11 @@ const seeded = v.object({
 
 export const artwork = v.union(uploaded, seeded);
 
-/** The three VAT cases from ticket 03, frozen onto an order at the moment of sale. */
+/**
+ * The three VAT cases from ticket 03. ⚠️ **Legacy since 2026-08-27** (ADR 0006):
+ * Stripe Managed Payments calculates and remits the tax now, so no new order
+ * carries a case. Orders written before that day keep theirs.
+ */
 const vatCase = v.union(
   /** Dutch 21%, which is every EU consumer under the €10,000 threshold. */
   v.literal("nl21"),
@@ -203,16 +207,20 @@ export default defineSchema({
 
     // The ticket 03 fields, frozen at the moment of sale.
     buyerType: v.union(v.literal("business"), v.literal("consumer")),
-    /** ISO 3166-1 alpha-2, as the buyer chose it in the panel. */
+    /**
+     * ISO 3166-1 alpha-2. Since ADR 0006 this is the country of the billing
+     * address Stripe collected; before it, the one the buyer chose in the panel.
+     */
     country: v.string(),
-    /** The country Stripe's billing address actually said, where they differ. */
+    /** Legacy: the country Stripe's billing address said, where the panel's differed. */
     stripeCountry: v.optional(v.string()),
-    /** Set when the two disagree. Accepted, never refused (ticket 06). */
-    countryMismatch: v.boolean(),
+    /** Legacy: set when the two disagreed. Accepted, never refused (ticket 06). */
+    countryMismatch: v.optional(v.boolean()),
     name: v.string(),
     address: v.string(),
+    /** Legacy: the site no longer asks for one (ADR 0006). */
     vatNumber: v.optional(v.string()),
-    /** VIES gave this back. Stored, and never printed on the invoice. */
+    /** Legacy: VIES gave this back. Stored, and never printed on the invoice. */
     viesRequestIdentifier: v.optional(v.string()),
     withdrawalWaived: v.boolean(),
     /**
@@ -242,21 +250,25 @@ export default defineSchema({
     ip: v.string(),
 
     // Money. Whole cents, USD.
-    /** What the buyer paid, VAT included. This is the number on the card. */
-    totalCents: v.number(),
-    /** The VAT inside `totalCents`, or 0. */
-    vatCents: v.number(),
-    /** 2100 means 21.00%. An integer of basis points, so no float rounds. */
-    vatRateBps: v.number(),
-    vatCase,
     /**
-     * ⚠️ How the price was built. A first sale is VAT-inclusive; a V1.1 resale
-     * is VAT-on-top. The invoice template reads this rather than assuming, or
-     * every resale invoice is wrong by 21% (ticket 17).
+     * What the buyer paid, tax included. This is the number on the card in USD;
+     * under Managed Payments the card may have been charged the local-currency
+     * equivalent (ADR 0006).
      */
-    pricing: v.union(v.literal("inclusive"), v.literal("onTop")),
+    totalCents: v.number(),
+    // ⚠️ Everything below to `fxSource` is **legacy** (ADR 0006). Stripe is the
+    // merchant of record, calculates the tax and issues the invoice, so no new
+    // order writes these. They stay optional so the orders written before
+    // 2026-08-27 keep reading.
+    /** Legacy: the VAT inside `totalCents`, or 0. */
+    vatCents: v.optional(v.number()),
+    /** Legacy: 2100 means 21.00%. */
+    vatRateBps: v.optional(v.number()),
+    vatCase: v.optional(vatCase),
+    /** Legacy: how the price was built. */
+    pricing: v.optional(v.union(v.literal("inclusive"), v.literal("onTop"))),
 
-    // The euro leg of the invoice, frozen with the rest.
+    // Legacy: the euro leg of the site's own invoice.
     /** USD per EUR, the ECB daily reference rate. */
     fxRate: v.optional(v.number()),
     /** ⚠️ The date the rate was published. Without it a weekend invoice is unprovable. */
@@ -344,6 +356,11 @@ export default defineSchema({
    *
    * The number is allocated inside the mutation that writes the row, so no
    * number is ever taken by something that then fails.
+   */
+  /**
+   * ⚠️ **Legacy since ADR 0006.** The site issued its own invoices until
+   * 2026-08-27; Stripe issues them now. The rows written before then stay
+   * readable at their private links, and nothing writes a new one.
    */
   invoices: defineTable({
     orderId: v.id("orders"),

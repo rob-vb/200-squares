@@ -44,7 +44,6 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { artwork } from "./schema";
 import { currentOwner, normalise } from "./auth";
 import { midnightOf, nextDate, nextMidnightUtc, todayUtc, RESERVATION_MS } from "./lib/time";
-import { vatInsideCents } from "./lib/vat";
 import { mintToken } from "./lib/token";
 import { withdrawUrl } from "./lib/withdrawal";
 import { declinedMail, outbidMail, sendMail, wonMail } from "./lib/mail";
@@ -726,15 +725,10 @@ export const planClose = internalQuery({
 
 const declaredBanner = v.object({
   buyerType: v.union(v.literal("business"), v.literal("consumer")),
-  country: v.string(),
   name: v.string(),
-  vatNumber: v.optional(v.string()),
-  viesRequestIdentifier: v.optional(v.string()),
   withdrawalWaived: v.boolean(),
   withdrawalText: v.string(),
   invoiceText: v.string(),
-  vatCase: v.union(v.literal("nl21"), v.literal("reverse"), v.literal("none")),
-  vatRateBps: v.number(),
   ip: v.string(),
 });
 
@@ -786,13 +780,9 @@ export const recordWin = internalMutation({
       ownerId: bid.ownerId,
       bannerDate: args.date,
       buyerType: d.buyerType,
-      country: d.country,
-      stripeCountry: args.stripeCountry || undefined,
-      countryMismatch: Boolean(args.stripeCountry) && args.stripeCountry !== d.country,
+      country: args.stripeCountry,
       name: d.name,
       address: args.address,
-      vatNumber: d.vatNumber,
-      viesRequestIdentifier: d.viesRequestIdentifier,
       withdrawalWaived: d.withdrawalWaived,
       withdrawalText: d.withdrawalText,
       // ⚠️ Ticket 43, and the banner's period is the short one: the right is
@@ -802,14 +792,6 @@ export const recordWin = internalMutation({
       invoiceText: d.invoiceText,
       ip: d.ip,
       totalCents: args.amountCents,
-      vatCents: vatInsideCents(args.amountCents, d.vatRateBps),
-      vatRateBps: d.vatRateBps,
-      vatCase: d.vatCase,
-      // ⚠️ Inclusive, and ticket 07 is explicit about why: a bid is a number the
-      // bidder types themselves, and two bids of $250 must mean the same thing
-      // whoever placed them. Exclusive pricing would make the top bid depend on
-      // the bidder's tax status, which is not an auction.
-      pricing: "inclusive",
       createdAt: now,
     });
 
@@ -901,20 +883,10 @@ function declaredFrom(metadata: Record<string, string> | null) {
   const m = metadata ?? {};
   return {
     buyerType: m.buyerType === "business" ? ("business" as const) : ("consumer" as const),
-    country: m.country ?? "",
     name: m.name ?? "",
-    vatNumber: m.vatNumber || undefined,
-    viesRequestIdentifier: m.viesRequestIdentifier || undefined,
     withdrawalWaived: m.withdrawalWaived === "true",
     withdrawalText: m.withdrawalText ?? "",
     invoiceText: m.invoiceText ?? "",
-    vatCase:
-      m.vatCase === "reverse"
-        ? ("reverse" as const)
-        : m.vatCase === "none"
-          ? ("none" as const)
-          : ("nl21" as const),
-    vatRateBps: Number(m.vatRateBps ?? 0),
     ip: m.ip ?? "",
   };
 }
@@ -1036,8 +1008,7 @@ async function closeOne(ctx: ActionCtx, date: string) {
       await ctx.runAction(internal.mail.orderConfirmed, { orderId: winner.orderId });
     } catch {
       // The same rule as the mail above: a banner day that is won, collected and
-      // on the board is not undone by a document that can be written again.
-      // `invoices.sweepMissing` picks it up within the day.
+      // on the board is not undone by a mail that did not go.
     }
     break;
   }

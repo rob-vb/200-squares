@@ -5,9 +5,9 @@
 // ⚠️ Company, link and artwork have **left this panel**. Ticket 06 moved all
 // three behind the payment — the buyer supplies them on the thank-you page —
 // and their place is taken by the fields ticket 03 requires before the money
-// moves: buyer type with no default, country, name, an EU VAT number where one
-// is owed, an unticked withdrawal box with the Art. 6(1)(h) information under
-// it, and the digital-invoice line. Net, the screen does not grow.
+// moves: buyer type with no default, name, an unticked withdrawal box with the
+// Art. 6(1)(h) information under it, and the invoice line. Country and VAT
+// number left with ADR 0006 — Stripe Managed Payments does the tax now.
 //
 // ⚠️ The button says *Order now — obliges you to pay*, and that is not a style
 // choice. Under *Fuhrmann-2* only the words on the button that concludes the
@@ -18,7 +18,7 @@
 // minutes, exactly one visitor can win a given square, and the loser is handed
 // back the part of their drag that survived rather than an error.
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { api } from "@convex/api";
 import { useMutation } from "convex/react";
 import type { Id } from "@convex/dataModel";
@@ -27,10 +27,9 @@ import { useScreen } from "./flow";
 import { Countdown } from "../countdown";
 import { Emphasis } from "@/components/emphasis";
 import { INVOICE_TEXT, ORDER_BUTTON, WITHDRAWAL_INFO, WITHDRAWAL_TEXT } from "@/lib/checkout/consent";
-import { countryOptions } from "@/lib/checkout/countries";
 import { clearHold, convexSite, useHold, writeHold } from "@/lib/checkout/hold";
 import { useTurnstile } from "@/lib/checkout/turnstile";
-import { NL_VAT_BPS, vatFor, wantsVatNumber, type BuyerType } from "@/lib/checkout/vat";
+import type { BuyerType } from "@/lib/checkout/buyer";
 import { PRICE_PER_SQUARE, cellCount, priceCentsOf, priceOf, squareRange } from "@/lib/board/geometry";
 import type { Rect } from "@/lib/board/types";
 
@@ -51,30 +50,17 @@ export function BuyFlow({ rect }: { rect: Rect }) {
   const sentToStripe = Boolean(held?.stripeUrl);
 
   const [buyerType, setBuyerType] = useState<BuyerType | null>(null);
-  const [country, setCountry] = useState("");
   const [name, setName] = useState("");
-  const [vatNumber, setVatNumber] = useState("");
   const [waived, setWaived] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [lost, setLost] = useState<{ offer: Rect | null } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [vatError, setVatError] = useState<string | null>(null);
 
   const { box, getToken } = useTurnstile(!sentToStripe);
-  const countries = useMemo(() => countryOptions(), []);
 
   const totalCents = priceCentsOf(rect);
   const squares = cellCount(rect);
-  const askVat = wantsVatNumber(buyerType, country);
-  const vat = vatFor({
-    buyerType: buyerType ?? "consumer",
-    country: country || "NL",
-    // The panel can only guess. The real answer comes from VIES on the server,
-    // and it is the server's answer that is frozen into the order.
-    viesValid: askVat && vatNumber.trim() ? true : null,
-    totalCents,
-  });
 
   const giveBack = async () => {
     // Closing first, so the panel does not sit there while the round trip runs.
@@ -88,7 +74,6 @@ export function BuyFlow({ rect }: { rect: Rect }) {
   const order = async () => {
     setBusy(true);
     setNotice(null);
-    setVatError(null);
     setLost(null);
     try {
       let hold = held;
@@ -133,18 +118,14 @@ export function BuyFlow({ rect }: { rect: Rect }) {
         body: JSON.stringify({
           reservationId: hold.reservationId,
           buyerType,
-          country,
           name,
-          vatNumber,
           withdrawalWaived: waived,
         }),
       });
       const answer = await res.json();
 
       if (!answer?.ok) {
-        if (answer?.error === "vies-invalid") {
-          setVatError("VIES does not know that number.");
-        } else if (answer?.error === "expired") {
+        if (answer?.error === "expired") {
           clearHold();
           setNotice("The fifteen minutes ran out. Draw the rectangle again.");
         } else if (answer?.error === "conflict") {
@@ -190,7 +171,7 @@ export function BuyFlow({ rect }: { rect: Rect }) {
     );
   }
 
-  const ready = Boolean(buyerType && country && name.trim() && (buyerType === "business" || waived));
+  const ready = Boolean(buyerType && name.trim() && (buyerType === "business" || waived));
 
   return (
     <>
@@ -239,74 +220,21 @@ export function BuyFlow({ rect }: { rect: Rect }) {
           </div>
         </FieldBox>
 
-        <Field label="Country">
-          <select
-            className={inputClass}
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-          >
-            <option value="">Choose your country</option>
-            {countries.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-
         <Field label={buyerType === "business" ? "Legal name" : "Full name"}>
           <input
             className={inputClass}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={buyerType === "business" ? "As it goes on the invoice" : "As it goes on the invoice"}
+            placeholder={buyerType === "business" ? "Company name" : "Your name"}
             autoComplete="name"
           />
         </Field>
 
-        {askVat ? (
-          <Field
-            label="EU VAT number"
-            error={vatError}
-            hint="Leave it empty if you have none. We then charge Dutch VAT."
-          >
-            <input
-              className={inputClass}
-              value={vatNumber}
-              onChange={(e) => {
-                setVatNumber(e.target.value);
-                setVatError(null);
-              }}
-              placeholder="IE6388047V"
-              autoComplete="off"
-            />
-          </Field>
-        ) : null}
-
-        {vatError ? (
-          <SecondaryButton
-            onClick={() => {
-              setBuyerType("consumer");
-              setVatNumber("");
-              setVatError(null);
-            }}
-          >
-            Continue as a private person
-          </SecondaryButton>
-        ) : null}
-
-        {/* Not before both fields are answered: the VAT case is decided by
-            buyer type and country, and a line that guesses at it is a price
-            that changes while you look at it. */}
-        {buyerType && country ? (
+        {/* Tax is Stripe's: it is inside the price, and the exact amount for
+            the buyer's country appears on Stripe's page (ADR 0006). */}
         <p className="text-faint text-[12px] leading-snug">
-          {vat.vatCase === "nl21"
-            ? `${money(totalCents)} includes ${NL_VAT_BPS / 100}% Dutch VAT (${money(vat.vatCents)}).`
-            : vat.vatCase === "reverse"
-              ? `${money(totalCents)}, VAT reverse-charged. We check the number before you pay.`
-              : `${money(totalCents)}. No VAT is charged outside the EU.`}
+          {money(totalCents)}, tax included. Stripe shows the tax for your country before you pay.
         </p>
-        ) : null}
 
         {/* One block, not two. The tick, its information and the invoice line
             are the same kind of thing to a buyer — small print at the moment of

@@ -20,9 +20,15 @@ export default function Page() {
       >
         <Section title="What you buy">
           <P>
-            A square costs $250. You pay once, and the square is yours for as
-            long as this site runs. There is no subscription, no renewal and no
-            invoice after the first one.
+            A square costs $250, tax included. You pay once, and the square is
+            yours for as long as this site runs. There is no subscription and
+            no renewal.
+          </P>
+          <P>
+            Payment goes through Stripe. Stripe is the seller of record for the
+            payment: it works out the tax for your country, shows it before you
+            pay, and emails you the receipt and the invoice. Prices are in US
+            dollars; Stripe may show you the amount in your own currency.
           </P>
           <P>
             A purchase of several squares at once is one block, at most 3 wide

@@ -1,5 +1,8 @@
 # $250 includes VAT, and the site computes it, not Stripe
 
+> **Superseded by [ADR 0006](0006-stripe-is-the-merchant-of-record.md) on 2026-08-27.** Stripe
+> Managed Payments computes the tax now. `tax_behavior: inclusive` survives; the rest does not.
+
 A square costs $250. That is what the buyer pays, whoever they are and wherever they
 are. Whatever VAT is due comes out of the $250, and the site works out how much —
 Stripe Tax is off.

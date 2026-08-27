@@ -18,28 +18,24 @@ import Stripe from "stripe";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
 import { INVOICE_TEXT, WITHDRAWAL_TEXT } from "@/lib/checkout/consent";
-import { vatFor, wantsVatNumber, type BuyerType } from "@/lib/checkout/vat";
-import { checkVatNumber, normaliseVatNumber } from "@/lib/checkout/vies";
-import { PRICE_PER_SQUARE_CENTS, cellCount, priceCentsOf, squareRange } from "@/lib/board/geometry";
+import type { BuyerType } from "@/lib/checkout/buyer";
+import { PRICE_PER_SQUARE_CENTS, cellCount, squareRange } from "@/lib/board/geometry";
 
 type Body = {
   reservationId?: string;
   buyerType?: BuyerType;
-  country?: string;
   name?: string;
-  vatNumber?: string;
   withdrawalWaived?: boolean;
 };
 
 /**
  * What the panel is told back.
  *
- * `vies-invalid` is the one the panel draws at the field, beside ticket 06's one
- * button: *Continue as a private person*. Everything else is a sentence.
+ * Every error is a sentence in the panel. `vies-invalid` left with ADR 0006.
  */
 type Answer =
-  | { ok: true; url: string; viesUnavailable?: boolean }
-  | { ok: false; error: "expired" | "vies-invalid" | "invalid" | "conflict" | "unavailable" };
+  | { ok: true; url: string }
+  | { ok: false; error: "expired" | "invalid" | "conflict" | "unavailable" };
 
 const fail = (error: Extract<Answer, { ok: false }>["error"], status = 400) =>
   Response.json({ ok: false, error } satisfies Answer, { status });
@@ -57,12 +53,10 @@ export async function POST(request: Request) {
   }
 
   const buyerType = body.buyerType === "business" || body.buyerType === "consumer" ? body.buyerType : null;
-  const country = typeof body.country === "string" ? body.country.toUpperCase() : "";
   const name = (body.name ?? "").trim().slice(0, 120);
-  const vatNumberRaw = (body.vatNumber ?? "").trim();
   const reservationId = body.reservationId;
 
-  if (!reservationId || !buyerType || country.length !== 2 || !name) return fail("invalid");
+  if (!reservationId || !buyerType || !name) return fail("invalid");
 
   // A consumer who has not ticked the box has not asked for an immediate start,
   // and ticket 03 is clear that the information beside it is the load-bearing
@@ -88,29 +82,8 @@ export async function POST(request: Request) {
     return fail("expired");
   }
 
-  // ⚠️ Synchronously, and before anything is created. A number that fails here
-  // never reaches Stripe, and a number that passes carries its consultation
-  // reference into the order.
-  let viesRequestIdentifier: string | undefined;
-  let viesValid: boolean | null = null;
-  let viesUnavailable = false;
-  if (wantsVatNumber(buyerType, country) && vatNumberRaw) {
-    const result = await checkVatNumber(country, vatNumberRaw);
-    if (result.state === "invalid") return fail("vies-invalid");
-    if (result.state === "valid") {
-      viesValid = true;
-      viesRequestIdentifier = result.requestIdentifier;
-    } else {
-      // Never block an order on a service the site does not run. VAT is charged
-      // and the panel says so in one line (ticket 06).
-      viesUnavailable = true;
-    }
-  }
-
   const rect = reservation.rect;
   const squares = cellCount(rect);
-  const totalCents = priceCentsOf(rect);
-  const vat = vatFor({ buyerType, country, viesValid, totalCents });
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
   const ip =
@@ -157,16 +130,11 @@ export async function POST(request: Request) {
           reservationId,
           rect: `${rect.r},${rect.c},${rect.w},${rect.h}`,
           buyerType,
-          country,
           name,
-          vatNumber: vatNumberRaw ? normaliseVatNumber(country, vatNumberRaw) : "",
-          viesRequestIdentifier: viesRequestIdentifier ?? "",
           withdrawalWaived: String(withdrawalWaived),
           // The words themselves, not a version of them (ticket 06).
           withdrawalText: withdrawalWaived ? WITHDRAWAL_TEXT : "",
           invoiceText: INVOICE_TEXT,
-          vatCase: vat.vatCase,
-          vatRateBps: String(vat.vatRateBps),
           ip,
         },
       },
@@ -192,5 +160,5 @@ export async function POST(request: Request) {
   }
 
   if (!session.url) return fail("unavailable", 502);
-  return Response.json({ ok: true, url: session.url, viesUnavailable } satisfies Answer);
+  return Response.json({ ok: true, url: session.url } satisfies Answer);
 }

@@ -142,7 +142,7 @@ export const wonMail = (input: {
         ]
       : []),
     "",
-    "Your invoice follows.",
+    "Your receipt and invoice come from Stripe, in a separate mail.",
     "",
     "If something is wrong, reply to this message. A person reads it.",
   ].join("\n"),
@@ -195,16 +195,15 @@ const usdExact = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
- * Order confirmed, with the invoice.
+ * Order confirmed.
  *
- * ⚠️ [Ticket 13](../../.scratch/200squares-v1/issues/13-email.md) merged the
- * receipt and the confirmation into **one** mail, and switched Stripe's own
- * receipts off to keep it one: a Stripe receipt is not a VAT invoice, and two
- * documents where the prettier one is invalid is the worst of the three
- * options. So this is the mail a buyer keeps.
+ * ⚠️ Ticket 13 once merged receipt and confirmation into one mail with the
+ * site's own invoice in it. Since ADR 0006 Stripe is the merchant of record and
+ * sends the receipt and the invoice itself, so this mail says where that one
+ * comes from and carries nothing that would contradict it.
  *
- * Three things and no more: what was bought, where the invoice is, and the way
- * back to the artwork. That last link is ticket 06's grant — the Stripe session
+ * Three things and no more: what was bought, where the invoice comes from, and
+ * the way back to the artwork. That last link is ticket 06's grant — the Stripe session
  * id — and it works with no account, because the buyer was never asked to make
  * one.
  */
@@ -212,7 +211,6 @@ export const orderConfirmedMail = (input: {
   what: string;
   squares: number;
   totalCents: number;
-  invoiceUrl: string;
   artworkUrl: string;
   /** Set for a consumer only. ⚠️ Art. 6:230m lid 1 sub h — see below. */
   withdrawUrl?: string;
@@ -220,9 +218,9 @@ export const orderConfirmedMail = (input: {
   subject: "Your squares on 200 squares",
   text: [
     `You bought ${input.what} — ${input.squares} ${input.squares === 1 ? "square" : "squares"} on 200squares.com.`,
-    `You paid ${usdExact(input.totalCents)}.`,
+    `You paid ${usdExact(input.totalCents)}, tax included.`,
     "",
-    `Your invoice: ${input.invoiceUrl}`,
+    "Your receipt and invoice come from Stripe, in a separate mail.",
     "",
     "Put your picture and your link on the square here:",
     input.artworkUrl,
@@ -244,28 +242,6 @@ export const orderConfirmedMail = (input: {
           input.withdrawUrl,
         ]
       : []),
-    "",
-    "If something is wrong, reply to this message. A person reads it.",
-  ].join("\n"),
-});
-
-/**
- * The banner's half of the same mail.
- *
- * The winner has already had `wonMail`, which said the day was theirs and
- * whether their image was up. That one ends *your invoice follows*; this is it,
- * and it says nothing the other one already said.
- */
-export const bannerInvoiceMail = (input: {
-  date: string;
-  totalCents: number;
-  invoiceUrl: string;
-}) => ({
-  subject: `Your invoice for the 200 squares banner on ${input.date}`,
-  text: [
-    `The banner on ${input.date} cost ${usdExact(input.totalCents)}.`,
-    "",
-    `Your invoice: ${input.invoiceUrl}`,
     "",
     "If something is wrong, reply to this message. A person reads it.",
   ].join("\n"),

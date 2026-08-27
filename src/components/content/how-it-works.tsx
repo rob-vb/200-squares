@@ -58,6 +58,10 @@ const FAQ: [string, string][] = [
     "If you bought as a private person, yes: you have 14 days from the day you buy, and there is a withdraw button on your thank-you page and under your order in My squares. A business buyer has no right to cancel, and this site does not offer one. The banner works the same way, except that a banner day is over at 00:00 UTC and the right ends with it.",
   ],
   [
+    "Do I get an invoice? What about VAT?",
+    "Payment goes through Stripe, and Stripe emails you the receipt and the invoice. The price includes tax. Stripe works out the tax for your country and shows it before you pay.",
+  ],
+  [
     "Can I buy a square somebody already owns?",
     "No. Every square the site still has is on the board, marked with its number. What is taken is taken.",
   ],
@@ -75,8 +79,8 @@ export function HowItWorks() {
 
         <Section title="What you get">
           <P>
-            One square is ${PRICE_PER_SQUARE}. You pay once. There is no subscription and no
-            renewal.
+            One square is ${PRICE_PER_SQUARE}, tax included. You pay once. There is no
+            subscription and no renewal.
           </P>
           <P>
             Your square is permanent. It does not expire, and nobody takes it back, rents it out

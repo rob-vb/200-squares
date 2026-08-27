@@ -72,7 +72,7 @@ await page.screenshot({ path: `${out}-1-panel.png` });
 
 await page.getByRole("button", { name: BUYER, exact: true }).first().click();
 await page.locator("select").first().selectOption("NL");
-await page.getByPlaceholder("As it goes on the invoice").first().fill("Test Koper");
+await page.getByPlaceholder("Your name").first().fill("Test Koper");
 // ⚠️ A business sees no withdrawal tick box, and that is the point: the right is
 // a consumer's. So the box is checked where there is one and skipped where there
 // is not, rather than being waited for.

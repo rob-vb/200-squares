@@ -23,21 +23,18 @@ import Stripe from "stripe";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
 import { BANNER_WITHDRAWAL_TEXT, INVOICE_TEXT } from "@/lib/checkout/consent";
-import { vatFor, wantsVatNumber, type BuyerType } from "@/lib/checkout/vat";
-import { checkVatNumber, normaliseVatNumber } from "@/lib/checkout/vies";
+import type { BuyerType } from "@/lib/checkout/buyer";
 
 type Body = {
   bidId?: string;
   buyerType?: BuyerType;
-  country?: string;
   name?: string;
-  vatNumber?: string;
   withdrawalWaived?: boolean;
 };
 
 type Answer =
-  | { ok: true; url: string; viesUnavailable?: boolean }
-  | { ok: false; error: "expired" | "vies-invalid" | "invalid" | "conflict" | "unavailable" };
+  | { ok: true; url: string }
+  | { ok: false; error: "expired" | "invalid" | "conflict" | "unavailable" };
 
 const fail = (error: Extract<Answer, { ok: false }>["error"], status = 400) =>
   Response.json({ ok: false, error } satisfies Answer, { status });
@@ -55,12 +52,10 @@ export async function POST(request: Request) {
   }
 
   const buyerType = body.buyerType === "business" || body.buyerType === "consumer" ? body.buyerType : null;
-  const country = typeof body.country === "string" ? body.country.toUpperCase() : "";
   const name = (body.name ?? "").trim().slice(0, 120);
-  const vatNumberRaw = (body.vatNumber ?? "").trim();
   const bidId = body.bidId;
 
-  if (!bidId || !buyerType || country.length !== 2 || !name) return fail("invalid");
+  if (!bidId || !buyerType || !name) return fail("invalid");
 
   // A consumer who has not ticked the box has not asked for the day to start at
   // 00:00. Unlike a square's box this one is a real waiver, because a banner day
@@ -85,25 +80,7 @@ export async function POST(request: Request) {
     return fail("expired");
   }
 
-  // Synchronously, and before anything is created. A number that fails here
-  // never reaches Stripe, and a number that passes carries its consultation
-  // reference into the order the close will write.
-  let viesRequestIdentifier: string | undefined;
-  let viesValid: boolean | null = null;
-  let viesUnavailable = false;
-  if (wantsVatNumber(buyerType, country) && vatNumberRaw) {
-    const result = await checkVatNumber(country, vatNumberRaw);
-    if (result.state === "invalid") return fail("vies-invalid");
-    if (result.state === "valid") {
-      viesValid = true;
-      viesRequestIdentifier = result.requestIdentifier;
-    } else {
-      viesUnavailable = true;
-    }
-  }
-
   const totalCents = bid.amountCents;
-  const vat = vatFor({ buyerType, country, viesValid, totalCents });
   const dollars = Math.round(totalCents / 100).toLocaleString("en-US");
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
@@ -161,16 +138,11 @@ export async function POST(request: Request) {
           bidId,
           date: bid.date,
           buyerType,
-          country,
           name,
-          vatNumber: vatNumberRaw ? normaliseVatNumber(country, vatNumberRaw) : "",
-          viesRequestIdentifier: viesRequestIdentifier ?? "",
           withdrawalWaived: String(withdrawalWaived),
           // The words themselves, not a version of them (ticket 06).
           withdrawalText: withdrawalWaived ? BANNER_WITHDRAWAL_TEXT : "",
           invoiceText: INVOICE_TEXT,
-          vatCase: vat.vatCase,
-          vatRateBps: String(vat.vatRateBps),
           ip,
         },
       },
@@ -199,5 +171,5 @@ export async function POST(request: Request) {
   }
 
   if (!session.url) return fail("unavailable", 502);
-  return Response.json({ ok: true, url: session.url, viesUnavailable } satisfies Answer);
+  return Response.json({ ok: true, url: session.url } satisfies Answer);
 }

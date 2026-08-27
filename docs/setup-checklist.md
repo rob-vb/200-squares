@@ -65,12 +65,14 @@ The endpoint exists — [ticket 16](../.scratch/200squares-v1/issues/16-build-ch
 built it. It answers 400 to anything without a valid signature, and 200 to every event
 type it does not handle, because a non-2xx makes Stripe retry.
 
-## 4. Stripe: turn its own receipts off
+## 4. Stripe: Managed Payments on, and its receipts on
 
-Stripe → Settings → Customer emails. **Off**, in test mode and in live mode.
+Stripe → Settings → Managed Payments: **enabled**, terms accepted
+([ADR 0006](adr/0006-stripe-is-the-merchant-of-record.md)). Stripe is the merchant of
+record and sends the receipt and the invoice itself, from Link. Stripe → Settings →
+Customer emails may stay on; under Managed Payments the Link mails go out regardless.
 
-The site issues the invoice ([ticket 17](../.scratch/200squares-v1/issues/17-invoice-document.md)).
-A Stripe receipt is not a VAT invoice.
+The site issues no invoice since 2026-08-27. Ticket 17's design is history.
 
 ## 5. Turnstile: add the staging hostname
 
@@ -92,25 +94,17 @@ Vercel → **200-squares** → Settings → Environment Variables. Both on **Pre
 ⚠️ Vercel refuses a `NEXT_PUBLIC_` variable with secret visibility. Pick the non-sensitive
 option or the build fails.
 
-## 7. Five more on Convex dev
+## 7. One more on Convex dev
 
-The invoice and the admin page cannot run without these
-([tickets 23](../.scratch/200squares-v1/issues/23-build-invoice.md) and
-[24](../.scratch/200squares-v1/issues/24-build-removal.md)).
+The admin page cannot run without this
+([ticket 24](../.scratch/200squares-v1/issues/24-build-removal.md)).
 
 ```sh
-npx convex env set BUSINESS_NAME "..."
-npx convex env set BUSINESS_ADDRESS "..."
-npx convex env set BUSINESS_KVK ...
-npx convex env set BUSINESS_VAT_ID NL...B..
 npx convex env set ADMIN_EMAILS you@example.com
 ```
 
-⚠️ **Your real values, and nobody else may put them in.** The four `BUSINESS_` ones are
-printed on a legal document and frozen into it at the moment it is issued, so a wrong VAT
-number is a real problem and not a typo. An invoice issued before they are set keeps its
-number and its token, and `finish unwritten invoices` renders the document the night after
-you set them.
+The four `BUSINESS_*` variables that used to sit beside it left with
+[ADR 0006](adr/0006-stripe-is-the-merchant-of-record.md): nothing reads them any more.
 
 ⚠️ **`ADMIN_EMAILS` unset admits nobody**, which is the safe way round: `/admin` renders
 *that is not your page* for everybody, including you.
@@ -118,9 +112,8 @@ you set them.
 ## 8. Two rows to look at, once
 
 Nothing to set. After a test payment on staging, check that the mail arrived at a real
-inbox and that the invoice link in it opens — [ticket 13](../.scratch/200squares-v1/issues/13-email.md)
-cannot be verified any other way, and the invoice is the one document on this site that
-the law reads.
+inbox, and that Stripe's own receipt and invoice arrived beside it
+([ADR 0006](adr/0006-stripe-is-the-merchant-of-record.md)).
 
 ---
 
@@ -225,7 +218,6 @@ yet.
    | `CONVEX_DEPLOY_KEY` | Convex → **energized-deer-345** → Settings → Deploy keys |
    | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the **real** Turnstile site key — non-sensitive |
    | `STRIPE_SECRET_KEY` | `sk_live_…` |
-   | `BUSINESS_VAT_ID` | ⚠️ the eenmanszaak's own BTW-id, e.g. `NL…B01` — needed **here**, not only on Convex: VIES returns the `requestIdentifier` only to a caller that identifies itself, and that reference is the art. 18(1)(a) proof. Without it the check works and nothing is kept. |
    | `PURGE_SECRET` | ⚠️ a **new** value, `openssl rand -base64 32` — not the preview one. It is the whole guard on `/api/purge`, and the same string goes on Convex prod in step 5. Sensitive. |
 
 5. **Convex prod variables**:
@@ -246,7 +238,7 @@ yet.
    the same on every deployment, so copy them across rather than retyping:
 
    ```sh
-   for v in ADMIN_EMAILS BUSINESS_NAME BUSINESS_ADDRESS BUSINESS_KVK BUSINESS_VAT_ID; do
+   for v in ADMIN_EMAILS; do
      npx convex env set --prod "$v" "$(npx convex env get "$v")"
    done
    ```
@@ -255,10 +247,6 @@ yet.
      admits nobody, so prod would have **no admin page at all** — no removal, no strip, no
      *the bidder withdrew*. It is also where the dev's own copy of every mail goes
      (`convex/mail.ts`), falling back to `hello@200squares.com`.
-   - **`BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_KVK`, `BUSINESS_VAT_ID`** are the
-     seller block on the invoice. `businessFromEnv()` **throws** rather than printing a
-     placeholder on a legal document (ticket 29), so a prod deployment without them takes
-     the money and cannot issue the invoice.
 
    ⚠️ **`SEED_ENABLED` is not on this list and must never be.** It is what makes
    `seed:*`, `auth:devSignInLink` and `auction:closeDue`'s helpers refuse.
@@ -327,37 +315,13 @@ yet.
      [27](../.scratch/200squares-v1/issues/27-label-and-sellout.md)).
    - then do the live-mode purchase from step 7, in a real browser.
 
-   ⚠️ **This step comes before the ECB rate, not after** — the list had them the other way
-   round until 2026-08-27. `energized-deer-345` was checked that day and holds **zero
-   functions**: production has never deployed the Convex backend, because production serves
-   `main` and `main` predates it. `invoices:pullFxRate` cannot be run before this merge,
-   because until the production build runs `npx convex deploy` the function does not exist.
-   The same goes for the live Stripe webhook: it points at a `/stripe/webhook` route that
-   only appears here.
+   ⚠️ `energized-deer-345` was checked on 2026-08-27 and held **zero functions**: production
+   had never deployed the Convex backend, because production serves `main` and `main`
+   predated it. The live Stripe webhook points at a `/stripe/webhook` route that only
+   appears with this merge.
 
-9. **Pull the ECB rate, once, by hand**, before the first sale can happen:
-
-   ```sh
-   npx convex run --prod invoices:pullFxRate
-   ```
-
-   The cron that fills the rate runs at **17:00 UTC daily**, so on a deployment whose cron
-   has never fired the `fx` cache is empty. `invoices.ts` then issues the invoice anyway and
-   leaves the euro line off — deliberately, because refusing to invoice a paid order is the
-   worse failure. But [ticket 17](../.scratch/200squares-v1/issues/17-invoice-document.md)'s
-   **write-once** rule means that invoice is never repaired.
-
-   ⚠️ On prod the invoice with no euro line would be **the first real sale**, and the euro
-   amount is what art. 35a lid 4 Wet OB asks for. One command before the doors open, and it
-   cannot be done afterwards.
-   ([Ticket 28](../.scratch/200squares-v1/issues/28-prove-the-mail.md) watched it happen on
-   staging: invoice `2026-0010` has no euro amount and now never will.)
-
-   ⚠️ **After the merge, not before.** See step 8: the function does not exist on prod until
-   the production build has deployed it.
-
-
----
+9. **The ECB rate is history.** Until ADR 0006 this step pulled the rate the site's own
+   invoice needed. Stripe issues the invoice now; there is nothing to pull.
 
 ## Already done
 

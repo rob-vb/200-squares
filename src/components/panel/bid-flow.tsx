@@ -19,7 +19,7 @@
 // cannot be collected (ticket 07). The three sentences beside the box say so, and
 // they have to stay true when they are read at 23:59.
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
@@ -49,10 +49,9 @@ import {
   BID_TRUTHS,
   INVOICE_TEXT,
 } from "@/lib/checkout/consent";
-import { countryOptions } from "@/lib/checkout/countries";
 import { convexSite } from "@/lib/checkout/hold";
 import { useTurnstile } from "@/lib/checkout/turnstile";
-import { NL_VAT_BPS, vatFor, wantsVatNumber, type BuyerType } from "@/lib/checkout/vat";
+import type { BuyerType } from "@/lib/checkout/buyer";
 
 const money = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -96,41 +95,26 @@ export function BidFlow() {
   }
 
   const [buyerType, setBuyerType] = useState<BuyerType | null>(null);
-  const [country, setCountry] = useState("");
   const [name, setName] = useState("");
-  const [vatNumber, setVatNumber] = useState("");
   const [waived, setWaived] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [vatError, setVatError] = useState<string | null>(null);
 
   // Same shape as the floor above: the remembered answers arrive after the first
   // paint, so they are folded in during render rather than in an effect. Only
   // once, and never over something the bidder has already typed.
   const [filledFrom, setFilledFrom] = useState<string | null>(null);
   const rememberedKey = remembered ? JSON.stringify(remembered) : null;
-  if (rememberedKey && filledFrom !== rememberedKey && !buyerType && !country && !name) {
+  if (rememberedKey && filledFrom !== rememberedKey && !buyerType && !name) {
     setFilledFrom(rememberedKey);
     setBuyerType(remembered!.buyerType);
-    setCountry(remembered!.country);
     setName(remembered!.name);
-    setVatNumber(remembered!.vatNumber);
   }
 
   const { box, getToken } = useTurnstile(true);
-  const countries = useMemo(() => countryOptions(), []);
 
   const value = Math.round(Number(amount));
   const totalCents = Number.isFinite(value) ? value * 100 : 0;
-  const askVat = wantsVatNumber(buyerType, country);
-  const vat = vatFor({
-    buyerType: buyerType ?? "consumer",
-    country: country || "NL",
-    // The panel can only guess. The real answer comes from VIES on the server,
-    // and it is the server's answer that is frozen into the order.
-    viesValid: askVat && vatNumber.trim() ? true : null,
-    totalCents,
-  });
 
   // ⚠️ A refusal has to land where the bidder is looking. The amount error is at
   // the top of the panel and *PLACE BID — OBLIGES YOU TO PAY IF YOU WIN* is at the
@@ -155,7 +139,6 @@ export function BidFlow() {
   const place = async () => {
     setError(null);
     setNotice(null);
-    setVatError(null);
     if (!Number.isFinite(value) || value < minNextBid) {
       fail(`The next bid is at least $${minNextBid.toLocaleString("en-US")}.`);
       return;
@@ -200,17 +183,13 @@ export function BidFlow() {
         body: JSON.stringify({
           bidId: opened.bidId,
           buyerType,
-          country,
           name,
-          vatNumber,
           withdrawalWaived: waived,
         }),
       }).then((r) => r.json());
 
       if (!answer?.ok) {
-        if (answer?.error === "vies-invalid") {
-          setVatError("VIES does not know that number.");
-        } else if (answer?.error === "expired") {
+        if (answer?.error === "expired") {
           setNotice("That bid is no longer open. Try again.");
         } else {
           setNotice("The bid could not be started. Nothing is held on your card.");
@@ -225,7 +204,7 @@ export function BidFlow() {
     }
   };
 
-  const ready = Boolean(buyerType && country && name.trim() && (buyerType === "business" || waived));
+  const ready = Boolean(buyerType && name.trim() && (buyerType === "business" || waived));
 
   return (
     <>
@@ -307,72 +286,21 @@ export function BidFlow() {
             </div>
           </FieldBox>
 
-          <Field label="Country">
-            <select
-              className={inputClass}
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-            >
-              <option value="">Choose your country</option>
-              {countries.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
           <Field label={buyerType === "business" ? "Legal name" : "Full name"}>
             <input
               className={inputClass}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="As it goes on the invoice"
+              placeholder={buyerType === "business" ? "Company name" : "Your name"}
               autoComplete="name"
             />
           </Field>
 
-          {askVat ? (
-            <Field
-              label="EU VAT number"
-              error={vatError}
-              hint="Leave it empty if you have none. We then charge Dutch VAT."
-            >
-              <input
-                className={inputClass}
-                value={vatNumber}
-                onChange={(e) => {
-                  setVatNumber(e.target.value);
-                  setVatError(null);
-                }}
-                placeholder="IE6388047V"
-                autoComplete="off"
-              />
-            </Field>
-          ) : null}
-
-          {vatError ? (
-            <SecondaryButton
-              onClick={() => {
-                setBuyerType("consumer");
-                setVatNumber("");
-                setVatError(null);
-              }}
-            >
-              Continue as a private person
-            </SecondaryButton>
-          ) : null}
-
-          {/* Not before both fields are answered: the VAT case is decided by
-              buyer type and country, and a line that guesses at it is a price
-              that changes while you look at it. */}
-          {buyerType && country && totalCents > 0 ? (
+          {/* Tax is Stripe's: inside the price, and shown per country on
+              Stripe's page (ADR 0006). */}
+          {totalCents > 0 ? (
             <p className="text-faint text-[12px] leading-snug">
-              {vat.vatCase === "nl21"
-                ? `${money(totalCents)} includes ${NL_VAT_BPS / 100}% Dutch VAT (${money(vat.vatCents)}).`
-                : vat.vatCase === "reverse"
-                  ? `${money(totalCents)}, VAT reverse-charged. We check the number before you bid.`
-                  : `${money(totalCents)}. No VAT is charged outside the EU.`}
+              {money(totalCents)}, tax included. Stripe shows the tax for your country before you bid.
             </p>
           ) : null}
 

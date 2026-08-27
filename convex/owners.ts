@@ -165,15 +165,10 @@ export const mine = query({
         .query("invoices")
         .withIndex("by_order", (q) => q.eq("orderId", order._id))
         .unique();
-      // ⚠️ **An invoice that is still being written no longer hides the row.**
-      // The withdrawal function of art. 6:230oa lid 1 hangs under this row
-      // (ticket 43), and it may not depend on a bookkeeping document: a
-      // deployment that cannot render invoices would otherwise have no
-      // withdrawal button in My squares at all. So the row appears when there is
-      // either a document to link to or a function to offer, and the number is
-      // empty in the second case.
+      // Every order that stands. The number and the link belong only to an
+      // invoice the site itself issued before ADR 0006; the withdrawal function
+      // of art. 6:230oa lid 1 hangs under the row either way (ticket 43).
       const withdraw = await liveWithdrawUrl(ctx, order);
-      if (!invoice?.storageId && !withdraw) continue;
       invoices.push({
         number: invoice?.storageId ? invoice.number : "",
         issuedAt: invoice?.issuedAt ?? order.createdAt,
@@ -252,9 +247,7 @@ export const lastDeclared = query({
     v.null(),
     v.object({
       buyerType: v.union(v.literal("business"), v.literal("consumer")),
-      country: v.string(),
       name: v.string(),
-      vatNumber: v.string(),
     }),
   ),
   handler: async (ctx) => {
@@ -268,9 +261,7 @@ export const lastDeclared = query({
     if (!last) return null;
     return {
       buyerType: last.buyerType,
-      country: last.country,
       name: last.name,
-      vatNumber: last.vatNumber ?? "",
     };
   },
 });

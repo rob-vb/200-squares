@@ -84,7 +84,7 @@ export const WITHDRAWAL_INFO =
  * a form nobody reads.
  */
 export const INVOICE_TEXT =
-  "We email your invoice. It also stays available at a private link.";
+  "Payment goes through Stripe. Stripe emails you the receipt and the invoice.";
 
 /** What the order button says. ⚠️ Under *Fuhrmann-2* only these words count. */
 export const ORDER_BUTTON = "BUY NOW";

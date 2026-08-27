@@ -15,12 +15,10 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { normalise } from "./auth";
 import { rect as rectValidator } from "./schema";
 import { cellCount, overlaps } from "./lib/board";
-import { vatInsideCents } from "./lib/vat";
 import { mintToken } from "./lib/token";
 import { liveWithdrawUrl } from "./lib/withdrawal";
 
 const buyerType = v.union(v.literal("business"), v.literal("consumer"));
-const vatCase = v.union(v.literal("nl21"), v.literal("reverse"), v.literal("none"));
 
 /**
  * What the buyer told the site about themselves, on the site, before they were
@@ -31,15 +29,10 @@ const declared = v.object({
   reservationId: v.string(),
   rect: rectValidator,
   buyerType,
-  country: v.string(),
   name: v.string(),
-  vatNumber: v.optional(v.string()),
-  viesRequestIdentifier: v.optional(v.string()),
   withdrawalWaived: v.boolean(),
   withdrawalText: v.string(),
   invoiceText: v.string(),
-  vatCase,
-  vatRateBps: v.number(),
   ip: v.string(),
 });
 
@@ -58,10 +51,9 @@ const declared = v.object({
  *                hold does not beat a completed payment; whoever pays first
  *                wins, and the one who paid second gets every cent back.
  *
- * ⚠️ The money is recomputed here against `amountTotalCents` — what Stripe
- * actually took — rather than trusted from metadata. The VAT *case* was decided
- * before the session existed and travels with it; the arithmetic is redone, so
- * the invoice can never disagree with the card statement.
+ * ⚠️ The money is `amountTotalCents` — what Stripe actually took, in USD — and
+ * nothing is computed from it: under Managed Payments (ADR 0006) Stripe is the
+ * merchant of record and the tax is its arithmetic, not the site's.
  */
 export const fulfil = internalMutation({
   args: {
@@ -136,7 +128,6 @@ export const fulfil = internalMutation({
     }
 
     const now = Date.now();
-    const vatCents = vatInsideCents(args.amountTotalCents, d.vatRateBps);
     const orderId = await ctx.db.insert("orders", {
       stripeSessionId: args.stripeSessionId,
       paymentIntentId: args.paymentIntentId,
@@ -144,13 +135,10 @@ export const fulfil = internalMutation({
       ownerId,
       rect,
       buyerType: d.buyerType,
-      country: d.country,
-      stripeCountry: args.stripeCountry || undefined,
-      countryMismatch: Boolean(args.stripeCountry) && args.stripeCountry !== d.country,
+      // The billing address Stripe collected is the only country there is now.
+      country: args.stripeCountry,
       name: d.name,
       address: args.address,
-      vatNumber: d.vatNumber,
-      viesRequestIdentifier: d.viesRequestIdentifier,
       withdrawalWaived: d.withdrawalWaived,
       withdrawalText: d.withdrawalText,
       // ⚠️ The withdrawal function's address, minted here because art. 6:230oa
@@ -166,10 +154,6 @@ export const fulfil = internalMutation({
       invoiceText: d.invoiceText,
       ip: d.ip,
       totalCents: args.amountTotalCents,
-      vatCents,
-      vatRateBps: d.vatRateBps,
-      vatCase: d.vatCase,
-      pricing: "inclusive",
       refundedAt: clash ? now : undefined,
       refundReason: clash ? "The squares were sold to somebody else first." : undefined,
       createdAt: now,
@@ -241,8 +225,6 @@ export const orderBySession = query({
       rect: rectValidator,
       squares: v.number(),
       totalCents: v.number(),
-      vatCents: v.number(),
-      vatCase,
       refunded: v.boolean(),
       refundReason: v.union(v.string(), v.null()),
       /** The public company name, once the buyer has supplied it. */
@@ -282,8 +264,6 @@ export const orderBySession = query({
       rect: order.rect,
       squares: cellCount(order.rect),
       totalCents: order.totalCents,
-      vatCents: order.vatCents,
-      vatCase: order.vatCase,
       refunded: Boolean(order.refundedAt),
       refundReason: order.refundReason ?? null,
       companyName: owner?.name ?? "",
