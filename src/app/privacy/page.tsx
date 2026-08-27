@@ -29,6 +29,23 @@ export default function Page() {
             Your email address is not public. It is used for the receipt, for a message about your own
             square or your own bid, and for nothing else. There is no newsletter.
           </P>
+          <P>
+            It is also your key. There is no password here, so the address you paid with is what
+            signs you in and what proves a square is yours. That is why it is kept for as long as
+            the square is.
+          </P>
+          <P>
+            An order keeps more than that, because a sale has to be provable years later: the
+            invoice name and address, the exact words of the boxes you ticked, and the internet
+            address your browser came from. Tax law asks for ten years, so ten years is what it
+            gets.
+          </P>
+          <P>
+            While you are paying, and while a bid is being placed, the site keeps a scrambled
+            one-way copy of your internet address for fifteen minutes. It is never read back, only
+            compared with another one, and it is how a single visitor is stopped from holding the
+            whole board at once. After fifteen minutes it is gone.
+          </P>
         </Section>
 
         <Section title="What it counts">
@@ -45,6 +62,18 @@ export default function Page() {
             An owner sees the count of what they hold, and nobody else does. There is no history
             and no graph, because no time is written down to build one from. One public number adds
             every click on the site together; it names no owner and no square.
+          </P>
+          <P>
+            A count is a floor and not a census. It is counted in the visitor&rsquo;s own browser,
+            and nothing audits it: a browser that blocks scripts leaves for the same website
+            without being counted. Read the number as the least that happened. A zero stays a
+            zero, bare.
+          </P>
+          <P>
+            None of this contradicts the paragraph above about your email address. An address
+            belongs to an <strong className="font-semibold">owner</strong>, who bought something.
+            The promise about clicks is about a <strong className="font-semibold">visitor</strong>,
+            who did not.
           </P>
         </Section>
 
@@ -63,7 +92,14 @@ export default function Page() {
           <P>
             The payment is handled by a payment provider, which receives what a payment needs and
             keeps your card details away from this site. Hosting runs on Vercel, which keeps ordinary
-            server logs.
+            server logs. Email is sent by Resend, which is given the address it goes to and the
+            message itself.
+          </P>
+          <P>
+            Clicking a block loads a small check from Cloudflare. It is what stops a script from
+            inflating an owner&rsquo;s count, and it is named here because clicking is the one
+            thing on this list you did not set out to do: buying and bidding are deliberate, a
+            click is not.
           </P>
           <P>Nothing is sold, rented or handed on to anybody else.</P>
         </Section>

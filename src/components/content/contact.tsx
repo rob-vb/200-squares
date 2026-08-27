@@ -1,7 +1,7 @@
 // The one place a person is named.
 //
 // Ticket 07 ruled out a form and a mailto: a form that silently discarded a
-// message would be the one place this prototype lies to a visitor. A handle is
+// message would be the one place this site lies to a visitor. A handle is
 // neither — it goes to a real profile and it answers there — so it is a link,
 // and the only outward link on these pages.
 

@@ -90,7 +90,9 @@ One day of banner occupancy: which owner held it, with which artwork and link, a
 
 ## Bid
 
-An **irrevocable** offer on the Banner for tomorrow. Placing the bid is the offer and the close at 00:00 UTC is the acceptance, so no contract exists until the auction closes. A bid cannot be withdrawn. The Banner goes to the highest bid that **can be collected** at the close, which is not always simply the highest.
+An offer on the Banner for tomorrow. Placing the bid is the offer and the close at 00:00 UTC is the acceptance, so no contract exists until the auction closes. An overtaken bid **stays open** until the close, which is what lets the ladder promote it. The Banner goes to the highest bid that **can be collected** at the close, which is not always simply the highest.
+
+⚠️ **Irrevocable against a business, not against a consumer.** The word was flat until ticket 37 read it against the law: a consumer may take an offer back before the close (art. 6:230q lid 1 BW), by email, because a one-press revoke at 23:59 would unwind the ladder. A business bid cannot be withdrawn. This is not the same thing as a Withdrawal, which is about a contract that already exists.
 
 ## Top bid
 

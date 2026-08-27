@@ -31,10 +31,10 @@ The ancestor is the Million Dollar Homepage, which froze and filled with dead li
 
 ## Operating Context
 
-- The product today is a **frontend prototype only**. All data is mocked in the browser. There is no backend, no payment, no accounts, no image storage.
+- The product today is a **working site**, not a prototype. Convex is the backend and the source of truth, Stripe takes real money, Better Auth signs owners in, artwork lives in Convex file storage and is served through 200squares.com, and Resend sends the mail. What is left before launch is the switches: a live Stripe key, a live domain and the firewall rules. The prototype's mocked board is gone — the seed datasets that replaced it are a deployment command (`npx convex run seed:full`) and refuse without `SEED_ENABLED`.
 - Development happens on a VPS with no local browser. Every visual check happens on a Vercel preview URL. Vercel project `200-squares`, scope `robs-projects-52973834`; a branch push produces a public preview URL.
 - Commits must be authored as `hi@robvb.com` or the Vercel deploy is blocked.
-- The effort is planned as a wayfinder map at `.scratch/200squares-frontend/map.md`, with decision tickets in `.scratch/200squares-frontend/issues/`. Product and design decisions are recorded there, one per ticket.
+- The effort is planned as a wayfinder map at `.scratch/200squares-v1/map.md`, with decision tickets in `.scratch/200squares-v1/issues/`. Product and design decisions are recorded there, one per ticket. The design that came before it is the closed map at `.scratch/200squares-frontend/map.md`, whose answers stand.
 - Domain vocabulary lives in `CONTEXT.md`.
 
 ## Capabilities and Constraints
@@ -44,22 +44,21 @@ Confirmed:
 - The canvas is 16 × 14 cells. The banner is a fixed 5 × 5 block in the top-left and is never for sale. 199 squares + 1 banner = 200, which names the product.
 - A square costs $250, flat. Prices are in USD.
 - Squares are bought as a contiguous rectangle, at most 3 wide and 3 high. A block renders as one image; the grid lines inside it disappear.
-- A square carries one of three states: `available`, `pending`, `taken`. A `pending` square is paid for but has no artwork yet, and must never read as empty.
+- A square carries one of four states: `available`, `reserved`, `pending`, `taken`. A `pending` square is paid for but has no artwork yet, and must never read as empty. A `reserved` square is held while a checkout runs and reads to a visitor exactly like a taken one; it is the only state a square leaves without anybody acting. ⚠️ A square can also become `available` **again**, when a consumer withdraws and the block is deleted.
 - The banner auction runs through the day for **tomorrow's** banner and closes **hard** at 00:00 UTC: no extension window, and the minimum raise is $10 over the top bid. Bidding starts at $100. With no winner the banner shows a house ad.
 - Clicking a taken block or the banner opens the owner's website in a new tab.
 - The product UI is English.
 - **Artwork**: the buyer may hand over PNG, JPEG, WebP or GIF, up to 10 MB. The site stores WebP only, at the size the board draws. **Nothing animates** — a GIF keeps its first frame. Any shape is accepted and the site crops to the block, centred, with a drag to reposition; refusing one of nine shapes would be hostile.
+- **Owner links are followed.** A block's anchor carries `noopener noreferrer` and no `nofollow`: the link to their own site is part of what a buyer pays for.
 - **The stack**: Better Auth for accounts, Stripe for payment, Convex file storage for images, served through 200squares.com and never straight from Convex.
 
 Undecided, and not to be invented:
 
-- **How long a square is held** — forever, or a term. Ticket 07 settles the terms copy.
-- **Whether owner links are followed or nofollowed.** Buyers say they want a link to their site, so this is a product promise, not a technical detail.
-- What happens when squares get scarce, and what the last squares cost.
+- **What happens when squares get scarce, and what the last squares cost.**
 
-**A square cannot be sold on. That is V1.1.** V1.0 launches without resale: a square is bought once and stays with its owner, and the site offers no way to hand it back. The prototype had resale and it was taken out again on 2026-08-25 — a smaller build, and scarcity gets to work before a second-hand market softens it. The vocabulary is kept in `CONTEXT.md` under **Not in V1.0**, and the research that priced it is ticket 01 on the V1.0 map.
+**A square cannot be sold on. That is V1.1.** V1.0 launches without resale: a square is bought once and stays with its owner, and the site does not buy one back. ⚠️ **The site's promise is not the law.** A consumer has fourteen days to withdraw, with a button for it (ADR 0005, ticket 42), and a withdrawn square's block is deleted once the refund is paid — so a rectangle can come back onto the market after being sold. A business buyer has no such right. The prototype had resale and it was taken out again on 2026-08-25 — a smaller build, and scarcity gets to work before a second-hand market softens it. The vocabulary is kept in `CONTEXT.md` under **Not in V1.0**, and the research that priced it is ticket 01 on the V1.0 map.
 
-The one place the plan appears to a visitor is a small line in the top bar, which promises resale *when all 199 squares are sold* and nowhere else. `/terms` states today only: no resale, no way back.
+⚠️ **No part of the plan appears to a visitor.** Ticket 26 took the top bar's *resale when all 199 squares are sold* line out with the rest of the resale surface. `/terms` states only what is true today: no resale, and the site does not buy a square back.
 
 Out of scope for V1.0: resale of any kind, a price that moves with scarcity, other currencies, other boards, an API and a mobile app.
 
@@ -75,7 +74,7 @@ Out of scope for V1.0: resale of any kind, a price that moves with scarcity, oth
 There is none, and that is a hard constraint.
 
 - No visitors, no traffic numbers, no sold squares, no past banner winners, no customers, no press.
-- The prototype's mock datasets are mock. They must never be presented as real sales or real winners.
+- The seed datasets are seed data. They must never be presented as real sales or real winners, and `SEED_ENABLED` is what keeps them off a production deployment.
 - Future work must not fabricate visitor statistics, testimonials, case studies or logos. Ticket 07 states this explicitly: the copy has to sell without proof.
 - What does exist: the design direction and its state sheet, on throwaway preview branches `proto-01` and `proto-05`.
 

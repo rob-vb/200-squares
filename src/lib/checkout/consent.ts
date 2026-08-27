@@ -104,9 +104,17 @@ export const BANNER_WITHDRAWAL_TEXT =
  * the point of building the button: nobody has to read anything now. The banner
  * comes off the board the instant the function is pressed, and art. 6:230s lid 4
  * prices the refund from that moment either way.
+ *
+ * ⚠️ **"Counted from the close", not "from the day you win"** — ticket 40,
+ * 2026-08-27, on research 37 §7. The two read as the same instant and are not
+ * the same claim: the period runs from the conclusion of the contract, and the
+ * contract is concluded when the bid is accepted at 00:00 UTC. Research 37 made
+ * that re-word conditional on `/terms` saying so out loud, and `/terms` now
+ * does — *a bid is an offer, accepted at 00:00 UTC*. One may not be changed
+ * back without the other.
  */
 export const BANNER_WITHDRAWAL_INFO =
-  "You have 14 days to cancel, counted from the day you win — but a banner day is over at " +
+  "You have 14 days to cancel, counted from the close — but a banner day is over at " +
   "00:00 UTC, and the right ends with it. " +
   "To cancel, press *withdraw from contract here* under your order in My squares. " +
   "Your banner comes off the board at once, and you pay for the hours that had run.";

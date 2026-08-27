@@ -39,7 +39,11 @@ const FAQ: [string, string][] = [
   ],
   [
     "Do I get traffic numbers?",
-    "Yes. Every click on your block is counted, and the number sits on your row in My squares. It counts clicks, not people, so read it as rough. Your own tracking parameters tell you what happens after the click.",
+    "Yes. Every click on your block is counted, and the number sits on your row in My squares. It counts clicks and not people, and it is counted in the visitor's browser, so read it as a floor: the least that happened, not an audited total. A zero is a bare zero. Your own tracking parameters tell you what happens after the click.",
+  ],
+  [
+    "What can I upload?",
+    "PNG, JPEG, WebP or GIF, up to 10 MB. One image covers the whole block: the site crops it to your rectangle and you drag to place it, so any shape is fine. Nothing animates — a GIF keeps its first frame. You can change it whenever you like.",
   ],
   [
     `Why ${MAX_BLOCK} × ${MAX_BLOCK} at most?`,
@@ -47,7 +51,11 @@ const FAQ: [string, string][] = [
   ],
   [
     "Can I sell my square to somebody else?",
-    "Not through this site. A square cannot be sold on here, and it cannot be handed back. What you buy is yours to keep.",
+    "Not through this site. A square cannot be sold on here, and the site will not buy one back. What you buy is yours to keep.",
+  ],
+  [
+    "Can I cancel after I have paid?",
+    "If you bought as a private person, yes: you have 14 days from the day you buy, and there is a withdraw button on your thank-you page and under your order in My squares. A business buyer has no right to cancel, and this site does not offer one. The banner works the same way, except that a banner day is over at 00:00 UTC and the right ends with it.",
   ],
   [
     "Can I buy a square somebody already owns?",
@@ -143,7 +151,7 @@ export function HowItWorks() {
 
         <Section title="Questions?">
           {/* Plain text on purpose. A form that silently discarded a message would
-              be the one place this prototype lies to a real visitor. */}
+              be the one place this site lies to a real visitor. */}
           <Contact />
         </Section>
       </main>

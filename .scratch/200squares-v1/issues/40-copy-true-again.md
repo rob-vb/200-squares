@@ -1,7 +1,7 @@
 # 40 — Making the copy true again
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 38, 43 (both resolved — 43 on 2026-08-27, so this is now on the frontier)
 Parent: ../map.md
 
