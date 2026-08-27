@@ -16,7 +16,14 @@
 // squares, never a selection of the numbers printed on them. The panel is a
 // sibling of this box, not a child, so its fields stay selectable.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Board } from "./board";
 import { useClickCount, type ClickTarget } from "@/lib/board/clicks";
 import { useCanvasTransform, useWheelZoom, type Pt } from "./transform";
@@ -43,15 +50,20 @@ function tooltipFor(
 ): string | null {
   const cell = board.cells[at.r][at.c];
   if (cell.state === "banner") {
-    return bannerName ? `${bannerName} · today's banner` : "Banner · nobody has bid";
+    return bannerName
+      ? `${bannerName} · today's banner`
+      : "Banner · nobody has bid";
   }
-  if (cell.state === "available") return `${cell.n} · Available · $${PRICE_PER_SQUARE}`;
+  if (cell.state === "available")
+    return `${cell.n} · Available · $${PRICE_PER_SQUARE}`;
   // ⚠️ A reserved square says the same thing a sold one does. The visitor is not
   // told that somebody is at a payment page right now — that is an invitation to
   // wait fifteen minutes, and it is nobody's business but the buyer's.
   if (cell.state === "reserved") return "Taken";
   if (cell.state === "pending") return "Sold · artwork coming";
-  return cell.block ? `${cell.block.ownerName} · Opens ${cell.block.url}` : null;
+  return cell.block
+    ? `${cell.block.ownerName} · Opens ${cell.block.url}`
+    : null;
 }
 
 /**
@@ -110,11 +122,16 @@ export function Canvas() {
   // The side panel lies over the right of this box. The board re-centres into
   // what is left, so the panel arrives beside the board and not on top of it.
   const sidePanel = useMediaQuery(PANEL_MEDIA);
-  const cv = useCanvasTransform(boxRef, sidePanel && panelOpen ? PANEL_WIDTH : 0);
+  const cv = useCanvasTransform(
+    boxRef,
+    sidePanel && panelOpen ? PANEL_WIDTH : 0,
+  );
 
   const [hovered, setHovered] = useState<CellRef | null>(null);
   const [cursor, setCursor] = useState("default");
-  const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(
+    null,
+  );
 
   // ⚠️ Which cells are actually on screen, for the artwork the board draws.
   //
@@ -129,8 +146,8 @@ export function Canvas() {
   const inView = useMemo(() => {
     const span = cv.step * cv.scale;
     if (span <= 0) return null;
-    const c = Math.floor((-cv.t.x) / span) - 1;
-    const r = Math.floor((-cv.t.y) / span) - 1;
+    const c = Math.floor(-cv.t.x / span) - 1;
+    const r = Math.floor(-cv.t.y / span) - 1;
     const w = Math.ceil(cv.viewport.w / span) + 3;
     const h = Math.ceil(cv.viewport.h / span) + 3;
     return { r, c, w, h };
@@ -145,14 +162,43 @@ export function Canvas() {
   // reads it a moment later to decide whether to let the navigation happen.
   const lastPress = useRef<CellRef | null>(null);
   const lastPan = useRef<Pt>({ x: 0, y: 0 });
-  const pinchStart = useRef({ dist: 0, mid: { x: 0, y: 0 }, scale: 1, t: { x: 0, y: 0 } });
+  const pinchStart = useRef({
+    dist: 0,
+    mid: { x: 0, y: 0 },
+    scale: 1,
+    t: { x: 0, y: 0 },
+  });
   const spaceDown = useRef(false);
+  // The hand on the space bar, as the cursor shows it: `grab` while it is held,
+  // `grabbing` while it drags. The panel's fields take spaces of their own, and
+  // a space typed into one is not a request to pan.
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const [panning, setPanning] = useState(false);
+  // Whether this visitor has panned with the mouse before. Once they have, the
+  // hint beside the zoom controls has done its job and stays away.
+  const knowsPan = useSyncExternalStore(
+    subscribeKnowsPan,
+    readKnowsPan,
+    () => true,
+  );
 
   useWheelZoom(boxRef, (factor, p) => cv.zoomBy(factor, p));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Space") spaceDown.current = e.type === "keydown";
+      if (e.code !== "Space") return;
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        el.closest("input, textarea, select, button, a, [contenteditable]")
+      )
+        return;
+      const down = e.type === "keydown";
+      spaceDown.current = down;
+      setSpaceHeld(down);
+      // The board page is one screen, so there is nothing for the space bar to
+      // scroll; without this the browser still tries.
+      if (down) e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKey);
@@ -221,7 +267,8 @@ export function Canvas() {
     lastPress.current = null;
     const p = cv.localPoint(e);
     const first = pointers.current.size === 0;
-    const panning = e.pointerType === "mouse" && (e.button === 1 || spaceDown.current);
+    const panning =
+      e.pointerType === "mouse" && (e.button === 1 || spaceDown.current);
     // ⚠️ **The one press that does not capture the pointer.** A captured pointer
     // sends the click that follows it to this box, and the anchor under the
     // finger never opens — which would undo the whole of ticket 21. Nothing is
@@ -229,7 +276,9 @@ export function Canvas() {
     // anyway while the pointer is over the board, and `onPointerLeave` takes the
     // one case that does not, a button held down all the way off the canvas.
     const onLink =
-      first && !panning && (() => {
+      first &&
+      !panning &&
+      (() => {
         const at = cv.toCell(p);
         return at !== null && linkAt(board, bannerToday, at) !== null;
       })();
@@ -251,6 +300,7 @@ export function Canvas() {
     if (panning) {
       mode.current = "pan";
       lastPan.current = p;
+      setPanning(true);
       return;
     }
 
@@ -280,9 +330,13 @@ export function Canvas() {
 
     if (e.pointerType === "mouse" && mode.current === "idle") {
       const at = cv.toCell(p);
-      setHovered(at && board.cells[at.r][at.c].state === "available" ? at : null);
+      setHovered(
+        at && board.cells[at.r][at.c].state === "available" ? at : null,
+      );
       setCursor(cursorFor(board, at));
-      const text = at ? tooltipFor(board, bannerToday?.ownerName ?? null, at) : null;
+      const text = at
+        ? tooltipFor(board, bannerToday?.ownerName ?? null, at)
+        : null;
       setTip(text ? { x: p.x, y: p.y, text } : null);
     }
 
@@ -296,7 +350,10 @@ export function Canvas() {
       if (start.dist === 0) return;
       // Pinch is absolute, recomputed from the gesture-start snapshot every move.
       // Incremental pinch drifts.
-      const next = Math.min(MAX_SCALE, Math.max(1, (start.scale * dist) / start.dist));
+      const next = Math.min(
+        MAX_SCALE,
+        Math.max(1, (start.scale * dist) / start.dist),
+      );
       const cx = (start.mid.x - start.t.x) / start.scale;
       const cy = (start.mid.y - start.t.y) / start.scale;
       cv.setTransform(next, mid.x - cx * next, mid.y - cy * next);
@@ -304,6 +361,7 @@ export function Canvas() {
     }
     if (mode.current === "pan") {
       cv.panBy(p.x - prev.x, p.y - prev.y);
+      if (!knowsPan) learnPan();
       return;
     }
     if (mode.current === "select" && anchor.current) {
@@ -315,20 +373,23 @@ export function Canvas() {
     if (mode.current === "press" && pressed.current) {
       const at = cv.toCell(p);
       // The finger wandered off the block, so it is no longer a click on it.
-      if (!at || at.r !== pressed.current.r || at.c !== pressed.current.c) pressed.current = null;
+      if (!at || at.r !== pressed.current.r || at.c !== pressed.current.c)
+        pressed.current = null;
     }
   };
 
   const endPointer = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
     setDragging(false);
+    setPanning(false);
     // ⚠️ Read by the click that is about to follow this `pointerup`, and by
     // nothing else. The anchor navigates on its own; what this says is whether
     // the gesture that ended here was a click on it at all.
     lastPress.current = mode.current === "press" ? pressed.current : null;
     if (mode.current === "press" && pressed.current) follow(pressed.current);
     pressed.current = null;
-    if (pointers.current.size < 2 && mode.current === "pinch") mode.current = "idle";
+    if (pointers.current.size < 2 && mode.current === "pinch")
+      mode.current = "idle";
     if (pointers.current.size === 0) mode.current = "idle";
   };
 
@@ -340,7 +401,8 @@ export function Canvas() {
   // ⚠️ A hold makes the visitor's own squares unavailable on the live board, so
   // without this their selection turns red over the rectangle they are paying
   // for. While they hold one, the selection is theirs by definition.
-  const blocked = !holding && selection ? selectionBlocked(board, selection) : false;
+  const blocked =
+    !holding && selection ? selectionBlocked(board, selection) : false;
   const chip = selection
     ? {
         x: cv.t.x + selection.c * cv.step * cv.scale,
@@ -370,7 +432,11 @@ export function Canvas() {
       }}
       onDoubleClick={onDoubleClick}
       className="relative flex-1 overflow-hidden select-none"
-      style={{ touchAction: "none", overscrollBehavior: "none", cursor }}
+      style={{
+        touchAction: "none",
+        overscrollBehavior: "none",
+        cursor: panning ? "grabbing" : spaceHeld ? "grab" : cursor,
+      }}
     >
       <div
         className="absolute"
@@ -400,7 +466,8 @@ export function Canvas() {
           style={{
             left: chip.x,
             // Above the block, unless the block is at the very top of the view.
-            top: chip.y < 22 ? chip.y + selection.h * cv.step * cv.scale : chip.y,
+            top:
+              chip.y < 22 ? chip.y + selection.h * cv.step * cv.scale : chip.y,
             transform: chip.y < 22 ? undefined : "translateY(-100%)",
             background: blocked ? "#8A1233" : "var(--color-accent)",
           }}
@@ -419,7 +486,8 @@ export function Canvas() {
           style={{
             left: Math.min(tip.x + 14, cv.viewport.w - 8),
             top: tip.y + 16,
-            transform: tip.x > cv.viewport.w - 220 ? "translateX(-100%)" : undefined,
+            transform:
+              tip.x > cv.viewport.w - 220 ? "translateX(-100%)" : undefined,
           }}
         >
           {tip.text}
@@ -438,6 +506,7 @@ export function Canvas() {
       <ZoomControls
         inset={sidePanel && panelOpen ? PANEL_WIDTH : 0}
         scale={cv.scale}
+        hint={<PanHint shown={cv.scale > 1 && !knowsPan} held={spaceHeld} />}
         onIn={() => cv.zoomBy(1.6)}
         onOut={() => cv.zoomBy(1 / 1.6)}
         onFit={() => cv.zoomAbs(1)}
@@ -446,9 +515,57 @@ export function Canvas() {
   );
 }
 
+const PAN_HINT_KEY = "200squares:knows-pan";
+const knowsPanListeners = new Set<() => void>();
+function subscribeKnowsPan(cb: () => void) {
+  knowsPanListeners.add(cb);
+  return () => knowsPanListeners.delete(cb);
+}
+function readKnowsPan() {
+  try {
+    return localStorage.getItem(PAN_HINT_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+function learnPan() {
+  try {
+    localStorage.setItem(PAN_HINT_KEY, "1");
+  } catch {}
+  knowsPanListeners.forEach((cb) => cb());
+}
+
+/**
+ * How to move around once the board is bigger than the box. Desktop and mouse
+ * only: a finger pans with two fingers and needs no telling. It sits beside the
+ * zoom controls, which is where the eye already is when it has just zoomed, and
+ * it leaves for good after the first real pan.
+ */
+function PanHint({ shown, held }: { shown: boolean; held: boolean }) {
+  const key =
+    "inline-block min-w-[3.4em] border px-1.5 text-center font-mono text-[11px] leading-[1.5] transition-colors duration-150 " +
+    (held
+      ? "border-ink bg-ink text-page"
+      : "border-hairline bg-white text-ink");
+  return (
+    // The same box as the zoom controls beside it: the board under it can be any colour.
+    <span
+      aria-hidden={!shown}
+      className={
+        "border-hairline bg-square text-faint pointer-events-none flex h-9 items-center gap-1.5 border px-3 text-[12px] whitespace-nowrap transition-opacity duration-300 " +
+        (shown ? "opacity-100" : "opacity-0")
+      }
+      style={{ boxShadow: "var(--shadow-lift)" }}
+    >
+      Hold <kbd className={key}>Space</kbd> and drag to move around
+    </span>
+  );
+}
+
 function ZoomControls({
   inset,
   scale,
+  hint,
   onIn,
   onOut,
   onFit,
@@ -456,6 +573,8 @@ function ZoomControls({
   /** The panel's width, so the controls stay beside the board and not under it. */
   inset: number;
   scale: number;
+  /** What sits to the left of the buttons: the pan hint, when there is one to give. */
+  hint?: React.ReactNode;
   onIn: () => void;
   onOut: () => void;
   onFit: () => void;
@@ -465,24 +584,42 @@ function ZoomControls({
   return (
     // Touch has pinch and double-tap, so on a phone these would only cover squares.
     <div
-      className="border-hairline absolute bottom-4 hidden border lg:flex"
-      style={{ right: inset + 16, boxShadow: "var(--shadow-lift)" }}
+      className="absolute bottom-4 hidden items-center gap-3 lg:flex"
+      style={{ right: inset + 16 }}
     >
-      <button type="button" className={btn} onClick={onOut} disabled={scale <= 1} aria-label="Zoom out">
-        −
-      </button>
-      <button
-        type="button"
-        className="bg-square text-faint hover:bg-white border-hairline border-x px-3 text-[12px] transition-colors duration-150"
-        onClick={onFit}
-        disabled={scale <= 1}
-        aria-label="Fit the whole board"
+      {hint}
+      <div
+        className="border-hairline flex border"
+        style={{ boxShadow: "var(--shadow-lift)" }}
       >
-        Fit
-      </button>
-      <button type="button" className={btn} onClick={onIn} disabled={scale >= MAX_SCALE} aria-label="Zoom in">
-        +
-      </button>
+        <button
+          type="button"
+          className={btn}
+          onClick={onOut}
+          disabled={scale <= 1}
+          aria-label="Zoom out"
+        >
+          −
+        </button>
+        <button
+          type="button"
+          className="bg-square text-faint hover:bg-white border-hairline border-x px-3 text-[12px] transition-colors duration-150"
+          onClick={onFit}
+          disabled={scale <= 1}
+          aria-label="Fit the whole board"
+        >
+          Fit
+        </button>
+        <button
+          type="button"
+          className={btn}
+          onClick={onIn}
+          disabled={scale >= MAX_SCALE}
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+      </div>
     </div>
   );
 }
