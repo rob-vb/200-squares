@@ -84,6 +84,10 @@ export default function Page() {
             across other sites.
           </P>
           <P>
+            The Cloudflare check named below is not one of those. It asks whether you are a script,
+            it is thrown away once it has an answer, and it is not told which block you clicked.
+          </P>
+          <P>
             Cookies are used to keep you signed in, and for nothing else. There is no tracking cookie
             to accept or refuse.
           </P>
