@@ -583,13 +583,16 @@ function ZoomControls({
     "bg-square text-ink hover:bg-white disabled:text-ink/30 grid h-9 w-9 place-items-center text-[17px] leading-none transition-colors duration-150";
   return (
     // Touch has pinch and double-tap, so on a phone these would only cover squares.
+    // ⚠️ The row is wider than the buttons: it holds the hint as well, even while
+    // the hint is invisible. Only the buttons may take a click; the board is under
+    // the rest.
     <div
-      className="absolute bottom-4 hidden items-center gap-3 lg:flex"
+      className="pointer-events-none absolute bottom-4 hidden items-center gap-3 lg:flex"
       style={{ right: inset + 16 }}
     >
       {hint}
       <div
-        className="border-hairline flex border"
+        className="border-hairline pointer-events-auto flex border"
         style={{ boxShadow: "var(--shadow-lift)" }}
       >
         <button
