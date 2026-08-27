@@ -112,7 +112,14 @@ The full list, in order, is Part 2 of
    nothing else on this list would say so.
 
 8. ⚠️ **Added by [ticket 28](28-prove-the-mail.md) (2026-08-26): pull the ECB rate before
-   the first sale.** `npx convex run invoices:pullFxRate` against prod, once, by hand.
+   the first sale.** `npx convex run --prod invoices:pullFxRate`, once, by hand.
+
+   ⚠️ **But after the merge, not before** (2026-08-27). `npx convex function-spec --prod`
+   answers `"functions": []`: **the Convex backend has never been deployed to prod at all**,
+   because prod serves `main` and `main` predates it. The function does not exist there
+   until the production build runs `npx convex deploy`. The same holds for the live Stripe
+   webhook — it points at a `/stripe/webhook` route that only appears with that build. The
+   order in `docs/setup-checklist.md` was corrected: the merge is step 8, the rate is step 9.
 
    The cron that fills the rate runs at **17:00 UTC daily**, so on a deployment whose cron
    has never fired the `fx` cache is empty. `invoices.ts` then issues the invoice anyway and

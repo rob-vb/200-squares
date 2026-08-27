@@ -298,25 +298,7 @@ yet.
    open. If the widget stalls there, no square can be bought at all and nothing else on
    this list will tell you.
 
-8. **Pull the ECB rate, once, by hand**, before the first sale can happen:
-
-   ```sh
-   npx convex run --prod invoices:pullFxRate
-   ```
-
-   The cron that fills the rate runs at **17:00 UTC daily**, so on a deployment whose cron
-   has never fired the `fx` cache is empty. `invoices.ts` then issues the invoice anyway and
-   leaves the euro line off — deliberately, because refusing to invoice a paid order is the
-   worse failure. But [ticket 17](../.scratch/200squares-v1/issues/17-invoice-document.md)'s
-   **write-once** rule means that invoice is never repaired.
-
-   ⚠️ On prod the invoice with no euro line would be **the first real sale**, and the euro
-   amount is what art. 35a lid 4 Wet OB asks for. One command before the doors open, and it
-   cannot be done afterwards.
-   ([Ticket 28](../.scratch/200squares-v1/issues/28-prove-the-mail.md) watched it happen on
-   staging: invoice `2026-0010` has no euro amount and now never will.)
-
-9. **The switch-over: merge `staging` into `main`.** Production serves `main`, and `main` is
+8. **The switch-over: merge `staging` into `main`.** Production serves `main`, and `main` is
    the prototype from before ticket 08 — the one that reads `searchParams`, so every route
    on it is `x-vercel-cache: MISS` and `no-store`, and the resale market V1.0 dropped is
    still in it. Checked 2026-08-27: `main` is **86 commits** behind `staging` and
@@ -336,6 +318,36 @@ yet.
      ([ticket 26](../.scratch/200squares-v1/issues/26-strip-resale.md),
      [27](../.scratch/200squares-v1/issues/27-label-and-sellout.md)).
    - then do the live-mode purchase from step 7, in a real browser.
+
+   ⚠️ **This step comes before the ECB rate, not after** — the list had them the other way
+   round until 2026-08-27. `energized-deer-345` was checked that day and holds **zero
+   functions**: production has never deployed the Convex backend, because production serves
+   `main` and `main` predates it. `invoices:pullFxRate` cannot be run before this merge,
+   because until the production build runs `npx convex deploy` the function does not exist.
+   The same goes for the live Stripe webhook: it points at a `/stripe/webhook` route that
+   only appears here.
+
+9. **Pull the ECB rate, once, by hand**, before the first sale can happen:
+
+   ```sh
+   npx convex run --prod invoices:pullFxRate
+   ```
+
+   The cron that fills the rate runs at **17:00 UTC daily**, so on a deployment whose cron
+   has never fired the `fx` cache is empty. `invoices.ts` then issues the invoice anyway and
+   leaves the euro line off — deliberately, because refusing to invoice a paid order is the
+   worse failure. But [ticket 17](../.scratch/200squares-v1/issues/17-invoice-document.md)'s
+   **write-once** rule means that invoice is never repaired.
+
+   ⚠️ On prod the invoice with no euro line would be **the first real sale**, and the euro
+   amount is what art. 35a lid 4 Wet OB asks for. One command before the doors open, and it
+   cannot be done afterwards.
+   ([Ticket 28](../.scratch/200squares-v1/issues/28-prove-the-mail.md) watched it happen on
+   staging: invoice `2026-0010` has no euro amount and now never will.)
+
+   ⚠️ **After the merge, not before.** See step 8: the function does not exist on prod until
+   the production build has deployed it.
+
 
 ---
 
