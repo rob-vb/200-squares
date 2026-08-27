@@ -269,6 +269,14 @@ yet.
 
    ⚠️ `BETTER_AUTH_SECRET` must differ from dev.
 
+   ⚠️ **A Vercel secret cannot be read back.** `vercel env pull` writes
+   `PURGE_SECRET="[SENSITIVE]"` for anything stored as a Secret, so a script that reads one
+   environment's value to copy or compare it gets that placeholder and not the string. Two
+   things follow: comparing Vercel's copy against Convex's this way always reports a
+   mismatch that is not real, and *moving* a secret between environments loses it. If a
+   pair has to be re-split, **generate a new one and set both sides**, which is cheap — the
+   only thing a `PURGE_SECRET` buys is the right to clear a cache.
+
    ⚠️ `PURGE_SECRET` must be **the same string** as the one on Vercel Production in step 4,
    and different from the preview pair. `PURGE_URL` must be the **production** address:
    cache tags are scoped per project *and* environment, so prod pointing at the staging URL
