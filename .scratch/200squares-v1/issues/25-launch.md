@@ -1,8 +1,8 @@
 # 25 — The launch switches
 
 Type: task
-Status: open
-Assignee: rob-vb (claimed 2026-08-27)
+Status: resolved
+Assignee: rob-vb (claimed and resolved 2026-08-27)
 Blocked by: 14, 39, 40 (all resolved — 40 on 2026-08-27, so this is now on the frontier and is the last ticket on the map)
 See also: [36](36-build-purge-on-release.md) — not a switch, but it lands before launch.
 Parent: ../map.md
@@ -151,3 +151,56 @@ decide** to launch, not when the launch happens — so this is the switch, not t
 ⚠️ Do not do any of this early. Vercel Pro before there is anything to sell is $20 a month
 for nothing, and Hobby **pauses instead of billing**, which enforces
 [ticket 02](02-ddos-and-the-bill.md)'s rule better than Pro plus a spend cap does.
+
+
+## Resolution (2026-08-27)
+
+**The site is live, and the list that got it there was wrong in six places.** Nothing on it
+had ever been run; every step was written from a decision rather than from a dashboard, and
+six of them did not survive contact.
+
+**What it took.** Vercel Pro, Spend Management at $5 with *Pause production deployment* on,
+seven firewall rules, three grey-cloud CNAMEs, seven Vercel Production variables, fourteen
+on Convex prod, the live Stripe webhook on one event, the real Turnstile pair, the merge,
+and the ECB rate. `main` was **86 commits** behind, not the 73 ticket 39 recorded.
+
+**The six corrections**, each recorded where it belongs:
+
+1. **`/art/` with a query string cannot be a WAF rule.** Vercel offers no condition that
+   sees the query string whole — `Query` matches a parameter *by name* and its key field is
+   required, and both path fields say *"excluding query"*. The guard is now
+   `src/app/art/[id]/route.ts`, answering `400` at `no-store`. Measured live:
+   `/art/<id>?x=1` → 400.
+2. **The generated method rule was inverted.** *Generate Rule* wrote the description
+   correctly and the conditions backwards — five copies of `Method` **Is any of**
+   `GET,HEAD,POST,OPTIONS` behind a **Deny**. Staging answered 403 on every path including
+   `/`. Nothing in the description said so; only measuring did.
+3. **The click-redirect rate limit is dead**, like the webhook bypass before it: ticket 10
+   designed the redirect away, so that traffic never passes Vercel. **`/api/bid` was
+   missing** and now has `/api/checkout`'s limit.
+4. **Five Convex variables were missing from the list entirely** — `ADMIN_EMAILS` and the
+   four `BUSINESS_*`. Unset, prod would have had **no admin page at all** and would have
+   taken money it could not invoice. They were on dev, so nothing failed while building.
+5. **The merge comes before the ECB rate.** `function-spec --prod` answered
+   `"functions": []`: the backend had never been deployed to prod, so `pullFxRate` could not
+   have run and the live webhook pointed at a route that did not exist.
+6. **`PURGE_SECRET` was one variable across Production and Preview**, which ADR 0004
+   forbids. Both pairs are now separate. ⚠️ And a trap for whoever splits one again:
+   `vercel env pull` writes `[SENSITIVE]` for a Secret, so a secret cannot be moved or
+   compared — generate a new one and set both sides.
+
+**Proved, not assumed.** The purge pair answers `200 {"ok":true,"tags":1}` to the right
+secret and `403` to a wrong one — which also proves `canPurge()` finds Vercel's purge API,
+the check ADR 0004 says must never be quiet. And `/`, `/how-it-works`, `/terms` and
+`/privacy` all answer **`x-vercel-cache: HIT`** on the live domain: ticket 08's `?data=`
+removal was the cheapest defence on the map and this is the first time anything has shown
+it working. The ECB rate on prod is **1.1669 USD/EUR**.
+
+⚠️ **Two things are left, and neither is a decision.**
+
+- **The one live-mode purchase, by hand, in a real browser.** Production is the first place
+  the real Turnstile widget has ever run; it will not complete a challenge from the VPS, so
+  no script here can do it. If the widget stalls, no square can be bought and nothing else
+  on this list would say so.
+- **`STRIPE_SECRET_KEY` on Preview.** Moving it to Production left Preview without one, so
+  `flow.mjs` and `bid.mjs` cannot buy anything on staging until a `sk_test_…` is put back.

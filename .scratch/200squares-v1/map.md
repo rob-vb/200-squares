@@ -912,6 +912,23 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   a prototype with no backend; `CONTEXT.md` still called a bid flatly irrevocable.
   Proved by reading the three pages back on staging.
 
+- [25 — The launch switches](issues/25-launch.md) — **200squares.com is live.** Vercel Pro,
+  seven firewall rules, three grey-cloud CNAMEs, seven Vercel Production variables, fourteen
+  on Convex prod, the live Stripe webhook, the real Turnstile pair, `staging` merged into
+  `main` and the ECB rate pulled at **1.1669 USD/EUR**. ⚠️ **Six steps on the list did not
+  survive being run**, because none of them ever had been: the `/art/` query-string deny
+  **cannot be a WAF rule at all** and moved into `src/app/art/[id]/route.ts`; Vercel's rule
+  generator wrote the method rule **inverted** and staging answered 403 on every path
+  including `/`; the click-redirect limit was dead and `/api/bid` was missing; **five Convex
+  variables were absent from the list entirely** — `ADMIN_EMAILS` and the four `BUSINESS_*`,
+  without which prod has no admin page and cannot invoice what it charges; the merge has to
+  come **before** the ECB rate, because the backend had never been deployed to prod at all;
+  and `PURGE_SECRET` was one variable across two environments. `/`, `/how-it-works`,
+  `/terms` and `/privacy` now answer **`x-vercel-cache: HIT`** on the real domain — the
+  first proof that ticket 08's `?data=` removal did what it was for. ⚠️ **One thing is left
+  and no script here can do it**: the live-mode purchase by hand, because production is the
+  first place the real Turnstile widget has ever run.
+
 ## Not yet specified
 
 - **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
@@ -967,13 +984,11 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   **Done** (2026-08-27):
   [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md) and
   [40 — Making the copy true again](issues/40-copy-true-again.md).
-  **Still open**:
-  [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
-  the day, and it is deliberately last. ⚠️ **It is the only open ticket left on this map**,
-  and unlike the last time that was true (2026-08-26), the fog ahead of it has been walked:
-  what remains below needs real traffic, a real complaint or a lawyer, not a decision. ⚠️ [39](issues/39-what-an-invocation-costs.md) is **resolved
+  **Done (2026-08-27, last)**:
+  [25 — The launch switches](issues/25-launch.md). **The site is live.** ⚠️ [39](issues/39-what-an-invocation-costs.md) is **resolved
   2026-08-26** and put a seven-rule firewall list and a ninth step on it; it produced no
-  build ticket, because a dashboard rule is not a build.
+  build ticket, because a dashboard rule is not a build — and six of those steps did not
+  survive being run. See ticket 25's resolution.
 
 - **The road to launch, charted (2026-08-26).** Ticket 25 was briefly the only open ticket
   on this map, which read as *finished* and was not: four patches of fog had gone sharp
@@ -989,7 +1004,7 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   withdrawal function exists**, so 42 sits between 37 and 40. ⚠️ And 42 (**resolved
   2026-08-26**) put a sixth on it: the copy cannot be true until the function is **built**
   either, so [43](issues/43-build-withdrawal-function.md) — not 42 — is what 40 now waits on.
-  The road to launch was **43 → 41 → 40 → 25**. All but 25 are walked (2026-08-27).
+  The road to launch was **43 → 41 → 40 → 25**. All of it is walked (2026-08-27).
   ~~[39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
   is the one cost decision left~~ — **resolved 2026-08-26**. It was one answer after all, and
   the answer was seven firewall rules and no code.
