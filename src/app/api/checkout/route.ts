@@ -171,7 +171,8 @@ export async function POST(request: Request) {
       // One reservation, one session, for the reservation's whole life.
       { idempotencyKey: reservationId },
     );
-  } catch {
+  } catch (error) {
+    console.error("stripe.checkout.sessions.create failed (%s)", "checkout", error);
     return fail("conflict", 409);
   }
 

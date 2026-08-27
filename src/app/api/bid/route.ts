@@ -174,7 +174,8 @@ export async function POST(request: Request) {
       // One bid, one session, for the bid's whole life.
       { idempotencyKey: bidId },
     );
-  } catch {
+  } catch (error) {
+    console.error("stripe.checkout.sessions.create failed (%s)", "bid", error);
     return fail("conflict", 409);
   }
 
