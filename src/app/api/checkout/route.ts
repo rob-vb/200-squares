@@ -137,6 +137,9 @@ export async function POST(request: Request) {
               // $302.50 at the last screen.
               tax_behavior: "inclusive",
               product_data: {
+                // Managed Payments calculates tax from this. Electronically
+                // supplied services, general.
+                tax_code: "txcd_10000000",
                 name: squares === 1 ? "One square on 200squares.com" : `${squares} squares on 200squares.com`,
                 description: `Square ${squareRange(rect)}`,
               },
@@ -144,7 +147,6 @@ export async function POST(request: Request) {
           },
         ],
         // The site computes VAT itself and freezes it into the order.
-        automatic_tax: { enabled: false },
         billing_address_collection: "required",
         phone_number_collection: { enabled: false },
         success_url: `${origin}/thanks?session_id={CHECKOUT_SESSION_ID}`,

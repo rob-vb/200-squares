@@ -323,6 +323,24 @@ export const attachSession = mutation({
   },
 });
 
+/**
+ * Give a pending row back when Stripe refuses the session. Without this the row
+ * sits `pending` for the full reservation window with no session behind it, and
+ * `openBid` refuses the same caller a second bid for a quarter of an hour over a
+ * hold that was never placed. Only a session-less pending row can be abandoned;
+ * one with a session belongs to Stripe's timeout.
+ */
+export const abandon = mutation({
+  args: { bidId: v.id("bids") },
+  returns: v.null(),
+  handler: async (ctx, { bidId }) => {
+    const row = await ctx.db.get(bidId);
+    if (!row || row.status !== "pending" || row.stripeSessionId) return null;
+    await ctx.db.patch(bidId, { pendingUntil: Date.now() });
+    return null;
+  },
+});
+
 // ---------------------------------------------------------------------------
 // Landing a bid. The webhook's half.
 

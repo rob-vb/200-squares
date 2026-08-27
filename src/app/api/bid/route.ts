@@ -118,9 +118,10 @@ export async function POST(request: Request) {
       {
         mode: "payment",
         submit_type: "pay",
-        // ⚠️ Cards and nothing else. Manual capture rules out iDEAL, and a hold
-        // Stripe cannot take is a bid the close cannot collect.
-        payment_method_types: ["card"],
+        // ⚠️ No `payment_method_types`. The account runs Managed Payments, and
+        // under it Stripe chooses the methods and refuses the parameter. A
+        // manual-capture session only ever shows methods that can hold, so iDEAL
+        // stays out without being named (ticket 07 still holds).
         payment_intent_data: {
           // The whole of ticket 07 in one field.
           capture_method: "manual",
@@ -137,13 +138,15 @@ export async function POST(request: Request) {
               // whoever placed them (ticket 07, ADR 0002).
               tax_behavior: "inclusive",
               product_data: {
+                // Managed Payments calculates tax from this. Electronically
+                // supplied services, general.
+                tax_code: "txcd_10000000",
                 name: `The 200squares.com banner on ${bid.date}`,
                 description: `A bid of $${dollars}. Held, not charged, until the auction closes at 00:00 UTC.`,
               },
             },
           },
         ],
-        automatic_tax: { enabled: false },
         billing_address_collection: "required",
         phone_number_collection: { enabled: false },
         success_url: `${origin}/bid?session_id={CHECKOUT_SESSION_ID}`,
@@ -176,6 +179,9 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("stripe.checkout.sessions.create failed (%s)", "bid", error);
+    // The row must not outlive the failure, or the same caller is refused a
+    // retry for the whole reservation window (openBid's one-pending-per-caller).
+    await convex.mutation(api.auction.abandon, { bidId: bidId as Id<"bids"> }).catch(() => undefined);
     return fail("conflict", 409);
   }
 
