@@ -75,7 +75,22 @@ The full list, in order, is Part 2 of
    That is a factor of a hundred on that one rule. Read the Vercel usage page after the
    first week.
 
-   **Done 2026-08-27**: the seven rules are in place on the project.
+   **Done 2026-08-27**: the seven rules are in place on the project, and measured from
+   staging afterwards — `/`, `/how-it-works`, `/terms` and `/privacy` all 200,
+   `/art/<id>` a 404 at `max-age=30`, `/art/<id>?x=1` a **400** at `no-store`.
+
+   ⚠️ **Read a generated rule's conditions before switching it on.** Vercel's *Generate
+   Rule* writes the description and the conditions separately and they can disagree. It
+   produced *"Block requests that are not GET, HEAD, POST, or OPTIONS"* over five identical
+   conditions reading `Method` **Is any of** `GET, HEAD, POST, OPTIONS` — the exact inverse.
+   Staging answered **403 on every path, including `/`**, and the description gave no sign
+   of it. The right shape is one condition, `Method` **Is not any of**. Found by measuring.
+
+   ⚠️ Bot Protection and Attack Mode are **off**, and staying off: they were the first
+   suspect for the 403 and they were innocent. Turning either on would challenge headless
+   Chromium, and headless Chromium is the whole toolkit here — `shot.mjs`, `flow.mjs`,
+   `bid.mjs`, `artwork.mjs`, `withdraw.mjs`, `strip.mjs`, `clicks.mjs`. Nobody working on
+   this site could see it.
 3. **Three CNAME records** at Cloudflare, all **DNS only (grey cloud)**.
 4. **Vercel Production variables** — `CONVEX_DEPLOY_KEY`, the Turnstile site key,
    `STRIPE_SECRET_KEY` live, and ⚠️ `BUSINESS_VAT_ID`, which

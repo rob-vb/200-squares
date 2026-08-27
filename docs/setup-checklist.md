@@ -197,6 +197,16 @@ yet.
 
    ⚠️ The rate-limit rules cannot live in `vercel.json` either: it has no rate-limit action.
    It is the dashboard or the REST API.
+
+   ⚠️ **Read every generated rule's conditions before you switch it on.** *Generate Rule*
+   writes the description and the conditions separately, and they can disagree. On
+   2026-08-27 it produced *"Block requests that are not GET, HEAD, POST, or OPTIONS"* over
+   five identical conditions reading `Method` **Is any of** `GET, HEAD, POST, OPTIONS` —
+   the exact inverse, denying every honest request. Staging answered 403 on every path,
+   including `/`. The right shape is **one** condition, `Method` **Is not any of**, and it
+   was found by measuring, not by reading the description.
+
+   ⚠️ It also takes one instruction at a time; a pasted list of all seven is refused.
 3. **Three DNS records** at Cloudflare → 200squares.com → DNS. All three CNAME, all three
    **DNS only (grey cloud)**:
 
