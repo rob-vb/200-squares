@@ -269,6 +269,7 @@ export const withdrawalDeclared = internalAction({
       declaredAt: row.declaredAt,
       totalCents: row.totalCents,
       kind: row.kind,
+      orderEmail: row.orderEmail,
       adminUrl: adminUrl(),
     });
     await sendMail({ to: devAddress(), subject: dev.subject, text: dev.text });

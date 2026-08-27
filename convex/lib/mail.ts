@@ -420,11 +420,19 @@ export const withdrawalForDevMail = (input: {
   declaredAt: number;
   totalCents: number;
   kind: "squares" | "banner";
+  /** The address on the order, where it differs from the one above. */
+  orderEmail: string;
   adminUrl: string;
 }) => ({
   subject: `Withdrawal: ${input.what}`,
   text: [
     `${input.name} <${input.email}> withdrew from ${input.what}.`,
+    // ⚠️ Art. 11a lid 2 sub c lets them *provide* the address the confirmation
+    // goes to, so it need not be the one that paid. Where the two differ the dev
+    // is the person who has to notice, and nothing else on the site would say.
+    ...(input.orderEmail && input.orderEmail !== input.email
+      ? [`⚠️ The order was paid for by ${input.orderEmail}. They asked us to confirm to the address above.`]
+      : []),
     `Sent: ${stamp(input.declaredAt)}. Paid: ${usdExact(input.totalCents)}.`,
     ...(input.note ? ["", `They wrote: ${input.note}`] : []),
     "",

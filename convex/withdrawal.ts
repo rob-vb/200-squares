@@ -237,12 +237,22 @@ export const forMail = internalQuery({
       declaredAt: v.number(),
       kind: v.union(v.literal("squares"), v.literal("banner")),
       totalCents: v.number(),
+      /**
+       * The address on the order.
+       *
+       * ⚠️ It is here because art. 11a lid 2 sub c lets the consumer *provide*
+       * the address the confirmation goes to, so it need not be the one that
+       * paid. Where the two differ the dev's copy says so — they are the person
+       * who has to notice, and the refund goes to a card and not to an inbox.
+       */
+      orderEmail: v.string(),
     }),
   ),
   handler: async (ctx, { withdrawalId }) => {
     const row = await ctx.db.get(withdrawalId);
     if (!row) return null;
     const order = await ctx.db.get(row.orderId);
+    const owner = order ? await ctx.db.get(order.ownerId) : null;
     return {
       email: row.email,
       name: row.name,
@@ -252,6 +262,7 @@ export const forMail = internalQuery({
       declaredAt: row.declaredAt,
       kind: row.kind,
       totalCents: order?.totalCents ?? 0,
+      orderEmail: owner?.email ?? "",
     };
   },
 });
