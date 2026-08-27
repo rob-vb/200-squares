@@ -4,15 +4,17 @@
 // so a cell advances by `cell + SEAM`. Ticket 02's spike ignored the seam and its
 // hit-testing drifted by most of a square at the right edge of the grid.
 
-import type { Artwork, Block, Crop, Owner, Rect, SquareState } from "./types";
+import type { Artwork, Block, Crop, Rect, SquareState } from "./types";
 
 export const COLS = 16;
 export const ROWS = 14;
 /** The 1px gap between squares — the whole grid. It scales with the transform. */
 export const SEAM = 1;
 export const BANNER: Rect = { r: 0, c: 0, w: 5, h: 5 };
-export const MAX_BLOCK = 4;
-export const PRICE_PER_SQUARE = 100;
+export const MAX_BLOCK = 3;
+export const PRICE_PER_SQUARE = 250;
+/** The same number in whole cents. Money is an integer everywhere it is money. */
+export const PRICE_PER_SQUARE_CENTS = PRICE_PER_SQUARE * 100;
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 4;
 /** Below this rendered square size a number is unreadable. Locked by ticket 05. */
@@ -28,6 +30,9 @@ export const isBanner = (r: number, c: number) => covers(BANNER, r, c);
 export const cellCount = (rect: Rect) => rect.w * rect.h;
 
 export const priceOf = (rect: Rect) => cellCount(rect) * PRICE_PER_SQUARE;
+
+/** What the card is actually charged. VAT-inclusive, always (ADR 0002). */
+export const priceCentsOf = (rect: Rect) => cellCount(rect) * PRICE_PER_SQUARE_CENTS;
 
 /** Squares are numbered 1..199, left to right and top to bottom, around the banner. */
 const NUMBERS: (number | null)[][] = (() => {
@@ -65,16 +70,25 @@ export type Cell = {
 export type BoardModel = {
   cells: Cell[][];
   blocks: Block[];
-  ownerById: Map<string, Owner>;
-  /** Every square nobody has bought, ready to render one by one. */
+  /** Every square nobody holds, ready to render one by one. */
   available: { r: number; c: number; n: number }[];
-  /** The blocks whose owner has put them up for sale. Drives the For sale switch. */
-  listed: Block[];
+  /**
+   * Every square somebody is away paying for. It is drawn as a plain tile with
+   * no number: ticket 05 says the viewer is never told the difference between a
+   * held square and a sold one, and a number on it would invite a wait.
+   */
+  reserved: { r: number; c: number }[];
   stats: { total: number; taken: number; pending: number; available: number };
 };
 
-/** The whole derived view of the board. Blocks in, squares out. */
-export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
+/**
+ * The whole derived view of the board. Blocks and holds in, squares out.
+ *
+ * ⚠️ A reserved square is neither `pending` (that means paid) nor `taken`, and
+ * the viewer is never told the difference: all three read as unavailable. It is
+ * the only state a square leaves without anybody acting.
+ */
+export function buildBoard(blocks: Block[], reserved: Rect[]): BoardModel {
   const cells: Cell[][] = Array.from({ length: ROWS }, (_, r) =>
     Array.from({ length: COLS }, (_, c) => ({
       state: (isBanner(r, c) ? "banner" : "available") as SquareState,
@@ -83,8 +97,19 @@ export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
     })),
   );
 
+  // Reservations first, so a block written over one wins: the reservation is
+  // what the block came out of, and a late sweep must never hide a real sale.
+  for (const rect of reserved) {
+    for (let r = rect.r; r < rect.r + rect.h; r++) {
+      for (let c = rect.c; c < rect.c + rect.w; c++) {
+        if (cells[r][c].state === "available") cells[r][c].state = "reserved";
+      }
+    }
+  }
+
   for (const block of blocks) {
-    const state: SquareState = block.artwork ? "taken" : "pending";
+    // A frozen block may hold no artwork, so it reads as one waiting for some.
+    const state: SquareState = block.artwork && !block.frozen ? "taken" : "pending";
     for (let r = block.rect.r; r < block.rect.r + block.rect.h; r++) {
       for (let c = block.rect.c; c < block.rect.c + block.rect.w; c++) {
         cells[r][c].state = state;
@@ -94,12 +119,14 @@ export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
   }
 
   const available: BoardModel["available"] = [];
+  const held: BoardModel["reserved"] = [];
   let taken = 0;
   let pending = 0;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const cell = cells[r][c];
       if (cell.state === "available") available.push({ r, c, n: cell.n! });
+      if (cell.state === "reserved") held.push({ r, c });
       if (cell.state === "taken") taken++;
       if (cell.state === "pending") pending++;
     }
@@ -108,17 +135,18 @@ export function buildBoard(blocks: Block[], owners: Owner[]): BoardModel {
   return {
     cells,
     blocks,
-    ownerById: new Map(owners.map((o) => [o.id, o])),
     available,
-    listed: blocks.filter((b) => b.listing !== null),
+    reserved: held,
+    // `taken` and `pending` count squares somebody paid for. A reserved square
+    // is in none of the three: it is not available, and nobody owns it yet.
     stats: { total: SQUARE_COUNT, taken, pending, available: available.length },
   };
 }
 
 /**
- * A contiguous rectangle from anchor to head. The span is clamped to 4 before it
- * is clamped into the grid, so the anchor corner stays put and the block stops
- * growing at 4 x 4 instead of sliding along under the pointer.
+ * A contiguous rectangle from anchor to head. The span is clamped to MAX_BLOCK
+ * before it is clamped into the grid, so the anchor corner stays put and the block stops
+ * growing at 3 x 3 instead of sliding along under the pointer.
  */
 export function rectFrom(anchor: { r: number; c: number }, head: { r: number; c: number }): Rect {
   const clampSpan = (a: number, b: number, limit: number) => {
@@ -163,111 +191,12 @@ export function squareRange(rect: Rect): string {
 }
 
 // ---------------------------------------------------------------------------
-// Resale. Ticket 11: an owner may sell a block on, at a price they set, and the
-// site keeps a share of the sale.
-
-/** What a rectangle costs at a listing's price. The site's own price works the same. */
-export const askingFor = (pricePerSquare: number, rect: Rect) =>
-  cellCount(rect) * pricePerSquare;
-
-/**
- * The floor on an asking price per square, only there to stop a price of nothing.
- *
- * Ticket 11 put a $100 floor on the whole block, to keep second-hand blocks from
- * undercutting the $100 the site charges for a square. A price per square does
- * that job on its own: the buyer reads "$140 a square" against the site's "$100
- * a square" and judges. So the floor has no work left beyond refusing zero.
- */
-export const MIN_ASKING = 1;
-/** The site's share of a completed sale, from the seller. Listing is free. */
-export const RESALE_FEE = 0.1;
-
-export const feeOn = (price: number) => Math.round(price * RESALE_FEE);
-export const sellerGets = (price: number) => price - feeOn(price);
-
-export const sameRect = (a: Rect, b: Rect) =>
-  a.r === b.r && a.c === b.c && a.w === b.w && a.h === b.h;
-
-/**
- * A rectangle drawn from anchor to head, kept inside `bound`.
- *
- * This is `rectFrom` for a drag that lives inside something smaller than the
- * grid — a buyer drawing inside a listing, an owner drawing inside their own
- * block. It needs no 4 x 4 clamp of its own: a block is already at most 4 x 4,
- * so anything inside one is too.
- */
-export function rectWithin(
-  anchor: { r: number; c: number },
-  head: { r: number; c: number },
-  bound: Rect,
-): Rect {
-  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
-  const r1 = clamp(anchor.r, bound.r, bound.r + bound.h - 1);
-  const r2 = clamp(head.r, bound.r, bound.r + bound.h - 1);
-  const c1 = clamp(anchor.c, bound.c, bound.c + bound.w - 1);
-  const c2 = clamp(head.c, bound.c, bound.c + bound.w - 1);
-  return {
-    r: Math.min(r1, r2),
-    c: Math.min(c1, c2),
-    w: Math.abs(c2 - c1) + 1,
-    h: Math.abs(r2 - r1) + 1,
-  };
-}
-
-/** The overlap of two rectangles, or null where they do not touch. */
-export function intersect(a: Rect, b: Rect): Rect | null {
-  const r = Math.max(a.r, b.r);
-  const c = Math.max(a.c, b.c);
-  const r2 = Math.min(a.r + a.h, b.r + b.h);
-  const c2 = Math.min(a.c + a.w, b.c + b.w);
-  return r2 > r && c2 > c ? { r, c, w: c2 - c, h: r2 - r } : null;
-}
-
-/**
- * What the seller is left holding once `part` is sold out of `rect`.
- *
- * A buyer takes any rectangle they like, so what is left is a rectangle with a
- * bite out of it — which is not a block, because a block renders one image and
- * an L cannot. It falls apart into at most four blocks instead: a strip above,
- * a strip below, and whatever is left to the left and right of the bite.
- *
- * The seller keeps every square they did not sell. They simply hold them as
- * more than one block, each with its own crop of the artwork they had.
- */
-export function remainderOf(rect: Rect, part: Rect): Rect[] {
-  const above = part.r - rect.r;
-  const below = rect.r + rect.h - (part.r + part.h);
-  const left = part.c - rect.c;
-  const right = rect.c + rect.w - (part.c + part.w);
-  const out: Rect[] = [];
-  if (above > 0) out.push({ r: rect.r, c: rect.c, w: rect.w, h: above });
-  if (below > 0) out.push({ r: part.r + part.h, c: rect.c, w: rect.w, h: below });
-  if (left > 0) out.push({ r: part.r, c: rect.c, w: left, h: part.h });
-  if (right > 0) out.push({ r: part.r, c: part.c + part.w, w: right, h: part.h });
-  return out;
-}
-
-/**
- * The same artwork, cropped to a sub-rectangle of the block it was on.
- *
- * Mock artwork is a colour and a wordmark, so it has nothing to crop: it simply
- * re-fits to the smaller rectangle, which is what a wordmark does anyway. An
- * uploaded image carries a window, and windows compose — a block cut twice
- * narrows the window twice rather than losing the first cut.
- */
-export function cropArtwork(art: Artwork | null, from: Rect, to: Rect): Artwork | null {
-  if (!art || art.kind !== "image") return art;
-  const outer = art.crop ?? { x: 0, y: 0, w: 1, h: 1 };
-  return {
-    ...art,
-    crop: {
-      x: outer.x + ((to.c - from.c) / from.w) * outer.w,
-      y: outer.y + ((to.r - from.r) / from.h) * outer.h,
-      w: (to.w / from.w) * outer.w,
-      h: (to.h / from.h) * outer.h,
-    },
-  };
-}
+// Artwork on the page.
+//
+// ⚠️ Cutting a block up used to live here. It moved to `convex/lib/board.ts`,
+// because both places that need it are on the server: the reservation's overlap
+// check offers the loser the remainder of what they drew, and a part sale splits
+// a block inside a webhook where there is no browser to re-cut anything.
 
 /**
  * `background-size` and `background-position` for a cropped image.
@@ -285,3 +214,56 @@ export function cropStyle(crop: Crop | undefined): React.CSSProperties {
     }%`,
   };
 }
+
+/**
+ * Where an uploaded file is served from.
+ *
+ * ⚠️ **Never from Convex to a visitor.** Convex Free includes only 1 GB of
+ * egress, and a board that served its own artwork would spend it on a good day.
+ * `/art/<storageId>` streams the file through Vercel's edge with a year-long
+ * immutable cache, so Convex is read once per file per region (ticket 09).
+ *
+ * A new file means a new storage id means a new URL, so nothing is ever busted.
+ *
+ * ⚠️ The route itself arrives with
+ * [ticket 20](../../../.scratch/200squares-v1/issues/20-build-artwork.md). This
+ * is only the address; until that lands the only artwork on any board is seeded,
+ * which is a colour and a wordmark and needs no file.
+ */
+export const artUrl = (storageId: string) => `/art/${storageId}`;
+
+/**
+ * The square size the `1x` set is produced against, and the multiplier for the
+ * `4x`. A block's image is exactly the box the board draws, internal seams
+ * included — a bought rectangle is one grid item, so the seams inside it are
+ * part of the picture.
+ *
+ * ⚠️ The board's real square size is the viewport's, not a constant: `cell` is
+ * whatever a 16 x 14 grid fits into the screen. So these are the size artwork is
+ * *made* at, chosen to cover the screens the board is actually opened on — a
+ * phone draws a square at about 23px and the largest desktop at about 150px, and
+ * 80px carries both at fit scale.
+ */
+export const ART_CELL = 80;
+/** The zoom the `4x` set is made for. It is `MAX_SCALE`, and it is not a coincidence. */
+export const ART_ZOOM = MAX_SCALE;
+
+/** The pixel box a rect's artwork is drawn into, at a given square size. */
+export const artPixels = (rect: Rect, cell: number) => {
+  const step = cell + SEAM;
+  return { w: rect.w * step - SEAM, h: rect.h * step - SEAM };
+};
+
+/**
+ * The two sizes the browser produced before upload: the `1x` set below 2x zoom,
+ * the `4x` only above it. A phone never downloads the large one at fit scale.
+ *
+ * ⚠️ `onScreen` is the other half of that rule and it is a bill, not a nicety.
+ * At 4x zoom about a sixteenth of the board is in view; without this every one
+ * of 199 blocks would swap to its 400 KB file the moment somebody zoomed in,
+ * which is 80 MB of edge traffic for one gesture. Ticket 09 asked for the large
+ * set "only above 2x, lazy-loaded off-screen", and on a background image this is
+ * what lazy means: the small file stays until the block is actually in view.
+ */
+export const artSrc = (art: Artwork, scale: number, onScreen = true) =>
+  art.kind === "upload" ? artUrl(scale > 2 && onScreen ? art.large : art.small) : null;

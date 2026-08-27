@@ -12,12 +12,25 @@
 
 import { Countdown } from "./countdown";
 import { useScreen } from "./panel/flow";
-import { useBoard } from "@/lib/board/state";
+import { useBoard } from "@/lib/board/board";
+import { useViewer } from "@/lib/board/viewer";
+import { usd } from "@/lib/board/time";
 
 export function AuctionDock() {
-  const { topBid, liveBids, viewerIsTopBidder, viewerOutbid } = useBoard();
+  const { auction } = useBoard();
+  const { viewer } = useViewer();
   const { openBid, panelOpen } = useScreen();
-  const bids = liveBids.length;
+  const bids = auction?.bids ?? [];
+  const topCents = auction?.topCents ?? null;
+  // ⚠️ Only *theirs* once they are signed in. A stranger must never be told they
+  // were outbid, because the site does not know who a stranger is.
+  const top = bids.reduce<(typeof bids)[number] | null>(
+    (best, b) => (!best || b.amountCents > best.amountCents ? b : best),
+    null,
+  );
+  const viewerIsTopBidder = !!viewer && top?.ownerId === viewer.id;
+  const viewerOutbid =
+    !!viewer && !viewerIsTopBidder && bids.some((b) => b.ownerId === viewer.id);
 
   return (
     <div
@@ -35,13 +48,13 @@ export function AuctionDock() {
         </div>
 
         <div className="text-[13px] leading-tight font-medium">
-          {topBid ? (
+          {topCents !== null ? (
             <>
               {viewerIsTopBidder ? "You are top" : viewerOutbid ? "You were outbid" : "Top bid"} ·{" "}
-              {bids} bids
+              {bids.length} bids
               <br />
               <span className="font-display text-[22px] leading-none" data-numeric>
-                ${topBid.amount.toLocaleString("en-US")}
+                {usd(topCents)}
               </span>
             </>
           ) : (

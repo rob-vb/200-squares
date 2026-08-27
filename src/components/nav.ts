@@ -1,13 +1,9 @@
-"use client";
-
-// The pages beside the board, and the one rule every link obeys: carry the
-// dataset on. A visitor who asked for the early board keeps it across the site.
+// The pages beside the board.
 //
-// The name comes from the board itself, not from the query string. Reading the
-// query string on the client would cost every page its server rendering, and the
-// board already knows which dataset seeded it.
-
-import { useBoard } from "@/lib/board/state";
+// ⚠️ The dataset used to ride along on every link as `?data=`. It is gone: which
+// board a deployment shows is now the deployment's own business, set with
+// `npx convex run seed:full` and friends. A search parameter on the board route
+// is what made every page dynamic, and ticket 15 was told not to put one back.
 
 export const PAGES: { href: string; label: string }[] = [
   { href: "/how-it-works", label: "How it works" },
@@ -15,8 +11,3 @@ export const PAGES: { href: string; label: string }[] = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
 ];
-
-export function useHref(): (href: string) => string {
-  const { state } = useBoard();
-  return (href: string) => (state.name === "full" ? href : `${href}?data=${state.name}`);
-}

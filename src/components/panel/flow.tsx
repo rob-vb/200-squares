@@ -6,9 +6,10 @@
 // one. Ticket 06 put the whole screen's mutable UI state here, because the
 // canvas, the top bar, the auction dock and the panel all read from it.
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { selectionBlocked } from "@/lib/board/geometry";
-import { useBoard } from "@/lib/board/state";
+import { useBoard } from "@/lib/board/board";
+import { clearHold, useHold } from "@/lib/checkout/hold";
 import type { Rect } from "@/lib/board/types";
 
 /** How wide the sliding panel is. The canvas needs the number too. */
@@ -19,16 +20,15 @@ export const PANEL_MEDIA = "(min-width: 1280px)";
 export type Flow =
   | { kind: "none" }
   | { kind: "buy" }
-  | { kind: "bought"; rect: Rect; hasArtwork: boolean }
   | { kind: "bid" }
   | { kind: "mine" }
-  /** The owner putting one of their blocks up for sale, or changing the price. */
-  | { kind: "sell"; blockId: string }
-  /**
-   * A visitor buying part of somebody's listing. No sign-in, like a fresh buy.
-   * `rect` is what they drew inside the offer — one square, or all of it.
-   */
-  | { kind: "resale"; blockId: string; rect: Rect };
+  | { kind: "signin" };
+
+// ⚠️ There is no `bought` flow any more. The prototype confirmed a purchase in
+// the panel; ticket 06 moved that moment off the board entirely — the buyer is
+// on Stripe when the payment lands, and `/thanks` is where they come back to.
+
+const same = (a: Rect, b: Rect) => a.r === b.r && a.c === b.c && a.w === b.w && a.h === b.h;
 
 type ScreenValue = {
   flow: Flow;
@@ -43,26 +43,25 @@ type ScreenValue = {
   /** A flow is on screen. Not the same as "a flow is chosen": see `dragging`. */
   panelOpen: boolean;
   /**
-   * The market view. Off by default, and off is the board exactly as it is
-   * without resale: nothing is painted over anybody's artwork. On, everything
-   * that is not for sale dims and stops answering the pointer — a dimmed square
-   * that still selected would be lying about what the view is for.
+   * The rectangle the visitor is holding a reservation on, if any.
+   *
+   * ⚠️ It exists so the canvas can tell *their own hold* from *somebody else's*.
+   * The board is live, so the moment a reservation is written the squares under
+   * it read as unavailable — including to the visitor who just took them, whose
+   * selection would otherwise turn red and say "Not available" about squares
+   * they are at that second paying for.
+   *
+   * It comes straight off the `sessionStorage` store, so a reload, a back button
+   * or a second look at the tab all find the same hold still standing.
    */
-  forSale: boolean;
-  setForSale: (on: boolean) => void;
+  holding: Rect | null;
   selectRect: (rect: Rect | null) => void;
   setPreview: (src: string | null) => void;
   setHighlight: (rect: Rect | null) => void;
   openBid: () => void;
   openMine: () => void;
-  openSell: (blockId: string) => void;
-  /**
-   * A drag inside a listing. It runs through the selection, exactly like a drag
-   * on empty squares does, so the canvas draws it with the machinery it already
-   * has and the panel waits for the pointer to lift.
-   */
-  selectInListing: (blockId: string, rect: Rect) => void;
-  showBought: (rect: Rect, hasArtwork: boolean) => void;
+  /** Ticket 18: an address and a link sent to it. There is nothing else to sign in with. */
+  openSignIn: () => void;
   close: () => void;
 };
 
@@ -70,12 +69,23 @@ const ScreenContext = createContext<ScreenValue | null>(null);
 
 export function ScreenProvider({ children }: { children: React.ReactNode }) {
   const { board } = useBoard();
+  const hold = useHold();
   const [flow, setFlow] = useState<Flow>({ kind: "none" });
   const [selection, setSelection] = useState<Rect | null>(null);
   const [highlight, setHighlight] = useState<Rect | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [forSale, setForSaleState] = useState(false);
+  // Which hold the visitor has already waved away. Keyed on the reservation so
+  // that taking a new one brings the panel back.
+  const [dismissed, setDismissed] = useState<string | null>(null);
+
+  // Fifteen minutes, and then the tab's memory of it goes the way the server's
+  // has. The timer is what turns the hold off; nothing polls.
+  useEffect(() => {
+    if (!hold) return;
+    const id = window.setTimeout(() => clearHold(), Math.max(0, hold.expiresAt - Date.now()));
+    return () => window.clearTimeout(id);
+  }, [hold]);
 
   const selectRect = useCallback(
     (rect: Rect | null) => {
@@ -83,63 +93,55 @@ export function ScreenProvider({ children }: { children: React.ReactNode }) {
       setPreview(null);
       setHighlight(null);
       // A blocked selection never opens the panel: the red chip on the canvas
-      // already says it, at the place where the problem is.
-      if (rect && !selectionBlocked(board, rect)) {
+      // already says it, at the place where the problem is. The one exception is
+      // the visitor's own hold, which is only "blocked" because they took it.
+      const mine = Boolean(rect && hold && same(hold.rect, rect));
+      if (rect && (mine || !selectionBlocked(board, rect))) {
+        if (mine) setDismissed(null);
         setFlow({ kind: "buy" });
         return;
       }
       setFlow((f) => (f.kind === "buy" ? { kind: "none" } : f));
     },
-    [board],
+    [board, hold],
   );
 
   const value = useMemo<ScreenValue>(() => {
+    // ⚠️ A hold outlives the page. The panel a visitor left when they went to
+    // Stripe is put back in front of them when they come back to the tab,
+    // because otherwise the only way to reach their own fifteen minutes would be
+    // to drag the same rectangle again — and the board reads it as taken by then.
+    const resume = hold && hold.reservationId !== dismissed ? hold : null;
+    const shownFlow: Flow = flow.kind === "none" && resume ? { kind: "buy" } : flow;
+    const shownSelection = flow.kind === "none" && resume ? resume.rect : selection;
+
     // Opening another flow drops the selection, so the canvas never keeps a lit
     // rectangle whose flow has gone.
     const replace = (next: Flow) => () => {
       setSelection(null);
       setPreview(null);
       setHighlight(null);
+      if (hold) setDismissed(hold.reservationId);
       setFlow(next);
     };
     return {
-      flow,
-      selection,
+      flow: shownFlow,
+      selection: shownSelection,
       highlight,
       preview,
       dragging,
       setDragging,
-      panelOpen: flow.kind !== "none" && !dragging,
+      panelOpen: shownFlow.kind !== "none" && !dragging,
+      holding: hold?.rect ?? null,
       selectRect,
       setPreview,
       setHighlight,
-      forSale,
-      // Leaving the market view drops the flow that only exists inside it, so the
-      // panel never keeps a listing open on a board that has stopped showing it.
-      setForSale: (on: boolean) => {
-        setForSaleState(on);
-        setSelection(null);
-        setPreview(null);
-        setHighlight(null);
-        setFlow((f) => (f.kind === "resale" || f.kind === "sell" ? { kind: "none" } : f));
-      },
       openBid: replace({ kind: "bid" }),
       openMine: replace({ kind: "mine" }),
-      openSell: (blockId: string) => replace({ kind: "sell", blockId })(),
-      selectInListing: (blockId: string, rect: Rect) => {
-        setSelection(rect);
-        setPreview(null);
-        setHighlight(null);
-        setFlow({ kind: "resale", blockId, rect });
-      },
-      showBought: (rect: Rect, hasArtwork: boolean) => {
-        setSelection(null);
-        setPreview(null);
-        setFlow({ kind: "bought", rect, hasArtwork });
-      },
+      openSignIn: replace({ kind: "signin" }),
       close: replace({ kind: "none" }),
     };
-  }, [flow, selection, highlight, preview, dragging, forSale, selectRect]);
+  }, [flow, selection, dismissed, highlight, preview, dragging, hold, selectRect]);
 
   return <ScreenContext.Provider value={value}>{children}</ScreenContext.Provider>;
 }

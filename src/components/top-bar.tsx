@@ -11,30 +11,28 @@
 // that link — it is the page that sells. About, Terms and Privacy sit in the
 // footer of every page, which is where a phone visitor looks for them anyway.
 //
-// Sign in stays a one-click toggle. A fake form would add nothing to the idea
-// being sold, and buying needs no sign-in at all.
-//
-// The For sale switch stands here too, on the board page only. It first sat
-// under the canvas, where a phone has no room: the height between the board and
-// the auction dock is spoken for, and the dock covered it. The bar is the one
-// strip of this screen that is never covered by anything.
+// ⚠️ Sign in is a real form now (ticket 18) and it opens in the panel, like
+// every other flow. It stays one word in the bar: buying needs no account at
+// all, so a sign-in that took more room than that would be selling the wrong
+// thing.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ForSaleSwitch } from "./for-sale-switch";
-import { PAGES, useHref } from "./nav";
+import { PAGES } from "./nav";
 import { useScreen } from "./panel/flow";
-import { useBoard } from "@/lib/board/state";
+import { useViewer } from "@/lib/board/viewer";
 import { cellCount } from "@/lib/board/geometry";
 
 export function TopBar() {
-  const { state, dispatch, viewer, viewerBlocks } = useBoard();
-  const { openMine } = useScreen();
+  const { viewer, signedIn, signOut, mine } = useViewer();
+  const { openMine, openSignIn } = useScreen();
   const pathname = usePathname();
-  const href = useHref();
   const onBoard = pathname === "/";
 
-  const owned = viewerBlocks.reduce((n, b) => n + cellCount(b.rect), 0);
+  const owned = (mine?.blocks ?? []).reduce((n, b) => n + cellCount(b.rect), 0);
+  // Signed in with no owner row behind the address is a normal state, not a
+  // broken one: somebody may make an account before they ever buy anything.
+  const label = viewer?.name ?? "My squares";
   const wordmark = "200 SQUARES";
   const wordmarkClass = "font-display text-[22px] leading-none tracking-[0.01em]";
 
@@ -46,7 +44,7 @@ export function TopBar() {
         {onBoard ? (
           <h1 className={wordmarkClass}>{wordmark}</h1>
         ) : (
-          <Link href={href("/")} className={`${wordmarkClass} shrink-0`}>
+          <Link href="/" className={`${wordmarkClass} shrink-0`}>
             {wordmark}
           </Link>
         )}
@@ -55,7 +53,7 @@ export function TopBar() {
           {PAGES.map((page, i) => (
             <Link
               key={page.href}
-              href={href(page.href)}
+              href={page.href}
               className={`truncate transition-colors duration-150 ${
                 pathname === page.href ? "text-ink font-medium" : "text-faint hover:text-ink"
               } ${i > 0 ? "hidden lg:inline" : ""}`}
@@ -67,9 +65,7 @@ export function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-3 lg:gap-4">
-        {onBoard ? <ForSaleSwitch /> : null}
-
-        {state.signedIn && viewer ? (
+        {signedIn ? (
           <div className="flex items-center gap-3 lg:gap-4">
             {onBoard ? (
               <button
@@ -77,32 +73,28 @@ export function TopBar() {
                 onClick={openMine}
                 className="hover:text-accent text-[13px] transition-colors duration-150"
               >
-                {viewer.name}
+                {label}
                 <span className="text-faint"> · {owned} squares</span>
               </button>
             ) : (
               <Link
-                href={href("/")}
+                href="/"
                 className="hover:text-accent text-[13px] transition-colors duration-150"
               >
-                {viewer.name}
+                {label}
                 <span className="text-faint"> · {owned} squares</span>
               </Link>
             )}
             <button
               type="button"
               className="text-faint hover:text-ink hidden text-[13px] transition-colors duration-150 sm:inline"
-              onClick={() => dispatch({ type: "signOut" })}
+              onClick={signOut}
             >
               Sign out
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            className="shrink-0 text-[14px] font-medium"
-            onClick={() => dispatch({ type: "signIn" })}
-          >
+          <button type="button" className="shrink-0 text-[14px] font-medium" onClick={openSignIn}>
             Sign in
           </button>
         )}

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Contact } from "@/components/content/contact";
 import { ContentPage } from "@/components/content/content-page";
 import { Site } from "@/components/site";
-import { getDataset } from "@/lib/board/datasets";
 import { P, Section } from "@/components/content/section";
 
 export const metadata: Metadata = {
@@ -10,19 +9,19 @@ export const metadata: Metadata = {
   description: "One grid, 199 squares and a banner that changes every day.",
 };
 
-export default async function Page(props: PageProps<"/about">) {
-  const { data } = await props.searchParams;
+export default function Page() {
   return (
-    <Site dataset={getDataset(data)}>
+    <Site>
       <ContentPage
         title="ABOUT"
         intro="One grid, 199 squares, and a banner that changes every day."
       >
         <Section title="What this is">
           <P>
-            200 Squares is a single page with a fixed grid on it. 199 of the squares are for sale,
-            once, at $100 each. The 5 × 5 area in the top-left corner is the banner, and it is not
-            for sale: it is auctioned, one day at a time.
+            200 Squares is a single page with a fixed grid on it. 199 of the squares are for sale
+            at $250 each. The site sells each one once, and after that it is the owner&rsquo;s to
+            keep. The 5 × 5 area in the top-left corner is the banner, and it is not for sale: it
+            is auctioned, one day at a time.
           </P>
           <P>
             Every square that sells stays sold. The picture on the grid is the sum of everyone who
@@ -43,8 +42,8 @@ export default async function Page(props: PageProps<"/about">) {
 
         <Section title="Who runs it">
           <P>
-            One person, not a company. That is worth knowing before you spend $100 here, so it is on
-            this page and in the FAQ rather than in the small print.
+            One person, not a company. That is the whole of it, and it is on this page rather than
+            in the small print.
           </P>
           <Contact />
         </Section>

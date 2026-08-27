@@ -4,7 +4,7 @@
 //
 // It began as the page under the canvas. It moved out because the board is the
 // product and a board with a document under it is two products — but the order
-// ticket 07 fixed is unchanged, because it is the order a $100 buyer asks in:
+// ticket 07 fixed is unchanged, because it is the order a $250 buyer asks in:
 // counter → what you get → how it works → the daily banner → FAQ → contact.
 //
 // Nobody speaks here. The product states facts, and one name appears at the end.
@@ -21,7 +21,7 @@ const STEPS: [string, string][] = [
     "Pick your squares",
     `Drag a rectangle on the grid, up to ${MAX_BLOCK} wide and ${MAX_BLOCK} high. The price follows your drag.`,
   ],
-  ["Pay $100 per square", "One payment. Three by two squares is $600."],
+  ["Pay $250 per square", "One payment. Three by two squares is $1,500."],
   [
     "Add your artwork and your link",
     "One image covers the whole block. You can add it later: your squares stay reserved until you do.",
@@ -29,10 +29,6 @@ const STEPS: [string, string][] = [
 ];
 
 const FAQ: [string, string][] = [
-  [
-    "What happens if the site goes down?",
-    "Then the squares go with it. This is one project run by one person, not a company with a guarantee behind it. That is the honest answer, and it is priced in at $100.",
-  ],
   [
     "Can I buy more squares later, next to mine?",
     "Yes, as long as they are still free. Each purchase is its own block, so two blocks side by side stay two images.",
@@ -43,19 +39,31 @@ const FAQ: [string, string][] = [
   ],
   [
     "Do I get traffic numbers?",
-    "Not yet. There are no visitor statistics here, and invented numbers are worse than none. Put your own tracking parameters on your link and measure it.",
+    "Yes. Every click on your block is counted, and the number sits on your row in My squares. It counts clicks and not people, and it is counted in the visitor's browser, so read it as a floor: the least that happened, not an audited total. A zero is a bare zero. Your own tracking parameters tell you what happens after the click.",
   ],
   [
-    "Why 4 × 4 at most?",
-    "So no single buyer can take over the grid. 199 squares held by many owners is what makes the picture worth looking at.",
+    "What can I upload?",
+    "PNG, JPEG, WebP or GIF, up to 10 MB. One image covers the whole block: the site crops it to your rectangle and you drag to place it, so any shape is fine. Nothing animates — a GIF keeps its first frame. You can change it whenever you like.",
+  ],
+  [
+    `Why ${MAX_BLOCK} × ${MAX_BLOCK} at most?`,
+    `The limit is on one image, not on one owner. A block shows a single image, and past ${MAX_BLOCK} × ${MAX_BLOCK} that image starts to be the grid rather than a place on it. Buy as many blocks as you like: each one stays its own image and its own link.`,
   ],
   [
     "Can I sell my square to somebody else?",
-    "Not through this site, not yet. There is no listing and no transfer here, so a square stays with the buyer who took it.",
+    "Not through this site. A square cannot be sold on here, and the site will not buy one back. What you buy is yours to keep.",
+  ],
+  [
+    "Can I cancel after I have paid?",
+    "If you bought as a private person, yes: you have 14 days from the day you buy, and there is a withdraw button on your thank-you page and under your order in My squares. A business buyer has no right to cancel, and this site does not offer one. The banner works the same way, except that a banner day is over at 00:00 UTC and the right ends with it.",
+  ],
+  [
+    "Can I buy a square somebody already owns?",
+    "No. Every square the site still has is on the board, marked with its number. What is taken is taken.",
   ],
   [
     "What if every square sells?",
-    "Then that is it — there are no more. The banner is still auctioned every day.",
+    "Then the site has nothing left to sell. The banner is still auctioned every day.",
   ],
 ];
 
@@ -79,8 +87,8 @@ export function HowItWorks() {
             {MAX_BLOCK} high. A block shows one image: the grid lines inside it disappear.
           </P>
           <P>
-            A click on your block opens your website in a new tab. You can replace your image and
-            your link whenever you want.
+            A click on your block opens your website in a new tab, and every one of those clicks
+            is counted for you. You can replace your image and your link whenever you want.
           </P>
 
           <Subhead>What you may put there</Subhead>
@@ -91,11 +99,7 @@ export function HowItWorks() {
           </P>
           <P>
             No link shorteners: use your own domain. Tracking parameters on your own URL are fine —
-            they are how you measure this yourself.
-          </P>
-          <P>
-            This is a small independent project. Nobody can promise a website runs forever, and this
-            page will not pretend otherwise.
+            they are how you measure what happens after the click.
           </P>
         </Section>
 
@@ -147,7 +151,7 @@ export function HowItWorks() {
 
         <Section title="Questions?">
           {/* Plain text on purpose. A form that silently discarded a message would
-              be the one place this prototype lies to a real visitor. */}
+              be the one place this site lies to a real visitor. */}
           <Contact />
         </Section>
       </main>

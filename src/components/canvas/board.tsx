@@ -6,14 +6,27 @@
 // Three kinds of child: the banner, one element per block, and one element per
 // available square. A block is a single grid item, which is why the seams inside
 // a bought rectangle disappear on their own.
+//
+// ⚠️ **A block that can be clicked is a real `<a>`** (tickets 10 and 21), and not
+// a div the canvas opens a window from. It is what the owner paid for, so it
+// behaves like a link everywhere a link behaves: middle-click and ctrl-click open
+// it in a tab, the status bar shows where it goes, the context menu can copy the
+// address, and the keyboard can reach it. `window.open` from a handler has none
+// of that, and a pop-up blocker can refuse it.
+//
+// The gesture contract still decides **whether** a click counts as one — that is
+// `canvas.tsx`'s business, through `onFollow`, which may cancel the navigation.
+// Nothing here knows about drags, and nothing here counts anything.
 
-import type { Artwork, BannerDay, Block, Rect } from "@/lib/board/types";
+import type { Artwork, BannerToday, Rect } from "@/lib/board/types";
+import type { ClickTarget } from "@/lib/board/clicks";
 import {
   BANNER,
   COLS,
   NUMBER_MIN_PX,
   ROWS,
   SEAM,
+  artSrc,
   boxOf,
   cropStyle,
   gridArea,
@@ -27,16 +40,75 @@ function labelSize(label: string, wpx: number, hpx: number) {
 }
 
 /**
- * How artwork paints its box. An uploaded image may carry a crop, because a
- * block that was split keeps the same picture windowed to the part it still is.
+ * *Sold, artwork coming.* It says that at every size, and it never shows a number.
  */
-function artStyle(art: Artwork, wpx: number, hpx: number): React.CSSProperties {
-  return art.kind === "mock"
-    ? { background: art.bg, color: art.fg, fontSize: labelSize(art.label, wpx, hpx) }
-    : { backgroundImage: `url(${art.src})`, ...cropStyle(art.crop) };
+const HATCH =
+  "repeating-linear-gradient(-45deg, var(--color-square) 0 3px, color-mix(in srgb, var(--color-accent) 35%, transparent) 3px 5px)";
+
+/**
+ * What the canvas is told when somebody clicks a link on the board.
+ *
+ * It is handed the event as well as the target, because the canvas is the only
+ * thing that knows whether the gesture that produced it was a click at all — a
+ * pan that ended over a block is not one, and it cancels the navigation.
+ */
+export type Follow = (target: ClickTarget, e: React.MouseEvent<HTMLAnchorElement>) => void;
+
+/** Blocks and banner days keep their address bare. The scheme is added here. */
+const hrefOf = (url: string) => `https://${url}`;
+
+/**
+ * How artwork paints its box.
+ *
+ * An upload may carry a crop, because a block that was split keeps the same file
+ * windowed to the part it still is. Seeded artwork has nothing to crop: a
+ * wordmark simply re-fits, which is what a wordmark does anyway.
+ *
+ * ⚠️ The hatch is painted **under** the picture, not instead of it. Ticket 09: a
+ * block whose file is missing renders `pending`, never broken. A background
+ * image that 404s paints nothing at all, so without a layer beneath it a lost
+ * file would read as an empty square — which on this board means *for sale*.
+ */
+function artStyle(
+  art: Artwork,
+  wpx: number,
+  hpx: number,
+  scale: number,
+  onScreen: boolean,
+): React.CSSProperties {
+  if (art.kind === "seed") {
+    return { background: art.bg, color: art.fg, fontSize: labelSize(art.label, wpx, hpx) };
+  }
+  const crop = cropStyle(art.crop);
+  return {
+    backgroundImage: `url(${artSrc(art, scale, onScreen)}), ${HATCH}`,
+    backgroundSize: `${crop.backgroundSize}, auto`,
+    backgroundPosition: `${crop.backgroundPosition}, 0 0`,
+    backgroundRepeat: "no-repeat, repeat",
+  };
 }
 
-function BannerCell({ day, cell }: { day: BannerDay | null; cell: number }) {
+/** Two rectangles share at least one cell. `null` means "everything counts". */
+const touches = (window: Rect | null, rect: Rect) =>
+  window === null ||
+  (window.c < rect.c + rect.w &&
+    rect.c < window.c + window.w &&
+    window.r < rect.r + rect.h &&
+    rect.r < window.r + window.h);
+
+function BannerCell({
+  day,
+  cell,
+  scale,
+  inView,
+  onFollow,
+}: {
+  day: BannerToday | null;
+  cell: number;
+  scale: number;
+  inView: Rect | null;
+  onFollow?: Follow;
+}) {
   const step = cell + SEAM;
   const wpx = BANNER.w * step - SEAM;
 
@@ -64,22 +136,46 @@ function BannerCell({ day, cell }: { day: BannerDay | null; cell: number }) {
   }
 
   const art = day.artwork;
+  // A winner who brought no artwork gets the house ad in their place (ticket 07),
+  // so a banner day with nothing on it reads exactly like an unwon one.
+  if (!art) return <BannerCell day={null} cell={cell} scale={scale} inView={inView} />;
+
+  const inside =
+    art.kind === "seed" ? (
+      <span className="font-display leading-none" style={{ fontSize: wpx * 0.13 }}>
+        {art.label}
+      </span>
+    ) : null;
+  const className = "flex flex-col items-center justify-center overflow-hidden text-center";
+  const style = {
+    ...gridArea(BANNER),
+    ...(art.kind === "seed"
+      ? { background: art.bg, color: art.fg }
+      : artStyle(art, wpx, BANNER.h * step - SEAM, scale, touches(inView, BANNER))),
+  };
+
+  // A won day with no address is the winner's own empty hour (ticket 07). It is
+  // still their banner, so it is drawn — but there is nowhere to go, so it is
+  // not a link and no click on it is ever counted.
+  if (!day.url) return <div className={className} style={style}>{inside}</div>;
+
+  const follow = (e: React.MouseEvent<HTMLAnchorElement>) =>
+    onFollow?.({ kind: "banner", id: day.date }, e);
+
   return (
-    <div
-      className="flex flex-col items-center justify-center overflow-hidden text-center"
-      style={{
-        ...gridArea(BANNER),
-        ...(art.kind === "mock"
-          ? { background: art.bg, color: art.fg }
-          : { backgroundImage: `url(${art.src})`, ...cropStyle(art.crop) }),
-      }}
+    <a
+      href={hrefOf(day.url)}
+      target="_blank"
+      rel="noopener noreferrer"
+      draggable={false}
+      aria-label={`Today's banner: ${day.ownerName}. Opens ${day.url}`}
+      onClick={follow}
+      onAuxClick={follow}
+      className={className}
+      style={style}
     >
-      {art.kind === "mock" ? (
-        <span className="font-display leading-none" style={{ fontSize: wpx * 0.13 }}>
-          {art.label}
-        </span>
-      ) : null}
-    </div>
+      {inside}
+    </a>
   );
 }
 
@@ -88,18 +184,24 @@ export function Board({
   bannerToday,
   cell,
   scale,
+  inView,
   selection,
   blocked,
   hovered,
   preview,
   highlight,
-  forSale,
+  onFollow,
 }: {
   board: BoardModel;
-  bannerToday: BannerDay | null;
+  bannerToday: BannerToday | null;
   /** Square size in px at scale 1 — the fit size. */
   cell: number;
   scale: number;
+  /**
+   * The cells on screen, or null while the viewport is unknown. Artwork above 2x
+   * zoom is only fetched at full size for blocks inside it (ticket 09).
+   */
+  inView: Rect | null;
   selection: Rect | null;
   blocked: boolean;
   hovered: { r: number; c: number } | null;
@@ -107,14 +209,14 @@ export function Board({
   preview: string | null;
   /** A block My squares is pointing at. */
   highlight: Rect | null;
-  /** The market view. Everything not for sale dims; the listings stay lit. */
-  forSale: boolean;
+  /** What the canvas does about a click on one of the board's links. */
+  onFollow?: Follow;
 }) {
   const step = cell + SEAM;
   // A number below 34px rendered is unreadable, so below that a square is a tile.
   const showNumbers = cell * scale >= NUMBER_MIN_PX;
-  // Buying a listing has no selection — what is being bought is the highlight —
-  // so the artwork preview follows whichever of the two the flow put there.
+  // My squares points at a block with the highlight and has no selection, so the
+  // artwork preview follows whichever of the two the flow put there.
   const previewRect = selection ?? highlight;
 
   return (
@@ -128,7 +230,13 @@ export function Board({
         gap: SEAM,
       }}
     >
-      <BannerCell day={bannerToday} cell={cell} />
+      <BannerCell
+        day={bannerToday}
+        cell={cell}
+        scale={scale}
+        inView={inView}
+        onFollow={onFollow}
+      />
 
       {board.blocks.map((block) => {
         const wpx = block.rect.w * step - SEAM;
@@ -141,23 +249,48 @@ export function Board({
           return (
             <div
               key={block.id}
-              style={{
-                ...gridArea(block.rect),
-                background:
-                  "repeating-linear-gradient(-45deg, var(--color-square) 0 3px, color-mix(in srgb, var(--color-accent) 35%, transparent) 3px 5px)",
-              }}
+              style={{ ...gridArea(block.rect), background: HATCH }}
             />
           );
         }
 
+        const className =
+          "flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight";
+        const style = {
+          ...gridArea(block.rect),
+          ...artStyle(art, wpx, hpx, scale, touches(inView, block.rect)),
+        };
+        const inside = art.kind === "seed" ? art.label : null;
+
+        // ⚠️ A frozen block is not a link. The third strike takes away the right
+        // to point anywhere (ticket 11), and `buildBoard` already reads one as
+        // pending — so it draws what it has and sends nobody anywhere.
+        if (block.frozen || !block.url) {
+          return (
+            <div key={block.id} className={className} style={style}>
+              {inside}
+            </div>
+          );
+        }
+
+        const follow = (e: React.MouseEvent<HTMLAnchorElement>) =>
+          onFollow?.({ kind: "block", id: block.id }, e);
+
         return (
-          <div
+          <a
             key={block.id}
-            className="flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight"
-            style={{ ...gridArea(block.rect), ...artStyle(art, wpx, hpx) }}
+            href={hrefOf(block.url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            draggable={false}
+            aria-label={`${block.ownerName}. Opens ${block.url}`}
+            onClick={follow}
+            onAuxClick={follow}
+            className={className}
+            style={style}
           >
-            {art.kind === "mock" ? art.label : null}
-          </div>
+            {inside}
+          </a>
         );
       })}
 
@@ -186,20 +319,22 @@ export function Board({
         );
       })}
 
-      {forSale && (
-        // The market view is a layer, never a mark on the block. Ticket 11: a
-        // permanent for-sale badge paints over artwork the owner paid for, and
-        // owner artwork is the only colour this canvas has.
-        <>
-          <div
-            className="pointer-events-none absolute inset-0 z-[1]"
-            style={{ background: "color-mix(in srgb, var(--color-page) 82%, transparent)" }}
-          />
-          {board.listed.map((block) => (
-            <ListedPart key={block.id} block={block} cell={cell} scale={scale} />
-          ))}
-        </>
-      )}
+      {/*
+        A square somebody is away paying for. A plain tile, and deliberately not
+        the pending hatch: a hatched square says *sold, artwork coming*, which
+        would be a lie for the fifteen minutes a hold lasts. It carries no
+        number, so it cannot be read as an invitation to wait for it.
+      */}
+      {board.reserved.map((sq) => (
+        <div
+          key={`held-${sq.r}-${sq.c}`}
+          style={{
+            gridRow: sq.r + 1,
+            gridColumn: sq.c + 1,
+            background: "var(--color-square)",
+          }}
+        />
+      ))}
 
       {previewRect && preview && (
         // The image lands on the board before anything is confirmed. This is the
@@ -242,47 +377,6 @@ export function Board({
           }}
         />
       )}
-    </div>
-  );
-}
-
-/**
- * One listing, lit through the market view's dim layer.
- *
- * The part offered can be a strip of a block that is still whole, so the artwork
- * is drawn at the block's full size inside a window the size of the part. That is
- * the same picture the buyer will get, cropped the same way the split will crop it.
- */
-function ListedPart({ block, cell, scale }: { block: Block; cell: number; scale: number }) {
-  const part = block.listing!.rect;
-  const outer = boxOf(block.rect, cell);
-  const inner = boxOf(part, cell);
-  const art = block.artwork;
-
-  return (
-    <div
-      className="pointer-events-none absolute z-[2] overflow-hidden"
-      style={{
-        ...inner,
-        outline: `${2 / scale}px solid var(--color-accent)`,
-        outlineOffset: -1 / scale,
-        background: "var(--color-square)",
-      }}
-    >
-      {art ? (
-        <div
-          className="absolute flex items-center justify-center overflow-hidden px-[3%] text-center leading-tight font-bold tracking-tight"
-          style={{
-            left: outer.left - inner.left,
-            top: outer.top - inner.top,
-            width: outer.width,
-            height: outer.height,
-            ...artStyle(art, outer.width, outer.height),
-          }}
-        >
-          {art.kind === "mock" ? art.label : null}
-        </div>
-      ) : null}
     </div>
   );
 }

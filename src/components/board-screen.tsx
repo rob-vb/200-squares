@@ -16,7 +16,6 @@ import { AuctionDock } from "./auction-dock";
 import { Canvas } from "./canvas/canvas";
 import { PanelSheet, PanelSide } from "./panel/panel";
 import { TitleBlock } from "./title-block";
-import { MAX_BLOCK, PRICE_PER_SQUARE } from "@/lib/board/geometry";
 
 export function BoardScreen() {
   return (
@@ -27,10 +26,13 @@ export function BoardScreen() {
           <PanelSide />
         </div>
 
-        <div className="flex shrink-0 items-end justify-between gap-6">
-          <p className="text-faint hidden text-[13px] lg:block">
-            Drag to select up to {MAX_BLOCK} × {MAX_BLOCK} · ${PRICE_PER_SQUARE} per square
-          </p>
+        {/*
+          The drag instruction that used to sit beside this box is gone. It was
+          desktop-only and the auction dock lay over its corner, so the one
+          reader it could reach rarely saw it — and on the day the board sells
+          out it is an instruction for a thing that can no longer be done.
+        */}
+        <div className="flex shrink-0 items-end justify-end gap-6">
           <TitleBlock />
         </div>
       </main>

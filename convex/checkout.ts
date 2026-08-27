@@ -1,0 +1,336 @@
+// What happens to a payment once Stripe says it happened.
+//
+// ⚠️ Only the signature-verified webhook writes a block (ticket 05), and the
+// Stripe **session id** is the key against writing one twice. Everything in this
+// file is either that write or the one right the session id grants afterwards.
+//
+// The order of events is: reserve → order, on 200squares.com → pay, on Stripe →
+// webhook → `pending`. The buyer's return page is not part of it. It only
+// watches, and after ten seconds it asks Stripe directly (`convex/http.ts`), so
+// a late or lost webhook is never something the buyer has to see.
+
+import { v, ConvexError } from "convex/values";
+import { internal } from "./_generated/api";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { normalise } from "./auth";
+import { rect as rectValidator } from "./schema";
+import { cellCount, overlaps } from "./lib/board";
+import { vatInsideCents } from "./lib/vat";
+import { mintToken } from "./lib/token";
+import { liveWithdrawUrl } from "./lib/withdrawal";
+
+const buyerType = v.union(v.literal("business"), v.literal("consumer"));
+const vatCase = v.union(v.literal("nl21"), v.literal("reverse"), v.literal("none"));
+
+/**
+ * What the buyer told the site about themselves, on the site, before they were
+ * sent to Stripe. It travels in the Checkout Session's metadata and comes back
+ * with the webhook, which is why the reservation needs no cookie to be somebody.
+ */
+const declared = v.object({
+  reservationId: v.string(),
+  rect: rectValidator,
+  buyerType,
+  country: v.string(),
+  name: v.string(),
+  vatNumber: v.optional(v.string()),
+  viesRequestIdentifier: v.optional(v.string()),
+  withdrawalWaived: v.boolean(),
+  withdrawalText: v.string(),
+  invoiceText: v.string(),
+  vatCase,
+  vatRateBps: v.number(),
+  ip: v.string(),
+});
+
+/**
+ * Turn a paid Stripe session into a block, or into a refund.
+ *
+ * Three outcomes, and the caller acts on each:
+ *
+ *   `already`  — this session has an order. Nothing is written and nothing is
+ *                owed. Both the webhook and the ten-second fallback land here
+ *                the second time, which is the whole reason the key exists.
+ *   `written`  — the squares were free and now they are a block.
+ *   `refunded` — somebody else's payment landed on them first. ⚠️ Ticket 05: the
+ *                webhook wins whenever the squares are **still free**, and a
+ *                free square is one no *block* covers. Another visitor's live
+ *                hold does not beat a completed payment; whoever pays first
+ *                wins, and the one who paid second gets every cent back.
+ *
+ * ⚠️ The money is recomputed here against `amountTotalCents` — what Stripe
+ * actually took — rather than trusted from metadata. The VAT *case* was decided
+ * before the session existed and travels with it; the arithmetic is redone, so
+ * the invoice can never disagree with the card statement.
+ */
+export const fulfil = internalMutation({
+  args: {
+    stripeSessionId: v.string(),
+    paymentIntentId: v.string(),
+    amountTotalCents: v.number(),
+    email: v.string(),
+    address: v.string(),
+    stripeCountry: v.string(),
+    declared,
+  },
+  returns: v.object({
+    status: v.union(v.literal("already"), v.literal("written"), v.literal("refunded")),
+    paymentIntentId: v.string(),
+    /**
+     * ⚠️ Set on every outcome that has an order behind it, including `refunded`.
+     * The refund itself is taken by the caller — a mutation cannot reach Stripe —
+     * and the mail that says so may only be sent once the money is actually on
+     * its way back (ticket 22), so the caller needs to know which order it is.
+     */
+    orderId: v.union(v.id("orders"), v.null()),
+  }),
+  handler: async (ctx, args) => {
+    const { declared: d } = args;
+
+    const existing = await ctx.db
+      .query("orders")
+      .withIndex("by_session", (q) => q.eq("stripeSessionId", args.stripeSessionId))
+      .unique();
+    if (existing) {
+      // ⚠️ A refunded order says `refunded` again rather than `already`. The
+      // refund is made **after** this mutation returns, so if that call failed —
+      // or the webhook died between the two — the retry Stripe sends is the only
+      // thing that can put it right. Saying `already` here would swallow it, and
+      // the buyer would be left paid up for squares they never got.
+      return {
+        status: existing.refundedAt ? ("refunded" as const) : ("already" as const),
+        paymentIntentId: existing.paymentIntentId ?? args.paymentIntentId,
+        orderId: existing._id,
+      };
+    }
+
+    // The reservation is the better source for the rectangle: it is what the
+    // overlap check actually passed. The metadata copy is the fallback for a
+    // webhook so late that the sweep has already taken the row.
+    const reservation = ctx.db.normalizeId("reservations", d.reservationId);
+    const row = reservation ? await ctx.db.get(reservation) : null;
+    const rect = row?.rect ?? d.rect;
+
+    const blocks = await ctx.db.query("blocks").collect();
+    const clash = blocks.some((b) => overlaps(b.rect, rect));
+
+    // An owner exists the moment a payment lands, whether or not an account ever
+    // follows it (ticket 08). The name is left empty on purpose: it is the
+    // *company* name, the buyer supplies it on the return page, and a private
+    // person's legal name has no business appearing in a public tooltip.
+    const emailNormalised = normalise(args.email);
+    let ownerId = (
+      await ctx.db
+        .query("owners")
+        .withIndex("by_email", (q) => q.eq("emailNormalised", emailNormalised))
+        .unique()
+    )?._id;
+    if (!ownerId) {
+      ownerId = await ctx.db.insert("owners", {
+        name: "",
+        email: args.email,
+        emailNormalised,
+        strikeAt: [],
+        createdAt: Date.now(),
+      });
+    }
+
+    const now = Date.now();
+    const vatCents = vatInsideCents(args.amountTotalCents, d.vatRateBps);
+    const orderId = await ctx.db.insert("orders", {
+      stripeSessionId: args.stripeSessionId,
+      paymentIntentId: args.paymentIntentId,
+      kind: "squares",
+      ownerId,
+      rect,
+      buyerType: d.buyerType,
+      country: d.country,
+      stripeCountry: args.stripeCountry || undefined,
+      countryMismatch: Boolean(args.stripeCountry) && args.stripeCountry !== d.country,
+      name: d.name,
+      address: args.address,
+      vatNumber: d.vatNumber,
+      viesRequestIdentifier: d.viesRequestIdentifier,
+      withdrawalWaived: d.withdrawalWaived,
+      withdrawalText: d.withdrawalText,
+      // ⚠️ The withdrawal function's address, minted here because art. 6:230oa
+      // lid 5 asks for it to be available for the whole period and the period
+      // starts now (ticket 43). **Consumers only** — lid 1 reaches a consumer
+      // contract and nothing else, so a business order has no token and its
+      // `/withdraw/` page is a 404 rather than a page that explains itself.
+      //
+      // ⚠️ And not on a clash: that order is refunded in full a moment from now
+      // by the caller, so there is nothing left to withdraw from.
+      withdrawalToken:
+        d.buyerType === "consumer" && !clash ? mintToken() : undefined,
+      invoiceText: d.invoiceText,
+      ip: d.ip,
+      totalCents: args.amountTotalCents,
+      vatCents,
+      vatRateBps: d.vatRateBps,
+      vatCase: d.vatCase,
+      pricing: "inclusive",
+      refundedAt: clash ? now : undefined,
+      refundReason: clash ? "The squares were sold to somebody else first." : undefined,
+      createdAt: now,
+    });
+
+    if (row && !row.releasedAt) await ctx.db.patch(row._id, { releasedAt: now });
+
+    if (clash) {
+      return { status: "refunded" as const, paymentIntentId: args.paymentIntentId, orderId };
+    }
+
+    await ctx.db.insert("blocks", {
+      rect,
+      ownerId,
+      url: "",
+      artwork: null,
+      frozen: false,
+      orderId,
+      createdAt: now,
+    });
+
+    // ⚠️ The third thing the webhook does (ticket 08): ask for a magic link. The
+    // buyer was never asked to make an account and does not need the mail to
+    // finish — the return page already grants them artwork and a link on the
+    // strength of the session id — so this is the way *back*, later, and it is
+    // sent whether or not they have signed in before.
+    //
+    // Scheduled rather than awaited: a mutation cannot reach the network, and a
+    // Resend outage must not undo a payment that has already landed.
+    if (args.email) {
+      await ctx.scheduler.runAfter(0, internal.auth.sendSignInLink, { email: args.email });
+    }
+
+    // ⚠️ The mail a buyer keeps, and it carries the invoice
+    // ([tickets 22](../.scratch/200squares-v1/issues/22-build-email.md) and
+    // [23](../.scratch/200squares-v1/issues/23-build-invoice.md)). Scheduled for
+    // the same reason the magic link is: the block is written, and neither
+    // Resend nor a rendered document may be able to undo that.
+    await ctx.scheduler.runAfter(0, internal.mail.orderConfirmed, { orderId });
+
+    // The artwork reminders ticket 06 fixed, booked now rather than swept for
+    // later. Each one looks at the block before it sends, so a square that gets
+    // its picture tomorrow simply never hears from us again — which is why no
+    // column has to remember what was sent.
+    for (const day of [1, 7, 30] as const) {
+      await ctx.scheduler.runAfter(day * 24 * 60 * 60 * 1000, internal.mail.artworkReminder, {
+        orderId,
+        day,
+      });
+    }
+
+    return { status: "written" as const, paymentIntentId: args.paymentIntentId, orderId };
+  },
+});
+
+/**
+ * The order behind a Stripe session, for the page the buyer lands on.
+ *
+ * ⚠️ Keyed on the session id and nothing else, which is exactly ticket 06's
+ * grant: whoever holds the session id is the person who just paid, because the
+ * only place it exists is their own return URL. So it answers with what they
+ * bought and never with the email, the IP or the address they gave Stripe.
+ */
+export const orderBySession = query({
+  args: { stripeSessionId: v.string() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      rect: rectValidator,
+      squares: v.number(),
+      totalCents: v.number(),
+      vatCents: v.number(),
+      vatCase,
+      refunded: v.boolean(),
+      refundReason: v.union(v.string(), v.null()),
+      /** The public company name, once the buyer has supplied it. */
+      companyName: v.string(),
+      url: v.string(),
+      /**
+       * Whether a picture is on the block yet. A boolean and not the artwork:
+       * the page only has to know which word the button says, and the file
+       * itself is drawn on the board.
+       */
+      hasArtwork: v.boolean(),
+      /**
+       * The first of the two entry points art. 6:230oa lid 1 asks for, and the
+       * only surface a buyer with no account holds (ticket 43). Empty for a
+       * business, and empty once the period has run — the page itself still
+       * explains, but the site stops offering a door that leads nowhere.
+       */
+      withdrawUrl: v.string(),
+    }),
+  ),
+  handler: async (ctx, { stripeSessionId }) => {
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_session", (q) => q.eq("stripeSessionId", stripeSessionId))
+      .unique();
+    if (!order || !order.rect) return null;
+
+    const owner = await ctx.db.get(order.ownerId);
+    const block = (
+      await ctx.db
+        .query("blocks")
+        .withIndex("by_owner", (q) => q.eq("ownerId", order.ownerId))
+        .collect()
+    ).find((b) => b.orderId === order._id);
+
+    return {
+      rect: order.rect,
+      squares: cellCount(order.rect),
+      totalCents: order.totalCents,
+      vatCents: order.vatCents,
+      vatCase: order.vatCase,
+      refunded: Boolean(order.refundedAt),
+      refundReason: order.refundReason ?? null,
+      companyName: owner?.name ?? "",
+      url: block?.url ?? "",
+      hasArtwork: Boolean(block?.artwork),
+      withdrawUrl: await liveWithdrawUrl(ctx, order),
+    };
+  },
+});
+
+/**
+ * Name the block and point it somewhere, on the strength of the session id.
+ *
+ * Ticket 06 moved company, link and artwork off the panel and behind the
+ * payment, and this is where the first two land — before any email arrives, so
+ * nobody leaves the site with a square that says nothing.
+ *
+ * The artwork is the third, and it hangs on the same grant: `art.orderUploadUrls`
+ * and `art.setOrderArtwork` check this session id in exactly the way this
+ * mutation does (ticket 20).
+ */
+export const completeBySession = mutation({
+  args: { stripeSessionId: v.string(), companyName: v.string(), url: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { stripeSessionId, companyName, url }) => {
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_session", (q) => q.eq("stripeSessionId", stripeSessionId))
+      .unique();
+    if (!order) throw new ConvexError("There is no order for that payment.");
+    if (order.refundedAt) throw new ConvexError("That order was refunded.");
+
+    const name = companyName.trim().slice(0, 80);
+    // Bare, no scheme: `blocks.url` is an address and the anchor adds the https.
+    const bare = url.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "").slice(0, 200);
+    if (!name) throw new ConvexError("A name is needed.");
+
+    await ctx.db.patch(order.ownerId, { name });
+    const blocks = await ctx.db
+      .query("blocks")
+      .withIndex("by_owner", (q) => q.eq("ownerId", order.ownerId))
+      .collect();
+    for (const block of blocks) {
+      if (block.orderId !== order._id) continue;
+      if (block.frozen) continue;
+      await ctx.db.patch(block._id, { url: bare });
+    }
+    return null;
+  },
+});

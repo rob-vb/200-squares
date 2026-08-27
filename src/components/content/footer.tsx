@@ -7,16 +7,14 @@
 // product is, in figures.
 
 import Link from "next/link";
-import { PAGES, useHref } from "../nav";
+import { PAGES } from "../nav";
 import { SQUARE_COUNT } from "@/lib/board/geometry";
 
 export function Footer() {
-  const href = useHref();
-
   return (
     <footer className="border-hairline border-t">
       <div className="mx-auto flex w-full max-w-[1180px] flex-wrap items-baseline gap-x-6 gap-y-3 px-4 py-8 lg:px-8">
-        <Link href={href("/")} className="font-display text-[14px]">
+        <Link href="/" className="font-display text-[14px]">
           200 SQUARES
         </Link>
         <span className="text-faint text-[12px]" data-numeric>
@@ -26,7 +24,7 @@ export function Footer() {
           {PAGES.map((page) => (
             <Link
               key={page.href}
-              href={href(page.href)}
+              href={page.href}
               className="text-faint hover:text-ink transition-colors duration-150"
             >
               {page.label}

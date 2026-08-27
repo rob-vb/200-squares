@@ -16,63 +16,42 @@
 // squares, never a selection of the numbers printed on them. The panel is a
 // sibling of this box, not a child, so its fields stay selectable.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Board } from "./board";
+import { useClickCount, type ClickTarget } from "@/lib/board/clicks";
 import { useCanvasTransform, useWheelZoom, type Pt } from "./transform";
 import { PANEL_MEDIA, PANEL_WIDTH, useScreen } from "../panel/flow";
 import { useMediaQuery } from "../use-media-query";
-import { useBoard } from "@/lib/board/state";
+import { useBoard } from "@/lib/board/board";
+import type { BannerToday } from "@/lib/board/types";
 import {
   MAX_SCALE,
   PRICE_PER_SQUARE,
-  askingFor,
-  covers,
   priceOf,
   rectFrom,
-  rectWithin,
   selectionBlocked,
   type BoardModel,
 } from "@/lib/board/geometry";
-import type { Block } from "@/lib/board/types";
 
 type CellRef = { r: number; c: number };
-
-/**
- * The listing under this cell, if the cell is part of one.
- *
- * A listing can be a strip of a block that is still whole, so covering the block
- * is not enough: the other half of that block is not for sale and must not
- * answer as though it were.
- */
-function listingAt(board: BoardModel, at: CellRef): Block | null {
-  const block = board.cells[at.r][at.c].block;
-  return block?.listing && covers(block.listing.rect, at.r, at.c) ? block : null;
-}
 
 /** What the tooltip says about one cell. Mouse only — a tap selects instead. */
 function tooltipFor(
   board: BoardModel,
   bannerName: string | null,
   at: CellRef,
-  forSale: boolean,
 ): string | null {
   const cell = board.cells[at.r][at.c];
-  // In the market view the board answers for one thing only. Everything else is
-  // dimmed, and a dimmed square that still spoke would undo the dimming.
-  if (forSale) {
-    const listed = listingAt(board, at);
-    if (!listed) return null;
-    const owner = board.ownerById.get(listed.ownerId);
-    const { rect, pricePerSquare } = listed.listing!;
-    return `${owner?.name ?? "For sale"} · ${rect.w} × ${rect.h} for sale · $${pricePerSquare} a square`;
-  }
   if (cell.state === "banner") {
     return bannerName ? `${bannerName} · today's banner` : "Banner · nobody has bid";
   }
   if (cell.state === "available") return `${cell.n} · Available · $${PRICE_PER_SQUARE}`;
+  // ⚠️ A reserved square says the same thing a sold one does. The visitor is not
+  // told that somebody is at a payment page right now — that is an invitation to
+  // wait fifteen minutes, and it is nobody's business but the buyer's.
+  if (cell.state === "reserved") return "Taken";
   if (cell.state === "pending") return "Sold · artwork coming";
-  const owner = cell.block ? board.ownerById.get(cell.block.ownerId) : null;
-  return owner && cell.block ? `${owner.name} · Opens ${cell.block.url}` : null;
+  return cell.block ? `${cell.block.ownerName} · Opens ${cell.block.url}` : null;
 }
 
 /**
@@ -80,19 +59,41 @@ function tooltipFor(
  * draw on, a block and the banner are links, and a pending block is neither: it
  * is paid for but has nowhere to send anybody yet.
  */
-function cursorFor(board: BoardModel, at: CellRef | null, forSale: boolean): string {
+function cursorFor(board: BoardModel, at: CellRef | null): string {
   if (!at) return "default";
-  // Drawing, not following: inside a listing the drag buys, so the cursor is the
-  // same crosshair an empty square gets.
-  if (forSale) return listingAt(board, at) ? "crosshair" : "default";
   const state = board.cells[at.r][at.c].state;
   if (state === "available") return "crosshair";
-  if (state === "pending") return "default";
+  // Neither is a link: a pending block has nowhere to send anybody yet, and a
+  // reserved square is not a block at all.
+  if (state === "pending" || state === "reserved") return "default";
   return "pointer";
 }
 
+/**
+ * What a click on this cell counts as, or null where the cell is not a link.
+ *
+ * ⚠️ It has to agree with `board.tsx`, which decides the same thing when it
+ * chooses between an `<a>` and a `<div>`. Where the two disagree the board grows
+ * a link the canvas will not let through, or a count with nothing behind it.
+ */
+function linkAt(
+  board: BoardModel,
+  bannerToday: BannerToday | null,
+  at: CellRef,
+): ClickTarget | null {
+  const cell = board.cells[at.r][at.c];
+  if (cell.state === "banner") {
+    return bannerToday?.url ? { kind: "banner", id: bannerToday.date } : null;
+  }
+  // `taken` is already artwork and not frozen, which is exactly what the board
+  // draws as an anchor. `pending` and `reserved` are neither.
+  if (cell.state !== "taken") return null;
+  const block = cell.block;
+  return block?.url && !block.frozen ? { kind: "block", id: block.id } : null;
+}
+
 export function Canvas() {
-  const { board, bannerToday, ownerOfBannerToday } = useBoardCanvasData();
+  const { board, bannerToday } = useBoard();
   // The selection is the panel's business as much as the canvas's: it is what
   // opens the buy flow, so it lives in the screen state, not in here.
   const {
@@ -103,9 +104,7 @@ export function Canvas() {
     setDragging,
     panelOpen,
     openBid,
-    forSale,
-    selectInListing,
-    flow,
+    holding,
   } = useScreen();
   const boxRef = useRef<HTMLDivElement | null>(null);
   // The side panel lies over the right of this box. The board re-centres into
@@ -117,12 +116,34 @@ export function Canvas() {
   const [cursor, setCursor] = useState("default");
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
 
+  // ⚠️ Which cells are actually on screen, for the artwork the board draws.
+  //
+  // Above 2x zoom a block swaps to its `4x` file, and at 4x about a sixteenth of
+  // the board is in view. Without this, one zoom gesture would fetch 199 large
+  // files — 80 MB of edge traffic for a look at one corner. Ticket 09 asked for
+  // the large set "only above 2x, lazy-loaded off-screen"; a background image
+  // has no `loading="lazy"`, so this is what lazy means here.
+  //
+  // It is deliberately coarse and one cell generous on every side: the point is
+  // to keep the other fifteen sixteenths on the small file, not to be exact.
+  const inView = useMemo(() => {
+    const span = cv.step * cv.scale;
+    if (span <= 0) return null;
+    const c = Math.floor((-cv.t.x) / span) - 1;
+    const r = Math.floor((-cv.t.y) / span) - 1;
+    const w = Math.ceil(cv.viewport.w / span) + 3;
+    const h = Math.ceil(cv.viewport.h / span) + 3;
+    return { r, c, w, h };
+  }, [cv.step, cv.scale, cv.t.x, cv.t.y, cv.viewport.w, cv.viewport.h]);
+
   const pointers = useRef(new Map<number, Pt>());
   const mode = useRef<"idle" | "select" | "pan" | "pinch" | "press">("idle");
   const anchor = useRef<CellRef | null>(null);
-  /** The listing a market drag is drawing inside. It bounds the rectangle. */
-  const offer = useRef<Block | null>(null);
   const pressed = useRef<CellRef | null>(null);
+  // ⚠️ The bridge between the gesture and the click that follows it. `pointerup`
+  // leaves the cell a clean press ended on here, and the anchor's own handler
+  // reads it a moment later to decide whether to let the navigation happen.
+  const lastPress = useRef<CellRef | null>(null);
   const lastPan = useRef<Pt>({ x: 0, y: 0 });
   const pinchStart = useRef({ dist: 0, mid: { x: 0, y: 0 }, scale: 1, t: { x: 0, y: 0 } });
   const spaceDown = useRef(false);
@@ -141,26 +162,47 @@ export function Canvas() {
     };
   }, []);
 
+  // The counter, and the widget that pays for it. Both are idle until somebody
+  // actually clicks a link on the board (`clicks.ts`).
+  const { box: turnstileBox, count } = useClickCount();
+
+  // The one thing a press on the board still does by hand. Everything that
+  // leaves the board is an `<a>` now and opens itself (ticket 21) — but an
+  // unsold banner is the house ad, and it has nowhere to go. It asks for a bid
+  // rather than sitting there as the one dead end on the canvas.
   const follow = useCallback(
     (at: CellRef) => {
       const cell = board.cells[at.r][at.c];
-      const url =
-        cell.state === "banner"
-          ? bannerToday?.url
-          : cell.state === "pending"
-            ? // A pending block is paid for but has nothing to show yet.
-              undefined
-            : cell.block?.url;
-      // An unsold banner is the house ad. It asks for a bid, so it opens the
-      // bid flow rather than sitting there as the one dead end on the board.
-      if (cell.state === "banner" && !bannerToday) {
-        openBid();
-        return;
-      }
-      if (!url) return;
-      window.open(`https://${url}`, "_blank", "noopener,noreferrer");
+      if (cell.state === "banner" && !bannerToday) openBid();
     },
     [board, bannerToday, openBid],
+  );
+
+  /**
+   * A click on one of the board's links, from the anchor itself.
+   *
+   * Two jobs, in this order. **Cancel what was not a click**: a pan that ended
+   * over a block, a pinch, a middle-drag, a finger that wandered off what it
+   * started on. The board owns the primary drag at every input (ticket 02), so
+   * a gesture the canvas did not read as a press must not navigate.
+   *
+   * ⚠️ And then **count it without waiting**. Ticket 10: the anchor navigates
+   * natively and the count is thrown after it. Nothing here is awaited, and
+   * nothing between here and the browser's own default action can be.
+   */
+  const onFollow = useCallback(
+    (target: ClickTarget, e: React.MouseEvent<HTMLAnchorElement>) => {
+      // ⚠️ The keyboard reaches these links as well, and it produces a click
+      // with no pointer gesture behind it — `detail` is 0 for exactly that. A
+      // press check would refuse every one of them.
+      if (e.detail !== 0 && !lastPress.current) {
+        e.preventDefault();
+        return;
+      }
+      lastPress.current = null;
+      void count(target);
+    },
+    [count],
   );
 
   const twoFinger = () => {
@@ -176,9 +218,24 @@ export function Canvas() {
     // the pointer on the way down and the button never sees a click at all.
     if ((e.target as HTMLElement).closest("button")) return;
 
+    lastPress.current = null;
     const p = cv.localPoint(e);
+    const first = pointers.current.size === 0;
+    const panning = e.pointerType === "mouse" && (e.button === 1 || spaceDown.current);
+    // ⚠️ **The one press that does not capture the pointer.** A captured pointer
+    // sends the click that follows it to this box, and the anchor under the
+    // finger never opens — which would undo the whole of ticket 21. Nothing is
+    // lost by letting it go: the moves that track a wandering finger arrive here
+    // anyway while the pointer is over the board, and `onPointerLeave` takes the
+    // one case that does not, a button held down all the way off the canvas.
+    const onLink =
+      first && !panning && (() => {
+        const at = cv.toCell(p);
+        return at !== null && linkAt(board, bannerToday, at) !== null;
+      })();
+
     pointers.current.set(e.pointerId, p);
-    e.currentTarget.setPointerCapture(e.pointerId);
+    if (!onLink) e.currentTarget.setPointerCapture(e.pointerId);
 
     if (pointers.current.size === 2) {
       // The second finger overrides whatever the first one was doing, so a pinch
@@ -191,7 +248,7 @@ export function Canvas() {
     }
     if (pointers.current.size > 2) return;
 
-    if (e.pointerType === "mouse" && (e.button === 1 || spaceDown.current)) {
+    if (panning) {
       mode.current = "pan";
       lastPan.current = p;
       return;
@@ -199,21 +256,6 @@ export function Canvas() {
 
     const at = cv.toCell(p);
     if (!at) return;
-
-    // In the market view the board answers for listings and nothing else — but
-    // it answers with the same gesture as everywhere else. A buyer draws the
-    // rectangle they want, from one square to the whole offer, and the drag is
-    // held inside the part that is actually for sale.
-    if (forSale) {
-      const listed = listingAt(board, at);
-      if (!listed) return;
-      offer.current = listed;
-      anchor.current = at;
-      mode.current = "select";
-      setDragging(true);
-      selectInListing(listed.id, rectWithin(at, at, listed.listing!.rect));
-      return;
-    }
 
     // Pressing on something already sold is not the start of a selection: it is a
     // click on somebody's block, which is what they paid for.
@@ -238,9 +280,9 @@ export function Canvas() {
 
     if (e.pointerType === "mouse" && mode.current === "idle") {
       const at = cv.toCell(p);
-      setHovered(!forSale && at && board.cells[at.r][at.c].state === "available" ? at : null);
-      setCursor(cursorFor(board, at, forSale));
-      const text = at ? tooltipFor(board, ownerOfBannerToday?.name ?? null, at, forSale) : null;
+      setHovered(at && board.cells[at.r][at.c].state === "available" ? at : null);
+      setCursor(cursorFor(board, at));
+      const text = at ? tooltipFor(board, bannerToday?.ownerName ?? null, at) : null;
       setTip(text ? { x: p.x, y: p.y, text } : null);
     }
 
@@ -267,12 +309,7 @@ export function Canvas() {
     if (mode.current === "select" && anchor.current) {
       const at = cv.toCell(p);
       if (!at) return;
-      const listed = offer.current;
-      if (listed) {
-        selectInListing(listed.id, rectWithin(anchor.current, at, listed.listing!.rect));
-      } else {
-        onSelectionChange(rectFrom(anchor.current, at));
-      }
+      onSelectionChange(rectFrom(anchor.current, at));
       return;
     }
     if (mode.current === "press" && pressed.current) {
@@ -285,9 +322,12 @@ export function Canvas() {
   const endPointer = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
     setDragging(false);
+    // ⚠️ Read by the click that is about to follow this `pointerup`, and by
+    // nothing else. The anchor navigates on its own; what this says is whether
+    // the gesture that ended here was a click on it at all.
+    lastPress.current = mode.current === "press" ? pressed.current : null;
     if (mode.current === "press" && pressed.current) follow(pressed.current);
     pressed.current = null;
-    if (pointers.current.size === 0) offer.current = null;
     if (pointers.current.size < 2 && mode.current === "pinch") mode.current = "idle";
     if (pointers.current.size === 0) mode.current = "idle";
   };
@@ -297,12 +337,10 @@ export function Canvas() {
     cv.zoomAbs(cv.scale >= MAX_SCALE ? 1 : cv.scale < 2 ? 2 : MAX_SCALE, p);
   };
 
-  // A market drag is never blocked: it can only be drawn inside an offer. The
-  // offer comes from the flow and not from the drag's ref, which is cleared the
-  // moment the pointer lifts — the chip has to survive that.
-  const marketOffer =
-    flow.kind === "resale" ? (board.blocks.find((b) => b.id === flow.blockId) ?? null) : null;
-  const blocked = !forSale && selection ? selectionBlocked(board, selection) : false;
+  // ⚠️ A hold makes the visitor's own squares unavailable on the live board, so
+  // without this their selection turns red over the rectangle they are paying
+  // for. While they hold one, the selection is theirs by definition.
+  const blocked = !holding && selection ? selectionBlocked(board, selection) : false;
   const chip = selection
     ? {
         x: cv.t.x + selection.c * cv.step * cv.scale,
@@ -321,6 +359,14 @@ export function Canvas() {
         setHovered(null);
         setTip(null);
         setCursor("default");
+        // A press on a link does not capture the pointer, so a button held down
+        // all the way off the canvas never comes back as a `pointerup`. It is
+        // not a click on anything either way.
+        if (mode.current === "press") {
+          mode.current = "idle";
+          pressed.current = null;
+          pointers.current.clear();
+        }
       }}
       onDoubleClick={onDoubleClick}
       className="relative flex-1 overflow-hidden select-none"
@@ -338,12 +384,13 @@ export function Canvas() {
           bannerToday={bannerToday}
           cell={cv.cell}
           scale={cv.scale}
+          inView={inView}
           selection={selection}
           blocked={blocked}
           hovered={hovered}
           preview={preview}
           highlight={highlight}
-          forSale={forSale}
+          onFollow={onFollow}
         />
       </div>
 
@@ -360,33 +407,11 @@ export function Canvas() {
         >
           {blocked
             ? "Not available"
-            : `${selection.w}×${selection.h} $${(marketOffer
-                ? askingFor(marketOffer.listing!.pricePerSquare, selection)
-                : priceOf(selection)
-              ).toLocaleString("en-US")}`}
+            : holding
+              ? "Held for you"
+              : `${selection.w}×${selection.h} $${priceOf(selection).toLocaleString("en-US")}`}
         </span>
       )}
-
-      {forSale &&
-        board.listed.map((block) => {
-          const { rect, pricePerSquare } = block.listing!;
-          const x = cv.t.x + rect.c * cv.step * cv.scale;
-          const y = cv.t.y + rect.r * cv.step * cv.scale;
-          const below = y < 22;
-          return (
-            <span
-              key={block.id}
-              className="font-display bg-accent pointer-events-none absolute px-1.5 text-[13px] leading-[1.35] whitespace-nowrap text-white"
-              style={{
-                left: x,
-                top: below ? y + rect.h * cv.step * cv.scale : y,
-                transform: below ? undefined : "translateY(-100%)",
-              }}
-            >
-              {rect.w}×{rect.h} · ${pricePerSquare}/sq
-            </span>
-          );
-        })}
 
       {tip && (
         <span
@@ -400,6 +425,15 @@ export function Canvas() {
           {tip.text}
         </span>
       )}
+
+      {/*
+        ⚠️ Turnstile's box, and it may not be hidden: Cloudflare refuses to run a
+        widget inside a `display:none` container and refuses quietly (see
+        `checkout/turnstile.ts`). The site key is invisible, so nothing is drawn
+        here unless Cloudflare actually wants an interaction — and the script is
+        not even fetched until the first click on a link (`board/clicks.ts`).
+      */}
+      <div ref={turnstileBox} className="absolute top-4 left-4" />
 
       <ZoomControls
         inset={sidePanel && panelOpen ? PANEL_WIDTH : 0}
@@ -451,14 +485,4 @@ function ZoomControls({
       </button>
     </div>
   );
-}
-
-/** Everything the canvas needs out of the board state, in one place. */
-function useBoardCanvasData() {
-  const { board, bannerToday } = useBoard();
-  return {
-    board,
-    bannerToday,
-    ownerOfBannerToday: bannerToday ? board.ownerById.get(bannerToday.ownerId) ?? null : null,
-  };
 }

@@ -1,0 +1,1061 @@
+# Map: 200 squares — V1.0, the real site
+
+Label: wayfinder:map
+
+## Destination
+
+**200squares.com is live and takes real money.** Next.js on Vercel, Convex as the
+backend, Better Auth for accounts, Stripe for payments.
+
+A visitor drags a rectangle, pays by card, and afterwards supplies artwork and a
+link through an account they never had to create. The daily banner auction runs on
+real card holds and closes hard at 00:00 UTC. Clicks are really counted. A DDoS
+attack may take the site offline, but it must never produce a bill.
+
+⚠️ **Resale is not in V1.0** (2026-08-25). Charting put it in; the dev took it out to keep
+the build smaller and to let scarcity work before a second-hand market softens it. The site
+launches without it. See **Out of scope**.
+
+Marketing and the launch itself are out of scope. The map is finished when the dev
+can decide to launch — not when the launch happens.
+
+The design does not change. [The prototype map](../200squares-frontend/map.md) is
+closed and its answers stand; this map replaces the fake data underneath it with a
+real backend, and then makes the copy true again.
+
+## Notes
+
+- Domain: full-stack product build. Money, accounts and abuse are the new subjects.
+  The design is settled and is not reopened.
+- **This map builds.** Same shape as the prototype map: decide, build, then make the
+  copy true. Planning tickets still resolve as decisions.
+- Keep it informal. Short tickets, short answers, no ceremony.
+- Skills to consult per session: `mattpocock-skills:grilling`,
+  `mattpocock-skills:domain-modeling`, `mattpocock-skills:research`,
+  `mattpocock-skills:codebase-design`, `frontend-design` only where UI changes.
+- The dev works on a VPS, so nothing can be viewed locally. Every visual check
+  happens on a Vercel preview URL. The long-lived one is the `staging` branch:
+  `https://200-squares-git-staging-robs-projects-52973834.vercel.app`.
+- **Commit as `hi@robvb.com` or the Vercel deploy is blocked.**
+- ⚠️ **The scripts write their screenshots to the repo root, and `git add -A` will take
+  them.** It did, twice, on ticket 20. `/*.png` is in `.gitignore` from 2026-08-25 — check
+  `git status` before committing all the same.
+- **Seeing a board is a deployment command, not a URL.** `npx convex run seed:full`,
+  `seed:early` or `seed:clear` against the dev deployment. ⚠️ `?data=` is gone: it was a
+  search parameter, and reading one is what made every route build dynamic (ticket 08).
+  Nothing may put one back on the board route. The seed refuses without `SEED_ENABLED`.
+- ⚠️ **Do not poll the staging URL with `curl`.** It trips Vercel's bot challenge, which
+  then blocks Playwright too and there is no other way to see the site. Use
+  `node scripts/shot.mjs` from the repo root and leave time between runs.
+- ⚠️ **Turnstile cannot be solved from the VPS.** Headless or headful, the widget renders,
+  fetches its challenge and stalls — no callback, no error code. Cloudflare does not answer
+  a datacenter address. So dev and preview run Cloudflare's **dummy always-passes keys**
+  and production keeps the real pair; without that nobody working on this site could get
+  through their own checkout. Found by [ticket 16](issues/16-build-checkout.md), written
+  up under *Turnstile on dev* in `docs/environments.md`, and it puts one manual live-mode
+  purchase on [ticket 25](issues/25-launch.md).
+- **Driving a real purchase**: `node scripts/flow.mjs [prefix]` buys a square end to end on
+  staging in Stripe test mode and screenshots every step. Run
+  `node scripts/free-holds.mjs` first if a previous run stopped at Stripe — one visitor may
+  hold one reservation and the VPS is one visitor.
+- **Driving an upload**: `node scripts/artwork.mjs [prefix]` starts from the session
+  `scripts/signin.mjs` leaves in `.auth.json`, makes a source image on the spot, and puts a
+  picture on the first block in My squares — then asks `/art/<id>` for what it stored and
+  prints the cache header. `node scripts/flow.mjs` now uploads on the thank-you page as
+  part of the purchase, which is the one grant a buyer with no account holds. Built by
+  [ticket 20](issues/20-build-artwork.md). ⚠️ **The panel is in the DOM twice** — the side
+  panel and the bottom sheet, one hidden by CSS — so a script that reaches for the *last*
+  file input reaches into the copy nobody can see.
+- **Driving a real bid**: `node scripts/bid.mjs <email> [amount] [prefix]` places one bid end
+  to end on staging in Stripe test mode. ⚠️ Give each run a **different address** — Stripe's
+  email is what makes an owner, and a bidder who raises their own bid has their earlier hold
+  released, so a one-address run can never build the ladder the close needs. `PHONE=1` runs the
+  same bid in the **bottom sheet** instead of the side panel, and an amount below the floor is
+  the cheap way to see a refusal — it never reaches Stripe and leaves no pending row. A refused
+  run writes `<prefix>-2c-panel.png`, the panel **element**: ⚠️ `fullPage` scrolls the *page*
+  and this panel scrolls **inside itself**, so a page shot cannot show what the visitor is
+  looking at ([ticket 35](issues/35-a-refused-bid-says-nothing.md)).
+- **Driving a withdrawal**: `node scripts/withdraw.mjs [prefix]` starts from the session
+  `scripts/signin.mjs` leaves in `.auth.json`, opens `/admin` and presses *The bidder withdrew*
+  on today's banner. ⚠️ There is no other way to press it — the button is admin-only and the
+  close fires once a day — so make the day first with `scripts/bid.mjs`, `seed:ageAuction` and
+  `auction:closeDue`. Built by [ticket 32](issues/32-build-withdrawn-banner-day.md).
+- **Driving a strip**: `node scripts/strip.mjs <search> [reason] [prefix]` starts from the
+  session `scripts/signin.mjs` leaves in `.auth.json`, opens `/admin` **at a phone width**,
+  searches for an owner and empties their first *Live* block with a rule and a reason. ⚠️
+  There is no other way to press it — the button is admin-only. Built by
+  [ticket 28](issues/28-prove-the-mail.md).
+- **Asking the edge what it is still serving**: `node scripts/art-check.mjs /art/<id> …`
+  makes **two** requests per URL and prints `x-vercel-cache`, because one request cannot tell
+  a cached 200 from a fresh one — `HIT` is the copy a purge has to reach, and `REVALIDATED`
+  on a 404 is the purge having reached it. ⚠️ Vercel's cache key includes the **deployment**,
+  so a fresh deploy starts with an empty edge cache: a proof has to cache and purge inside one
+  deployment or it proves nothing. Built by
+  [ticket 36](issues/36-build-purge-on-release.md).
+- **Reading a page, not looking at one**: `TEXT=1 node scripts/shot.mjs <path> out.png`
+  prints the words as well as taking the picture, and `AUTH=1` goes in signed in. An invoice
+  is checked line by line and a screenshot cannot be. Added by
+  [ticket 28](issues/28-prove-the-mail.md).
+- ⚠️ **Mail can be read here after all, and `robvb.com` takes plus addressing.** `hi@robvb.com`
+  is the admin and the inbox; `hi+bid1@`, `hi+bid2@`, `hi+strip@` all deliver, which is what
+  makes a two-bidder ladder testable from one inbox. `EMAIL=` on `scripts/flow.mjs` puts the
+  address into Stripe's checkout. Resend's own log is the fastest way to see what left and
+  whether it landed — `GET https://api.resend.com/emails` with `RESEND_API_KEY`, and
+  `/emails/<id>` gives the body back. Found by [ticket 28](issues/28-prove-the-mail.md).
+- **Driving a click**: `node scripts/clicks.mjs [prefix]` starts from the session
+  `scripts/signin.mjs` leaves in `.auth.json`, reads the owner's own count out of My squares,
+  clicks their block on the board three ways — mouse, mouse again on the same permit, and the
+  keyboard — drags across it once to prove a drag counts nothing, and reads the count again.
+  It sets a link on the block first if `seed:adopt` left it without one. The count is private
+  to its owner (ticket 14), so the panel is the only place it can be checked at all. The
+  public total on `/how-it-works` is an hour old by design: `npx convex run
+  snapshots:buildSiteClicks` forces it rather than waiting. Built by
+  [ticket 21](issues/21-build-clicks.md).
+- ⚠️ **The close cannot be tested by waiting for it.** It fires at 00:00 UTC, once a day.
+  `npx convex run seed:ageAuction` moves tomorrow's live bids back to today and clears the
+  day row, so the next `npx convex run auction:closeDue` closes it for real against Stripe
+  test mode. To force the case that matters — a **declined capture** — cancel the top
+  PaymentIntent at Stripe first and watch the runner-up be promoted for its own amount.
+  Built by [ticket 19](issues/19-build-auction.md); refuses without `SEED_ENABLED`.
+- ⚠️ **Being signed in is also a deployment command.** There is no inbox here either, so a
+  magic link cannot be read out of mail. `npx convex run auth:devSignInLink '{"email":"…"}'`
+  hands the link back instead of posting it, and `node scripts/signin.mjs '<url>'` follows
+  it and leaves the session in `.auth.json` for the next script. A link is single use.
+  `npx convex run seed:adopt '{"email":"…"}'` gives that address a seeded owner's squares,
+  so My squares has something in it. All three refuse without `SEED_ENABLED`. Built by
+  [ticket 18](issues/18-build-accounts.md).
+- The dev speaks Dutch; write to them in Dutch, ASD-STE100 style. The product UI is
+  English, prices in USD.
+- Vocabulary lives in `CONTEXT.md` at the repo root. Product truth lives in
+  `PRODUCT.md`. Both describe a prototype today and both need updating as this map
+  resolves.
+- This is a one-person business (eenmanszaak, KVK + BTW). Every legal answer is a
+  cost to that person, not to a company.
+- **Nothing may be invented.** `PRODUCT.md` bans fabricated statistics, customers and
+  proof. Real money does not lift that ban.
+- ⚠️ **The Convex project stays on Free, with no card on the account.** Convex has two
+  plans priced at zero: **Free has hard caps** and disables the deployment; **Starter is
+  pay-as-you-go** and bills the overage. Attaching a payment method silently converts the
+  site's failure mode from *breaks* to *bills* — the one thing the dev said must never
+  happen. Tickets 02, 05, 09 and 10 all rest on this. It is not a preference; it is the
+  enforcement. Found by [ticket 09](issues/09-artwork-storage.md).
+
+### Fixed by charting (2026-08-24)
+
+Answers given by the dev while charting. Not tickets — they are the frame.
+
+- **Stack**: Next.js on Vercel, Convex, Better Auth, Stripe, Resend for email.
+- **The prototype stays.** The components are kept. `src/lib/board/state.tsx` — the
+  reducer and the two mock datasets — is what gets replaced by Convex.
+- ~~**Resale is in V1.0.**~~ ⚠️ **Reversed 2026-08-25.** The dev took it out again once
+  ticket 01 had priced it. It moves to V1.1 and the site launches without it. Ticket 01's
+  answer stands as research V1.1 begins with. See **Out of scope** and
+  [ticket 12](issues/12-resale-for-real.md).
+- **Buying needs no account.** Stripe supplies the email. The site then creates the
+  account and sends a magic link. Better Auth, no password.
+- **Artwork comes after payment.** The block lands `pending` and the owner uploads
+  through their account. `pending` already exists in the model and in the copy.
+- **Checkout is Stripe's hosted page**, not Elements in the panel. Selection happens
+  on the board; payment happens on Stripe; the visitor returns to a thank-you page.
+- **A rectangle is held for 15 minutes** while checkout runs, and reads as taken on
+  the board for that time.
+- **The auction charges by card hold.** A bid is an authorization. At 00:00 UTC the
+  site captures the winner and releases the rest.
+- **The auction closes hard at 00:00 UTC.** No extension window. The minimum raise
+  stays $10 over the top bid.
+- **No moderation before publishing.** The dev does not approve artwork up front.
+  They do want to remove a block afterwards, with a reason.
+- **Removal refunds nothing by default**, and the dev decides per case. Otherwise
+  breaking the rules becomes a way to get a refund.
+- **A square costs $250, flat**, however full the board is. ⚠️ Charting fixed this at
+  $100; the dev raised it to **$250** on 2026-08-25, after tickets 03 and 06 were
+  resolved. The decisions in those tickets are untouched — only the amounts rescale, and
+  both tickets carry a dated note saying by how much.
+  [ADR 0002](../../docs/adr/0002-vat-inclusive-priced-and-computed-here.md), `PRODUCT.md`,
+  `CONTEXT.md`, the copy and `PRICE_PER_SQUARE` were all changed with it. The **banner
+  auction still opens at $100** — a banner is one day, a square is forever, and the two
+  numbers were never the same thing.
+- **The withdrawal right is waived at checkout** by an explicit tick box, the way
+  outbid.lol does it for bids. Ticket 03 checks that this is actually allowed.
+- **A DDoS attack may take the site down. It may not run up a bill.** Offline is an
+  acceptable failure; an unexpected invoice is not.
+- **The ceiling is about $20 a month**, and it is nearly all fixed cost. Ticket 02
+  found that Vercel Pro is compulsory for a commercial site at $20, so the dev chose
+  (2026-08-24) to stop there: **Vercel Pro plus Convex Free**. ⚠️ **Pro is deferred**
+  (2026-08-25): the site stays on **Hobby** until a live Stripe key enters Production,
+  because Hobby **pauses instead of billing** — a wall where Pro's Spend Management is only
+  a brake — and nothing commercial exists yet. Until then the bill is **$0**. See the dated
+  note on [ticket 02](issues/02-ddos-and-the-bill.md). The Convex websocket
+  stays unprotected, which is accepted on purpose — Convex Free refuses work instead of
+  billing for it, so an attack breaks the site rather than the bank, and that is the
+  failure the dev already called acceptable. The $25 step to Convex Pro waits until
+  there is real traffic.
+- **The domain is `200squares.com`.** Bought at Cloudflare while this map was
+  being worked — see [04 — Buy 200squares.com](issues/04-domain.md).
+
+## Decisions so far
+
+<!-- one line per resolved ticket -->
+
+- [04 — Buy 200squares.com](issues/04-domain.md) — bought, and the zone sits at
+  Cloudflare (`jacqueline`/`jakub.ns.cloudflare.com`), empty. None of the three
+  connections are live, and all three move to ticket 14, which already owns the keys
+  and the domain verification. Resend's SPF, DKIM and DMARC want doing earliest,
+  because ticket 13 cannot be tested without mail that arrives. Cloudflare in front
+  of Vercel is now a proxy switch rather than a registrar move, so ticket 02 judges
+  that arrangement on merit.
+
+- [01 — Reselling: what a platform is allowed to do, and what it costs](issues/01-resale-platform-cost.md)
+  — **run resale on site credit, not cash, and put VAT on top of the listed price.** The
+  model from tickets 11-12 survives whole; the money leg under it does not. The finding
+  nobody expected is VAT: art. 9a of Reg. 282/2011 presumes the platform supplies in its
+  own name and bars rebuttal by anyone who sets the general terms, so **VAT is owed on
+  $150, not $15**, with no margin scheme and no input VAT from a private seller. Priced
+  VAT-inclusive an EU resale **loses $19**; priced VAT-on-top about **$6** survives, and
+  the €10,000 threshold is crossed at 67 resales, not 670. ⚠️ **PSD2 is why cash is the
+  expensive road**: DNB says a platform that takes the buyer's money and pays the seller
+  provides a payment service, and an eenmanszaak is **forbidden to operate and unable to
+  be licensed**. Connect is the named escape, but only if payout is immediate — which is
+  also the only cheap chargeback defence. **DAC7 does not apply** (a square is
+  intangible, and an eenmanszaak is not an Entity), though the second ground dies on
+  becoming a BV. Resale is a Stripe restricted business twice over. In hosting money
+  resale is cheap; in risk, law and work it is the heaviest thing on the map.
+
+- [02 — DDoS, cost and hard limits](issues/02-ddos-and-the-bill.md) — **"Static front,
+  capped back"**, and the dev's own direction was aimed at the wrong half of the stack:
+  the Cloudflare zone stays **DNS-only**, because Vercel's firewall on Pro beats
+  Cloudflare Free and proxying subtracts from it. Blocked traffic does not bill on
+  Vercel, on any plan — that one fact makes the rule affordable. Vercel Pro is
+  **compulsory** for a commercial site, Spend Management goes to $5 with *Pause
+  production deployment* on, five WAF rules with the Stripe-webhook bypass first, and
+  Convex stays on **Free**, where an attack breaks the site instead of billing it.
+  Turnstile is the only free control that reaches the websocket. ⚠️ **$25 does not buy
+  websocket protection** — firewalling `*.convex.cloud` needs a Convex custom domain at
+  Convex Pro, so $20 + $25 = $45 — and even then Cloudflare inspects only the 101
+  upgrade. The board page must be cached, cookie-free and open **no websocket for an
+  anonymous visitor**, because a subscription rerun is a billed function call.
+  ⚠️ **[Ticket 05](issues/05-convex-model.md) overturned that last recommendation**: the
+  board is live for everyone, because Free cannot bill and the board is cold. Cookie-free
+  stands; the no-websocket rule does not. The failure the rule never covered: a script can
+  freeze the board with fake 15-minute reservations, for free.
+
+- [03 — VAT, invoices and the right of withdrawal](issues/03-vat-invoices-withdrawal.md)
+  — a square is **advertising space on a web page**, named in those words by Annex I(3)(h)
+  of Regulation 282/2011 as an electronically supplied service, and the link is part of
+  the same supply. The panel collects buyer type (no default), country, name, an EU VAT
+  number for a business outside NL, an unticked withdrawal box with the Art. 6(1)(h)
+  information, and consent to a digital invoice; only the **VAT number** (VIES,
+  synchronously, before the Checkout Session — Stripe checks validity too late) and the
+  **country** must be verified. Under €10,000 cross-border B2C every EU consumer pays
+  Dutch 21%. ⚠️ **The waiver as charted does not work**: a square is a service, so only
+  Art. 16(1)(a) applies and it needs **full performance** — a `pending`, permanent square
+  never has it. Keep the box anyway, because without the Art. 6(1)(h) information the 14
+  days become 12 months and 14 days, worth **$49,750** on a full board. The banner is
+  different and can be fully performed. ⚠️ And Stripe's button says "Buy": under
+  *Fuhrmann-2* the order must be placed on 200squares.com, which cuts across "checkout is
+  Stripe's hosted page".
+
+- [05 — The data model in Convex](issues/05-convex-model.md) — **blocks stay the only
+  record, the board goes live for everyone, and everything written often or worth money
+  is kept out of the board query.** ⚠️ The live board **contradicts ticket 02 on purpose**:
+  Convex Free cannot bill (hard caps, no overage rate), so an overrun breaks the site
+  instead of invoicing it — the dev's own rule, enforced by the platform — and the board
+  is cold, at most 199 sales in its whole life. Clicks are the real fan-out bomb, so they
+  get their own table the board never reads, and the public total is summed in a cached
+  query rather than held in one hot row. Recorded as
+  [ADR 0001](../../docs/adr/0001-live-board-clicks-outside-it.md), with an
+  environment-variable kill switch back to a cached snapshot. `reserved` becomes a fourth
+  square state; a reservation is its own table and **identifies nobody** — the Stripe
+  session metadata carries it back, so the board stays cookie-free. Convex is the source
+  of truth, not Stripe. Owner and Better Auth user stay two rows. The webhook beats a
+  late expiry whenever the squares are still free, and refunds automatically when they
+  are not. ⚠️ The reservation flood from ticket 02 is now a **quota** attack as well as a
+  board freeze, and it stays open for ticket 06.
+
+- [06 — Buying with real money](issues/06-buying-for-real.md) — **the order is placed on
+  200squares.com, $100 includes VAT, and only the webhook writes the block.** ⚠️ Charting
+  said "checkout is Stripe's hosted page"; under *Fuhrmann-2* only the words on the button
+  count, so the **order button moves into the panel** (*Order now — obliges you to pay*)
+  and Stripe is demoted to executing an order that already exists. The panel stays one
+  screen: company, link and artwork leave it, the ticket 03 fields take their place.
+  ⚠️ **`tax_behavior: inclusive`, irreversible, and Stripe Tax off** — the site computes
+  VAT itself and freezes it into the order, recorded as
+  [ADR 0002](../../docs/adr/0002-vat-inclusive-priced-and-computed-here.md). $250 stays
+  $250, and **revenue now depends on who buys**: a full board is worth $41,116 to $49,750,
+  not one number. The first sale is therefore priced inclusive while ticket 01's resale is
+  priced on top — deliberate, and ticket 12 must explain it. The late-webhook gap closes
+  with a subscribing return page plus a 10-second server-side session retrieve, keyed on
+  the session id so writing twice is impossible. The **reservation flood** that tickets 02
+  and 05 both left open is answered by Turnstile plus one reservation per IP plus a 10%
+  ceiling on the free squares. VIES failures never block an order; a country mismatch is
+  accepted and costs at most $43.39, which only inclusive pricing makes survivable. The
+  buyer uploads artwork on the **thank-you page**, before any mail arrives. Orders are kept
+  **10 years**, and `pending` has no deadline.
+
+- [08 — Accounts, signing in and access](issues/08-accounts.md) — **the webhook makes an
+  owner, not a user; Better Auth makes the user when the magic link is followed; and the
+  board never asks who is looking.** The two rows ticket 05 fixed are joined on the
+  normalised email, and an owner who never follows their link is an owner all the same —
+  the account is how you come back, not what makes you an owner. Next.js is full-stack, so
+  the handler sits at `app/api/auth/[...all]/route.ts` on 200squares.com and the
+  **`crossDomain` plugin is not used**. Magic Link is supported; the **`admin` plugin is
+  not**, so the admin is one `ADMIN_EMAILS` environment variable on the Convex deployment
+  and `requireAdmin(ctx)` beside the single `requireOwner(ctx, blockId)` guard. The link
+  lives **one hour**, not five minutes, because it arrives after a payment. ⚠️ The
+  mistyped address cannot be closed by machinery — it is a support case, repaired by hand
+  against the Stripe order, and the same route recovers a **dead inbox**, which `/terms`
+  must now answer out loud. ⚠️ **A finding nobody went looking for: the board is already
+  not cacheable.** Every page reads `props.searchParams` for `?data=`, so all five routes
+  build as dynamic today — ticket 02's cheapest defence was never switched on, and killing
+  `?data=` is now a cost requirement on ticket 15 rather than tidiness.
+  [18 — Build: accounts and signing in](issues/18-build-accounts.md) follows.
+
+- [07 — The auction on real card holds](issues/07-auction-holds.md) — **nothing is
+  released until somebody has paid.** One rule answers the declined capture, the runner-up
+  and the hostage attack at once: at 00:00 the site captures the top bid **first**, and
+  cancels the other holds only after that capture succeeds; on failure it walks down to
+  the next bid that can be collected, for that bidder's own amount. ⚠️ Charting said the
+  losing holds go at 00:00 — **they do not**, and the promotion is impossible if they do.
+  Being outbid during the day still releases at once. `capture_before` is read on every
+  bid and a hold that would die before the close is refused at the keyboard. The rollover
+  is a Convex cron **plus lazy closing on read**, ticket 05's own idiom, keyed on the date
+  with `closedAt` making a second run a no-op; a missed run shows the house ad and closes
+  late. Bidding needs no account and **makes** one, like buying — a bid is a relationship
+  over a day, so it wants a session but not a signup wall. ⚠️ The banner is priced
+  **VAT-inclusive**, which closes ticket 03's authorize-≠-capture warning for good: that
+  was a Stripe Tax problem, Stripe Tax is off, and a bid is captured for exactly the bid
+  amount. The sharp consequence is that **the highest bid is not always the most valuable
+  bid**, and the site takes it anyway. The winner gets **no preparation time**, so artwork
+  may ride along on a standing bid and the house ad covers a winner who brought none. The
+  withdrawal box here **actually works**, unlike a square's, because a banner day can be
+  fully performed — and a mid-day withdrawal is a pro-rata refund that `/terms` states and
+  nobody builds. Bidding still opens at $100 with a $10 raise.
+  [19 — Build: the auction on real card holds](issues/19-build-auction.md) follows.
+
+- [09 — Artwork: storage, limits and delivery](issues/09-artwork-storage.md) — **the
+  browser does the work, Convex keeps the file, and Vercel's edge serves it.** Files live
+  in Convex file storage (1 GB included, a full board costs ~88 MB) and
+  `generateUploadUrl()` answers ticket 06's visitor-with-no-session. ⚠️ But **Convex Free
+  includes only 1 GB of egress**, so artwork is **never served from Convex to a visitor**:
+  one route, `/art/<storageId>`, streams it through Vercel with an immutable
+  year-long cache, and Convex is read once per file per region. ⚠️ **Vercel Image
+  Optimization is switched off entirely** (`images.unoptimized: true`), which
+  **supersedes ticket 02's three image settings** — an optimizer that is never invoked
+  cannot be attacked through a varying query string. The browser crops and resizes to two
+  exact WebP sizes before upload, so no server ever decodes a hostile file and no 20 MB
+  camera JPEG lands. No animation. The site crops rather than refusing an odd ratio.
+  ⚠️ **A cut block's pieces share one file and carry a crop rectangle** — which
+  `geometry.ts` already draws — because the split happens in a webhook where there is no
+  browser to re-cut anything.
+  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) follows.
+
+- [10 — Counting clicks for real](issues/10-clicks-for-real.md) — **a real link, a
+  fire-and-forget mutation beside it, one counter row per block, and a public total an
+  hour old.** A native anchor with an un-awaited `onClick` mutation: no Vercel invocation,
+  no redirect in the visitor's path, and no blocked tab — ⚠️ awaiting anything first
+  breaks the user-gesture chain. `clickCounts` is one row per block, not a row per click,
+  because `/privacy` forbids the one field that would make those rows worth keeping.
+  ⚠️ **The fan-out bomb comes back on `/how-it-works`**, which holds a websocket by
+  design, so `siteClicks` is its own query against a cached row recomputed **hourly** and
+  never joins the board query. The privacy trap — every obvious rate limit is *something
+  kept about the visitor* — is answered by **invisible Turnstile**, one token per board
+  load spent over ~30 clicks, verified and thrown away. It stops a script and not a
+  determined person, so the rest is honest framing: **the count is a floor, not a
+  census**, an inflated number flatters exactly one owner, and the cost lands as function
+  calls against a plan that breaks rather than bills. A zero stays a **zero, bare** — the
+  most honest thing on the page. The part-sale tiebreak is the lowest square number.
+  [21 — Build: counting clicks for real](issues/21-build-clicks.md) follows.
+
+- [13 — Email](issues/13-email.md) — **six messages, one merged out of two, and Stripe
+  sends nothing at all.** Magic link, order-confirmed-with-invoice, outbid, banner won,
+  automatic refund, block removed — plus ticket 06's artwork reminders at 1, 7 and 30 days.
+  ⚠️ **Stripe's own receipts are switched off**: the site issues the invoice, and two
+  documents where the prettier one is not a valid VAT invoice is worse than either alone.
+  The magic link is the one that may not fail, which is what the `send.` subdomain
+  verification in ticket 14 is for. ⚠️ **The auction timing problem is fixed in the words,
+  not the timing** — every mail states the close time and never a countdown, so it stays
+  true whenever it is read; late outbid mail is sent anyway, and there is no "closes in an
+  hour" reminder. No bid confirmation; a first bid's mail *is* the magic link. ⚠️ **A reply
+  reaches a person**, not a `no-reply@`, because ticket 08 made emailing the dev the
+  official way back into a locked-out account — one more DNS record for ticket 14. And the
+  sentence that stops `/privacy` reading as self-contradictory: an **email address belongs
+  to an owner**, while the clicks promise is about a **visitor**.
+  [22 — Build: the mail](issues/22-build-email.md) follows.
+
+- [17 — The invoice as a document](issues/17-invoice-document.md) — **one series a year,
+  the ECB rate frozen on the invoice date, and an HTML document written once and never
+  recomputed.** `2026-0001`, allocated inside the mutation that writes the invoice, so no
+  number is taken by something that then fails; ⚠️ the double-write ticket 06 worried about
+  **cannot happen**, because the order is keyed on the Stripe session id and one order has
+  one invoice. The euro amount is the **ECB daily reference rate** — published, dated,
+  auditable in 2036 — and ⚠️ it is **not published on weekends or TARGET closing days**, so
+  the order freezes `fxRate`, `fxRateDate` **and** `fxSource`; without the date a weekend
+  invoice is unprovable. Stored as HTML in Convex file storage at a **permanent,
+  unguessable URL keyed on a random token**, never on the invoice number, because an
+  invoice carries a name and an address. No PDF at V1.0. A consumer gets one too — deciding
+  who needs an invoice costs more than sending everybody one. ⚠️ **The resale invoice is
+  the same document with a different VAT rule**, so the template must not hard-code
+  inclusive arithmetic or every resale invoice is wrong by 21%. The seller-side self-billed
+  document is different law and sits with ticket 12.
+  [23 — Build: the invoice document](issues/23-build-invoice.md) follows.
+
+- [11 — Managing the board: removing a block](issues/11-admin-removal.md) — **strip the
+  artwork, keep the square, count the strike; three strikes in twelve months freezes the
+  block, and nothing is ever refunded.** ⚠️ **The ticket's premise was stale**: `/terms`
+  already carries the content rules, already says the square stays yours, already says the
+  owner is told which rule, and already says the banner's bid is not returned — so *what
+  removal does to the squares* was decided in writing and this ticket did not reopen it.
+  What `/terms` never answered is the **loop**: strip it, they upload again, nightly. Hence
+  the freeze — ⚠️ **strikes count on the owner** (per-block counting hands a four-block
+  owner twelve of them) but the third **freezes only the block that caused it**; a strike
+  **expires after twelve months**, because the rule is for a pattern that runs over days;
+  the dev can unfreeze, unadvertised; and the owner sees *strike 2 of 3* in the mail and in
+  My squares, because freezing a surprise is the complaint worth designing out. The money
+  line is flat — *nothing is refunded* — since "we may make an exception" invites every
+  removed owner to ask for it. Appeals are a reply to the mail and nothing more. ⚠️
+  **Nothing watches the links, and `/terms` says so out loud**; a report to
+  `hello@200squares.com` is then the only signal the site will ever get about a
+  destination. A `removals` table keeps ten years — about an **owner**, not a visitor, so
+  `/privacy` is untouched — and without it the strike rule is unbuildable. One small admin
+  page does all four writes in one press, because the Convex dashboard would ask the dev to
+  edit three tables by hand at midnight. A banner winner takes a strike like anybody else,
+  or the banner is a free practice ground with no memory.
+  [24 — Build: the admin page and removal](issues/24-build-removal.md) follows.
+
+- [14 — Environments, keys and the first real deploy](issues/14-environments-and-keys.md)
+  — **two Convex deployments, one Vercel project, and the branch URL as the staging
+  address.** Convex dev is `proper-heron-683` and prod `energized-deer-345`, ⚠️ **both in
+  `eu-west-1`** — owner rows and email addresses stay in the EU, which `/privacy` may want
+  to say. No Convex preview deployments: one `dev` serves every branch, because a backend
+  per branch moves the `.convex.site` address that Stripe, Better Auth, Resend and
+  Turnstile all need fixed. ⚠️ **The Stripe webhook goes to Convex, not Vercel** — stable,
+  public, invisible to Deployment Protection, no Vercel invocations, same host as Better
+  Auth; **ticket 16 must build it there**. ⚠️ **Charting's `staging.200squares.com` is
+  dropped**: a branch-assigned domain is a **Pro feature**, and Vercel's own branch URL is
+  already stable, so the custom domain buys only prettiness. The build command lives in
+  `vercel.json`, not a dashboard override. ⚠️ Vercel now **refuses a `NEXT_PUBLIC_`
+  variable with secret visibility**. A duplicate Vercel project was found and deleted, and
+  the setup wizard was deleted too — it exited on a `$20` read as `$2` under `set -u`, and
+  dashboard work wants a list, not a program. ⚠️ **This ticket resolves with work
+  outstanding on purpose**: Pro, the spend cap, DNS and every production key are **launch**
+  work, not environment work, and holding them here would block six build tickets behind a
+  card the dev should not add yet. They move to
+  [25 — The launch switches](issues/25-launch.md). **Ticket 15 can start now.**
+
+- [26 — Strip the resale surface](issues/26-strip-resale.md) — **resale is out of the
+  repo, and `/terms` now says there is no exit at all.** Pure deletion: two panel flows,
+  the For sale switch, the market view and its dim layer on the canvas, `Listing`, the
+  asking price and the fee, the listings in the mock data, and every mention of selling on
+  in the copy. ⚠️ `/terms` lost *"Selling your square on"* and gained **"There is no way
+  out"**, and it does **not** promise V1.1 — that promise lives only in the top bar
+  ([ticket 27](issues/27-label-and-sellout.md)), which is not written yet, so today the
+  site says no resale and nothing else. `intersect`, `remainderOf` and the crop stayed on
+  purpose: a part sale is not only resale, and ticket 15's write path owes the loser of a
+  race exactly that remainder. `CONTEXT.md` keeps the vocabulary under **Not in V1.0** —
+  plus **Site credit**, which the ticket did not name but which describes nothing in V1.0
+  either. ⚠️ A stale price was found on the way: `/about` still said **$100 a square**.
+
+- [15 — Build: the Convex schema and the live board](issues/15-build-schema.md) — **the
+  reducer is gone, the board is really live, and all five routes build static.** The
+  schema is ticket 05's plus `invoices` and `cached`; money in whole cents, absolute UTC ms
+  everywhere, and `clickCounts` with no time field at all, which is where `/privacy`'s
+  promise is actually kept. ⚠️ **ADR 0001 is amended**: the board query carries the block's
+  `url` and its owner's name, because ticket 10 made a click a **native anchor** and an
+  anchor needs its `href` at render — a `/go/<id>` route would undo that whole answer. The
+  write path is the point: `reserve` reads and writes in one serialisable mutation, and the
+  loser gets `largestFreePart` of their drag rather than an error, verified against the
+  deployment. The kill switch is `BOARD_LIVE=false`, a cached row a cron rewrites
+  **every two minutes whether or not the switch is thrown**, because a snapshot built under
+  the load is no escape from it. ⚠️ **`?data=` is dead and every route is now
+  `○ (Static)`** — ticket 08's finding closed, and ticket 02's cheapest defence switched on
+  for the first time. Seeing a board is now `npx convex run seed:full`, guarded by
+  `SEED_ENABLED`. ⚠️ An `artwork` union arm nobody asked for — **seeded artwork**, colour
+  and a wordmark with no file — exists because 37 invented logos as real WebP files is not
+  a thing to build. Every unbuilt seam says out loud which ticket owns it, and
+  `owners.seedViewer` is the fake sign-in on borrowed time until ticket 18.
+
+- [16 — Build: the checkout](issues/16-build-checkout.md) — **the order is placed on
+  200squares.com, reserving moved to Convex, and one keyed mutation is the only thing that
+  writes a block.** The panel holds the ticket 03 fields and did not grow; the wording of
+  the tick box is stored **as words**, and `orders` gained the IP, that wording and a
+  `refundedAt` to carry it. ⚠️ **`reservations.reserve` is now internal** — reached only
+  through a Convex HTTP action, because the two limits need the caller's IP and a Turnstile
+  answer, and a public mutation with the controls wrapped *around* it is a bypass. The 10%
+  ceiling needed a floor of one 4 × 4 or the last nine squares could never be sold, and the
+  hold now keeps a **salted hash of the address**, which `/privacy` owes a sentence.
+  ⚠️ **A free square is one no *block* covers**: another visitor's live hold does not beat
+  a completed payment, whoever pays first wins, and the loser is refunded in full — a path
+  staged by hand, which is how the refund was found to be **unretryable** and fixed.
+  ⚠️ **Turnstile cannot be solved from the dev's VPS at all**, so dev runs Cloudflare's
+  dummy keys and **production is the first place the real widget ever runs** — one manual
+  live-mode purchase is now on [ticket 25](issues/25-launch.md). ⚠️ `owners.name` starts
+  **empty** and is set on the return page, so a private person's legal name never becomes
+  the public tooltip. All five pages still build `○ (Static)`: the session id is read on
+  the client and Stripe's back link has its own route.
+  [Ticket 23](issues/23-build-invoice.md) gains one rule — a refunded order takes no
+  invoice number.
+
+- [18 — Build: accounts and signing in](issues/18-build-accounts.md) — **Better Auth runs on
+  Convex, the browser reaches it through 200squares.com, and the board HTML is byte-identical
+  signed in or out.** Magic link only, one hour, and ⚠️ the Next.js route is a **forwarder,
+  not an auth server** — which is what keeps the cookie first-party and why ticket 08 refused
+  `crossDomain`. Turnstile on sign-in is Better Auth's own `captcha` plugin scoped to that one
+  endpoint, and a POST without a token really does come back `400 MISSING_RESPONSE`.
+  ⚠️ **The join is not the trigger ticket 08 asked for**: wiring `authFunctions` makes the
+  component reference its own generated API and TypeScript refuses it, so `currentOwner`
+  joins on the address and `requireOwner` writes `owners.userId` as a shortcut — which
+  answers the other order, an account made before the first purchase, for free.
+  ⚠️ **And the finding that costs money: ticket 08's "hit on sign-in and never on a board
+  view" is false.** The provider calls `useSession()` unconditionally, so every board view is
+  now one Vercel invocation where it was none. Static survives; free does not. Recorded below.
+  ⚠️ The VPS could not sign in at all — no browser, no inbox — so `auth:devSignInLink`,
+  `seed:adopt` and `scripts/signin.mjs` exist, all refusing without `SEED_ENABLED`.
+  `requireOwner` and `requireAdmin` are built and **nothing calls them yet**.
+
+- [19 — Build: the auction on real card holds](issues/19-build-auction.md) — **the ladder
+  is real, and it cost the courtesy.** ⚠️ **Ticket 07 carried two rules that cannot both
+  hold**: *an outbid hold is cancelled at once* (inherited from charting) and *at the
+  close, promote the next bid that can be collected*. A runner-up with no hold cannot be
+  promoted. The dev chose the ladder, so **an outbid hold stays on the card until 00:00
+  UTC** and the mail and the panel say so — and a **bidder's own** earlier hold is still
+  released when they raise, because a second hold on the same card can never be the next
+  bid that can be collected. A bid is a Checkout Session with `capture_method: manual`,
+  cards only, priced inclusive; ⚠️ its session comes back **`payment_status: unpaid`** and
+  stays that way until the close, so the webhook reads the PaymentIntent instead. Opening
+  a bid is **two steps like a purchase** — Turnstile on Convex, then VIES and Stripe on
+  Vercel behind a bid id — because a bid has no reserve step and a single Vercel route
+  would be the most floodable thing on the site. ⚠️ Three things the platform refuses:
+  **`capture_before` cannot be read at the keyboard** on a hosted page, so the late-hold
+  refusal moved one screen to `/bid`; **lazy closing on read is unbuildable** — a query
+  cannot capture money and an unauthenticated close endpoint is a road a flood walks down
+  — so one **hourly** cron is both the 00:00 close and its own retry; and the remembered
+  ticket 03 fields stay **off `owners`**, which the board query reads whole, and come from
+  the bidder's last order instead. Proved on staging by cancelling the top hold at Stripe
+  by hand: `$150` failed, `$100` was captured **for its own amount**, and the day, the
+  order and the house ad all landed. `scripts/bid.mjs` and `seed:ageAuction` exist so the
+  close can be watched rather than waited for.
+
+- [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) — **the
+  browser makes the picture, Convex keeps it, and Vercel's edge hands it out.** Three doors
+  on one rule — the Stripe session id on `/thanks`, `requireOwner` in My squares, a standing
+  bid in the bid panel — each handing out two short-lived upload URLs and checking the caller
+  again when the ids come back. The server's whole check is content type and byte size, and
+  it **deletes a refused pair before it throws**, or rejection would be the cheapest way to
+  fill the free plan's gigabyte. ⚠️ Three things ticket 09 did not price: **`s-maxage`**,
+  without which Vercel's edge caches nothing and every request stays on the function;
+  **`ART_CELL = 80`**, because "exactly the size the board draws" does not exist — `cell` is
+  whatever the viewport allows, from 23px to 150px; and **the `4x` set costs 80 MB** unless
+  it is given only to blocks in view, since a background image has no `loading="lazy"` and
+  one zoom gesture would otherwise fetch all 199. Replacement deletes what it replaced unless
+  something else still points at it, and a daily cron sweeps the rest — ⚠️ with
+  `invoices.storageId` on the referenced list, because that file is bookkeeping and is kept
+  ten years. Proved on staging four ways: a buyer with no account uploaded from `/thanks`, an
+  owner replaced a picture and both old files went to 404, a $1,000 bid was dressed and won
+  the banner through a real close, and the file came back `x-vercel-cache: HIT`.
+
+- [21 — Build: counting clicks for real](issues/21-build-clicks.md) — **a block becomes a
+  real link, and the count is thrown after it.** Blocks and the banner render as `<a>`, so a
+  square behaves like a link everywhere a link behaves — middle-click, ctrl-click, the status
+  bar, copy address, and the keyboard, which reaches the board for the first time. The price
+  is in the canvas: ⚠️ **a press on a link is the one press that does not capture the
+  pointer**, or the click goes to the box and the link never opens; and a pan or a wandering
+  finger that ends over a block has its navigation cancelled, while a **keyboard** click
+  (`detail === 0`) is let through or every one of them would be refused as a stray drag.
+  ⚠️ Ticket 10 asked for a token good for 30 clicks **and** for nothing to be written down,
+  and those cannot both be literal — a countdown is a row per visitor, which is an identifier
+  and a time. The promise wins: a permit is a **signed expiry with no nonce**, so the board
+  spends one on 30 clicks and the server enforces **two minutes**. Turnstile's script is not
+  fetched until somebody clicks, so a plain board load still reaches nothing at Cloudflare.
+  ⚠️ **The reset was not built**: nothing in V1.0 changes hands or splits, so it goes to V1.1
+  with resale — see **Out of scope**. Driven on staging by `scripts/clicks.mjs`, which reads
+  the count out of My squares, clicks three ways, drags once, and reads it again.
+
+- [22 — Build: the mail](issues/22-build-email.md) — **the six messages are complete.**
+  Five added to ticket 18's transport: order confirmed with the invoice, refunded in full,
+  block removed, and the artwork reminders at 1, 7 and 30 days. Every send is an action and
+  every caller schedules it, because a mutation cannot reach the network and a Resend outage
+  must not undo a landed payment. Three decisions the build had to make: the **refund mail
+  sits inside the success branch of `refunds.create`**, so the site never says the money is
+  on its way before Stripe has taken it and a retry's `charge_already_refunded` sends
+  nothing twice; the **reminders are scheduled, not swept**, each one checking the block
+  before it sends, which is why no `remindedAt` column exists; and the **banner's invoice
+  mail goes after `wonMail`**, which ends *your invoice follows*. ⚠️ **Stripe's own receipts
+  are still on** — there is no API for it, it is a dashboard switch per mode, and it stays
+  step 4 of the checklist. ⚠️ **Nothing has been sent to a real inbox yet**; that is
+  [ticket 28](issues/28-prove-the-mail.md).
+
+- [23 — Build: the invoice document](issues/23-build-invoice.md) — **built: the number is
+  taken in the mutation, the file is written by the action a moment later.** Ticket 17 asked
+  for the number to be allocated where the invoice row is written *and* printed inside the
+  document, and a Convex mutation cannot write a file — so `allocate` → `issue` → `attach`,
+  and ⚠️ **`invoices.storageId` is optional**, which is the one departure from the ticket as
+  written. A row without a file is an invoice still being written and never a gap in the
+  series: the number and the token are fixed and every field is frozen, so the nightly
+  re-render is the same document. `2026-0001` off the `by_year` index rather than a counter
+  row; refunded orders take no number; the **ECB rate** is pulled daily into the `fx` cached
+  row and frozen onto the order with its publication date (verified live: 1.1662, dated
+  2026-08-25). All four money cases were rendered and read, including ⚠️ the **VAT-on-top**
+  one, which is the ticket's own warning answered: the net is `total − vat` from two stored
+  numbers, never recomputed from a rate. Served at `/invoice/<32 hex>`, `private, no-store`
+  at both ends — the opposite of `/art`, because this carries a name and an address.
+  ⚠️ **The four `BUSINESS_` variables were not invented and not asked for**, so no document
+  has been rendered on a deployment yet.
+
+- [24 — Build: the admin page and removal](issues/24-build-removal.md) — **one page, one
+  press, four writes in one transaction.** `/admin` behind `requireAdmin`: a search, today's
+  banner, every block, the last fifty removals. Ugly, one column, works on a phone.
+  `admin.strip` strips artwork **and** link, pushes the strike, writes the `removals` row
+  and books the mail together — and calls ⚠️ **`release(ctx, old)`**, now exported from
+  `art.ts`, because stripping is not only setting the field to null and what was reported
+  would otherwise stay reachable at its `/art` URL. The strike rule as ticket 11 wrote it:
+  counted on the owner, twelve-month window, the third freezes **only** the block that
+  caused it, visible to the owner in the removal mail and in My squares — and silent at
+  nought. The banner goes through the same door and sets `removedAt`, which the board and
+  the click counter already read. ⚠️ **`ADMIN_EMAILS` is unset**, so `/admin` admits nobody
+  today, including the dev.
+
+- [27 — The resale label, and the day the board sells out](issues/27-label-and-sellout.md)
+  — **the label is dropped and the sold-out day is silence.** The dev looked at three
+  placements for *"When all 199 squares are sold, owners will be able to sell theirs on."*
+  and took none: on a phone the top bar has no room for it, and the only placement that
+  reaches a phone is a strip that costs canvas height on a board that must not scroll. So
+  ⚠️ **the site now promises resale nowhere** — not the top bar, not `/terms`
+  ([ticket 26](issues/26-strip-resale.md)) — and V1.1 starts from silence owing nobody a
+  thing. The two recorded risks of the hard wording are retired, not carried. On the day
+  `available` reaches zero, **nothing happens**: no sold-out branch on the board, the panel
+  or the dock; a drag selects nothing and no panel opens. The counter needed no change — it
+  already reads *"Every square is taken. The banner is still auctioned every day."* The
+  banner is still the one thing a sold-out board has. One thing did change on every day:
+  ⚠️ **the drag legend under the canvas is deleted** — *"Drag to select up to 4 × 4 · $250
+  per square"* — so nothing now tells a first visitor the board is drag-to-select, and on a
+  phone the price appears nowhere on the board screen. `TitleBlock` stays. The variants and
+  the switcher are off `staging`, on the throwaway branch `prototype/27-label-and-sellout`;
+  `convex/seed.ts` keeps `seed:soldout` so the full board can still be looked at.
+
+- [30 — Making the auction feel like a contest](issues/30-auction-tension.md) — **closed by
+  the dev, unbuilt.** It ran the whole way from *make the banner work like outbid.lol* to
+  *show the last five bidders on the board* to *laat maar zitten*, and it was worth every step
+  for what it settled on the way. ⚠️ **A paid bid would not remove the invoice** — the payment
+  makes the paperwork, not the card hold — which killed the outbid.lol model's stated reason;
+  and this site has no leaderboard, so a losing bid would buy nothing, which killed the model
+  itself. **Only the winner pays**, so [ticket 19](issues/19-build-auction.md)'s money path,
+  the VAT cases and the invoice all stand untouched. The last-five list died on the dev's own
+  objection: the banner block holds a winner's artwork for a day, and every other home for the
+  list trades loudness against board — the dock is the only surface everybody sees and it
+  already lies over the board's corner, while the bid panel shows a bidder only to rivals.
+  The lasting finding: **the contest is already rendered.** `AuctionDock` has the countdown,
+  the top bid, the bid count and the viewer's own standing; what it lacks is loudness, motion
+  and memory, not data. ⚠️ One debt is left behind on `/terms`, which promises *"the day stays
+  in the public record with the winning bid on it"* — a record of winning bids, committed to
+  and unbuilt. That belongs to *making the copy true again*, not to a closed ticket.
+
+- [29 — Which address the invoice may carry](issues/29-invoice-address.md) — **closed on
+  the dev's own answer, and it was asking the wrong question.** It was raised while setting
+  the `BUSINESS_` variables: the eenmanszaak is registered on the dev's home address. The
+  dev's question was not *which address may I use* — they know — but **where does my address
+  appear at all**, and that has one answer: ⚠️ **on the invoice, and nowhere else on the
+  site.** `BUSINESS_ADDRESS` is read in one file, the document sits behind a random token
+  with `private, no-store`, and no page prints an address — the site's public contact is
+  `hello@200squares.com`. The exposure is *every buyer, forever*, not *the web*. The three
+  research questions were dropped unasked. ⚠️ One line survives it: ticket 17's write-once
+  rule freezes the address into each document at issue time, so which address goes on prod
+  is a choice to make **before** the first real sale, and it is recorded on
+  [ticket 28](issues/28-prove-the-mail.md).
+
+- [31 — A bid that does not stand](issues/31-a-bid-that-does-not-stand.md) — **a bid cannot be
+  withdrawn, because there is nothing to withdraw from until the auction closes.** The bid is
+  an **offer**; the close at 00:00 UTC is the **acceptance**; no contract exists before it. So
+  the dev's fear — *intrekken vlak voor de teller, terwijl je wint* — is answered by one
+  sentence in `/terms` and no code at all. The offer is irrevocable on 6:219 lid 1 BW, an offer
+  naming a term for acceptance, which this auction does. ⚠️ **Two shortcuts were tried and both
+  fail**: outbid.lol's *"bids are non-refundable"* box (American, and it describes the
+  pay-every-bid model ticket 30 dropped), and abandoning the auction for a direct claim on the
+  banner — a day is still a day, and selling the banner **permanently** is *worse*, because
+  ticket 03 found a perpetual service is never fully performed. **The banner day is the safest
+  thing on the site precisely because it ends.** What survives is small: a consumer's 14 days
+  are born at the close and die at full performance, so they **live 24 hours**, pro rata, one
+  bid in size. Everyone may keep bidding; business-only was the lever that removes it entirely
+  and it was declined. A withdrawn day falls to the **house ad**, never the runner-up — ticket
+  07 has released every other hold by then. The refund stays **manual**, and ⚠️ Art. 14(3)
+  fixes the amount at the moment the consumer *sends the message*, not when the dev acts, so a
+  late reply costs the house free banner hours and shortens nobody's refund. Two code findings
+  outlive the ticket: ⚠️ **`removeBanner` cannot be reused** (`convex/admin.ts:226` counts a
+  strike and sends the *you broke rule X* mail), and ⚠️ **the ticket's own strike premise was
+  wrong** — `convex/auction.ts:407` gives a bidder an `owners` row the moment the hold lands,
+  so the row exists; what is missing is the **target**, because ticket 11's third strike freezes
+  a *block* and a bidder has none. Written up as
+  [ADR 0003](../../docs/adr/0003-a-bid-is-an-irrevocable-offer.md), with `CONTEXT.md`'s **Bid**
+  entry sharpened to match. Hands on [ticket 32](issues/32-build-withdrawn-banner-day.md).
+
+- [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md) — **built:
+  `withdrawBanner` is `removeBanner` with the blame taken out, and the `removals` row records
+  the withdrawal by *absence*.** Same three patched fields, same `release`, then it stops: no
+  strike, no `rule`, no mail. ⚠️ **`removals.rule` is now optional and its absence is the
+  marker** — a sentinel string or a `rule` plus a `withdrawn` flag were both refused, because
+  two fields about one row can disagree and one cannot; the query derives `withdrawn` on read.
+  ⚠️ **`reason` changed meaning without changing type**: on a removal it is words the owner
+  reads, on a withdrawal it is the dev's own note, and it is still required because the row is
+  the only thing the act leaves behind. ⚠️ The screenshots caught what the ticket did not: two
+  textareas stacked on `/admin`, where the wrong press costs a strike and a *you broke rule X*
+  mail — so the second names itself above its box, which is that page's founding argument
+  turned on the page itself. Ticket 31's words shipped: `/terms`'s daily-banner paragraph went
+  from three to five, which **settles ticket 19's debt** — *"the highest bid at 00:00 UTC wins
+  and is charged"* is gone — a fourth `BID_TRUTHS` line, and `BANNER_WITHDRAWAL_INFO` sharpened.
+  ⚠️ *"the day stays in the public record"* **stays and is still untrue**: that is ticket 30's
+  unbuilt promise, not this one's. Proved twice end to end against a real test-mode capture with
+  the new `scripts/withdraw.mjs`: house ad up, `strikeAt` still `[]`, a `removals` row with no
+  rule, no mail. ⚠️ The artwork release was not re-exercised — neither winner carried a picture —
+  and it is the identical call ticket 20 proved.
+
+- [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md) — **`MAX_BLOCK` is 3, and
+  the largest block costs $2,250 instead of $4,000.** Two constants, four comments and six
+  sentences of prose; the drag clamp, `rectIsSellable`, the price and the reservation ceiling
+  all read the constant, so they followed on their own. ⚠️ **The seed did make blocks 4 wide**
+  after all — the shapes live in `convex/seedData.ts`, not `convex/seed.ts` where the ticket
+  looked — so atlas, citadel and the viewer's own big block each lost their last column; the
+  full board keeps 140 of 199 squares. ⚠️ **`PRODUCT.md` did name the limit**, twice, and is
+  corrected. Proved on staging: a drag across 5 × 5 stops at *3 × 3 · 9 squares · $2,250*.
+  The artwork byte ceilings stay sized for a 4 × 4 picture on purpose — they are ceilings.
+
+- [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md) — **every
+  message reached a real inbox and the whole list was driven.** Purchase, invoice, the bid
+  ladder, the close and a strip, all on staging, all read at `hi@robvb.com` — which
+  **accepts plus addressing**, and that is what makes a two-bidder ladder testable from one
+  inbox at all. Stripe has no *Off* for customer emails; the individual toggles are the
+  switch and they are off in both modes. Three things it was not looking for: the **first
+  invoice on a deployment has no euro amount and never will**, which is now step 8 of
+  [ticket 25](issues/25-launch.md); a **stripped picture keeps serving from its own URL**
+  ([ticket 34](issues/34-stripped-art-stays-cached.md)); and a **refused bid says nothing
+  where the bidder is looking** ([ticket 35](issues/35-a-refused-bid-says-nothing.md)).
+
+- [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md) —
+  **a released file is purged from the edge by cache tag, and `immutable` comes off the year.**
+  ⚠️ *Purge the path* — the ticket's own first option — **cannot be built**: Vercel's cache key
+  is not configurable and the only handle is a `Vercel-Cache-Tag` header the route sets on its
+  own answers. That kills three of the four options with it. It works on Hobby, costs nothing to
+  purge, and does not wait for ticket 25. Three sharpenings the question did not have: it fires
+  on **`release`**, not `strip`, because a **replacement** leaves the identical year-long copy of
+  the old picture and nobody was calling that a removal; it **deletes** rather than invalidates,
+  because Vercel's recommended *invalidate* serves the stale picture one more time per region,
+  which for adult content or impersonation is the removal not working; and the deployment purges
+  **itself** through `@vercel/functions` rather than Convex holding an account-wide `VERCEL_TOKEN`.
+  ⚠️ Cache tags are scoped per project **and** environment, so dev must call staging and prod the
+  real domain — the wrong URL purges the wrong environment silently. A failed purge is the whole
+  risk, so it is recorded on the `removals` row and shown on `/admin`. The browser half stays: no
+  purge reaches it, and only `immutable` comes off, so a reload asks the edge and Convex is never
+  touched. [ADR 0004](../../docs/adr/0004-a-year-is-a-cache-not-a-promise.md) records it; the build is
+  [ticket 36](issues/36-build-purge-on-release.md).
+- [35 — A refused bid says nothing where the bidder is looking](issues/35-a-refused-bid-says-nothing.md)
+  — **a refused bid scrolls to the reason.** One `fail()` helper sets the amount error and
+  brings the field into view after paint, so all three refusals — below the minimum, somebody
+  bid while you were typing, whole dollars — land where the bidder is looking instead of at the
+  top of a panel that scrolls inside itself. The button **stays live** below the minimum on
+  purpose: a disabled button cannot say the other two. ⚠️ The `notice` messages were already
+  above the button and were left alone. ⚠️ `scripts/bid.mjs` had a real bug this exposed — every
+  CSS selector took the **hidden** copy of the double-mounted panel, so it could never have
+  tested the bottom sheet; it is scoped to the visible panel now, gains `PHONE=1`, and shoots
+  the panel *element* on a refusal, because a `fullPage` shot cannot show what a panel that
+  scrolls inside itself is showing. That is why ticket 28's screenshot looked empty.
+- [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md)
+  — **built and proved on staging.** `/art/<id>` tags every 200 `art-<id>` and has lost
+  `immutable`; `release` books a scheduled action for exactly the ids it deleted, which POSTs
+  the tags to `/api/purge` on the site behind a shared secret, which calls
+  `dangerouslyDeleteByTag`. Measured both ways round: a picture cached at the edge (`HIT`)
+  answers 404 `REVALIDATED` after the strip **and** after a replacement. `purgedAt` lands
+  393 ms after `removedAt`. ⚠️ Ticket 34 named four callers of `release`; there are **six**,
+  and `withdrawBanner` is one of them — the release where nobody did anything wrong and the
+  picture still has to stop being served. ⚠️ **`dangerouslyDeleteByTag` resolves silently when
+  there is no purge API**, so the route reads Vercel's request context itself and answers 503
+  rather than reporting a purge that did not happen. A failed purge retries six times over
+  about eight hours and then stops; the `removals` row keeps no `purgedAt` and `/admin` says
+  *Still on the edge* for ever, which the four removals that predate this build now do —
+  truthfully. A replacement gets no such row on purpose: `removals` is the record of things
+  taken off after a report, not of an owner tidying up. ⚠️ **Production's `PURGE_URL` and
+  `PURGE_SECRET` are on [ticket 25](issues/25-launch.md)**; the wrong URL purges the wrong
+  environment and reports success. New: `@vercel/functions`, and `scripts/art-check.mjs`,
+  which asks twice because one request cannot tell a cached 200 from a fresh one.
+
+- [38 — Nobody tells a bidder their card was declined](issues/38-declined-bidder-hears-nothing.md)
+  — **a seventh mail, and three defects hiding behind the silence.** Ticket 13's list of six
+  grows on purpose: this is the only path on the site where somebody loses something and
+  hears nothing, and rare is the reason to send it rather than to skip it. It says the
+  charge was refused and ⚠️ **never why** — a decline code is between the bidder and his
+  bank — and it is emphatically **not** the outbid mail, because nobody outbid him. Reading
+  the code to answer it found the rest: ⚠️ a `failed` bid's PaymentIntent is **never
+  cancelled**, so the loser's money stays frozen until the authorization expires by itself;
+  ⚠️ the status page tells him the day *"was decided while you were paying"* and that
+  *"nothing is held"*, both untrue, because `failed` covers three different endings and only
+  one of them has a `reason`; and ⚠️ **My squares forgets him** the next morning — it lists
+  only tomorrow's `held` bids, so it says *"You have not bid."* to somebody who bid all day.
+  One row for yesterday fixes that, with one word for the ending. The mirror case gets one
+  sentence too: a **promoted** runner-up is charged his own amount and did not expect to win
+  at all. `/terms` now owes ticket 40 the line that the highest bid does not always win.
+  [41 — Build: the declined bidder hears it](issues/41-build-declined-bidder.md) follows.
+
+- [37 — When a bid binds, read against a source](issues/37-when-a-bid-binds.md) — **a bid is
+  irrevocable against a business and not against a consumer, and the site has been saying
+  otherwise.** Art. 6:219 lid 1 does hold — the close at 00:00 UTC is a named term — but
+  ⚠️ **art. 6:230q lid 1 BW derogates from it expressly** for a consumer's offer to a trader,
+  and the memorie van toelichting records that the Raad van State raised *exactly* the
+  named-term case and the bill was amended to defeat it. Mandatory (art. 6:230i lid 1), so no
+  wording restores it. [ADR 0003](../../docs/adr/0003-a-bid-is-an-irrevocable-offer.md)'s own
+  ⚠️ came true and it now carries a superseding note: **conclusion at the close survives** and
+  is sourced, **irrevocability against a consumer does not**. When the contract is concluded is
+  left by Dutch law to the auction's own terms — so `/terms` must say it, and the research
+  recommends the ADR's own structure. Ticket 03's banner finding **stands unchanged**. The
+  auction is **outside** the *openbare veiling* exemption on two limbs, so the whole regime
+  applies. ⚠️ **The largest find is not what the ticket asked**: art. 6:230oa BW / art. 11a CRD
+  has required an on-site **withdrawal function** since 19 June 2026 and the site has none —
+  and the price of missing it is a **twelve-month** withdrawal tail, not a fee. Graduated as
+  [42 — The withdrawal function](issues/42-the-withdrawal-function.md), which now blocks
+  ticket 40 and, through it, the launch.
+
+- [39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
+  — **one real board visit costs exactly one Vercel invocation, and that is not the problem.**
+  Measured on staging: `/` is `PRERENDER`, the eight RSC prefetches are `PRERENDER`, the
+  chunks are `HIT`, and only `/api/auth/get-session` is a `MISS` — every load, for everyone.
+  Ticket 02's static front is standing. ⚠️ **Item 3 of the question was too big**: a query
+  string does **not** vary the cache key of a *static* route (`/?junk=zzz` answered `HIT`);
+  only the function route `/art/` has the query in its key, where each new string is one
+  invocation **and** a year in the cache. ⚠️ And the regex guard saves the Convex fetch, not
+  the Vercel invocation. Hobby's ceiling is **1M invocations** = 1M visits a month, so the
+  normal path is a success problem, not a cost one — and removing `get-session` buys $0.60
+  per million while paying with a real failure mode, and still leaves `/art/` open. **So:
+  make the flood free, not the normal path.** Blocked traffic bills nothing (ticket 02), and
+  `query` `ex` — *"any query string"*, from Vercel's own rule vocabulary — makes the one
+  unbounded hole expressible. ⚠️ **Not in `vercel.json`**: `has` matches a query key by name
+  and there is no rate-limit action there. **Zero code**, three new WAF rules and one dead
+  one dropped, all on [ticket 25](issues/25-launch.md). ⚠️ **Found on the way:
+  `200squares.com` is already public and serving `main`, 73 commits behind — every route
+  `MISS` and `no-store`, the pre-ticket-08 build, resale still in it.** No bill is possible
+  on Hobby, so ticket 39 left it; ticket 25 now knows it is switching a site **over**, not on.
+
+- [42 — The withdrawal function, which the law now requires](issues/42-the-withdrawal-function.md)
+  — **the law fixes how long the right lasts; the button only fixes whether the site obeys.**
+  ⚠️ That reframe decided it. The ticket asked how long a square's withdrawal right runs, as if
+  the button set it. Building the function lengthens nothing — what it decides is art. 6:230oa
+  compliance and, through art. 6:230m lid 1 sub h, whether the period stays 14 days or is
+  extended by up to **twelve months**. So: **14 days from the day of purchase, and the site
+  makes no claim that a square is ever fully performed.** It does not need one — the ordinary
+  period runs and ends, and the sub h information closes the tail that research 03 §5.6 called
+  the number worth caring about. The *"never dies"* reading is safest in law and buys nothing
+  the above does not, while putting a permanent refund right on every square. The banner is
+  unchanged (research 37 §3.1). **The function**: `/withdraw/<token>` on its own new token,
+  consumer orders only, entry points on `/thanks` and My squares — ⚠️ **not the invoice token**,
+  which the schema says exists so an owner can hand it to their bookkeeper. Pressing it writes
+  a row in a new `withdrawals` table, takes a **banner down at that instant** through ticket
+  32's `withdrawBanner`, and mails the consumer the lid 4 confirmation — ⚠️ **a seventh mail**,
+  obligatory rather than chosen, because ticket 32's *"the dev is already in the thread"* has
+  no thread behind a button. A square does not move; the refund stays manual (ADR 0003) and a
+  new mutation then **deletes the block**, so the rectangle returns to the market. `/admin`
+  lists what is not yet refunded, because art. 6:230r lid 1 puts a 14-day clock on each
+  declaration. ⚠️ **One button, not two**: art. 6:230oa reaches concluded contracts only, so
+  the pre-close revocation ticket 37 found stays an email — friction that protects the ladder
+  tickets 30 and 31 built. The copy still changes either way. Recorded as
+  [ADR 0005](../../docs/adr/0005-fourteen-days-and-a-button.md); its build is
+  [43](issues/43-build-withdrawal-function.md), and **ticket 40 is re-pointed at 43**.
+
+- [41 — Build: the declined bidder hears it](issues/41-build-declined-bidder.md) — **built and
+  proved through three shapes of the close.** The seventh mail exists: *Your card was declined
+  for the banner on …*, no decline code, one factual last line. ⚠️ Ticket 38's `reason` had to
+  become a **stored** `bids.failure`, not a derived one — a refused capture and a day already
+  decided both leave a `failed` bid whose hold outlived the close, so no reading of the row
+  could tell them apart. With it, the status page stops telling this bidder the day was settled
+  while he was paying, and My squares carries one row — **Declined** or **Not won** — where it
+  used to say *You have not bid.* to somebody who bid all day. The refused hold is cancelled
+  after the day is decided, winner or house ad; `wonMail` gains one sentence for a promoted
+  runner-up. ⚠️ **Unprovable on staging: the cancel itself.** Forcing a capture decline in test
+  mode means cancelling the hold first, so the close's own cancel always lands on an
+  already-cancelled intent — Stripe publishes no card that authorizes and then refuses capture.
+  ⚠️ **The mail count is now seven, and [43](issues/43-build-withdrawal-function.md) makes it
+  eight** — ticket 42 called its confirmation "a seventh mail" before this one landed.
+  `CONTEXT.md` and `PRODUCT.md` still say six; that is
+  [ticket 40](issues/40-copy-true-again.md)'s, along with the `/terms` line ticket 38 left it.
+
+- [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md) — **built and
+  proved on staging.** `/withdraw/<token>` exists, the token is minted for consumers only and
+  is never the invoice token, and the button says *confirm withdrawal* and nothing else.
+  ⚠️ **Art. 11a lid 2 was read first, and it held the design up rather than knocking it down:**
+  the statement must let the consumer *provide **or confirm*** their name, details identifying
+  the contract, and the address the confirmation goes to — so all three are shown filled in
+  from the order, and the name and the address stay **editable**. Two entry points on the
+  interface (`/thanks` and the order row in My squares), and the mails carry the art. 6:230m
+  lid 1 sub h information instead, which is the clause the twelve-month tail hangs on. One
+  press writes the row, takes a banner down at that instant through ticket 32's effect with no
+  strike, and books both mails; `/admin` lists what is still owed, oldest first, counting down
+  through zero, and its press deletes a withdrawn square's block so ticket 27's sold-out count
+  reads true. ⚠️ **Two things this build had to decide beyond the ticket:** a fourth page state
+  (`done`), so a used token never shows the button again; and the My squares order row no
+  longer waiting on an invoice **file**, because a statutory function may not hang off a
+  bookkeeping document. ⚠️ `src/lib/checkout/consent.ts` shipped here and not with ticket 40 —
+  those words are frozen onto every order at the moment of sale. **The rest of the copy is
+  still false**: `/terms` still promises the banner comes down *"as soon as we have read your
+  message"*.
+
+- [40 — Making the copy true again](issues/40-copy-true-again.md) — **the last debt is paid,
+  and three of its entries were not debts at all.** ⚠️ **The public record of banner days
+  already exists** — `banner-record.tsx` has been in the tree since ticket 15 and is wired
+  into `/how-it-works` — so `/terms`'s *"the day stays in the public record"* was true all
+  along, and the sentence gained a link rather than a deletion. Research 37 §7 marks it
+  *still untrue*; read this beside it. `/terms` now carries the consumer's fourteen days in
+  their own section, with **where the button is** (art. 6:230m lid 1 sub h), the immediate
+  acknowledgement, the 14-day refund deadline, and that a **cancelled square's rectangle goes
+  back on the market** — which no page had ever allowed for. The banner section gains the
+  moment of conclusion, the overtaken bid that **stays open**, the promoted runner-up's **own
+  amount**, and ticket 38's declined top bid. ⚠️ **"There is no way out" is now "No resale,
+  and no take-back"** — ticket 42 §5 rewrote the section and the heading had to follow, or a
+  consumer who skims headings stops at the first one. `/privacy` gains the fifteen-minute
+  salted hash, the ten years, Resend, **Cloudflare**, and the click count as a **floor**.
+  ⚠️ Reading the pages whole — which the ticket demanded — found four drifts the map never
+  recorded, the sharpest being that **the contact block offered only an X handle** while
+  `/terms` sent people to `hello@200squares.com` three times. `PRODUCT.md` had still described
+  a prototype with no backend; `CONTEXT.md` still called a bid flatly irrevocable.
+  Proved by reading the three pages back on staging.
+
+## Not yet specified
+
+- **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
+  left it at nothing, on the dev's *"laten we afwachten of dit echt gaat gebeuren"*. The ladder
+  already protects the day and the attack wins the bidder nothing, so this needs a real
+  incident first. ⚠️ Whoever picks it up starts from ticket 31's correction: the `owners` row
+  exists, so a strike would land — it is ticket 11's **consequence** that has no target,
+  because a third strike freezes a block and a bidder has none. ⚠️ And from
+  [ticket 37](issues/37-when-a-bid-binds.md) (2026-08-26): against a **consumer** there is
+  effectively **no claim at all**, at any stage, and a *non-refundable* clause dies on
+  art. 6:230i lid 1 and art. 6:237 sub i. A strike barring future bidding is defensible only
+  if published in advance and never fired by the exercise of a statutory right
+  (art. 6:237 sub h) — and the site cannot tell a lawful revocation from an abandoned hold.
+  Against a **business** bidder there is a claim, and a penalty clause would probably hold;
+  none is written.
+
+- **A PDF invoice.** Ticket 17 stored the invoice as HTML and said no PDF at V1.0, on the
+  grounds that it is legally sufficient and costs nothing. The moment a real business
+  buyer's accountant asks for an attachment is the moment to revisit it. It needs a real
+  complaint first.
+
+- **The build tickets.** Every decision here is followed by building it, the way
+  08-10, 12 and 15 followed their decisions on the prototype map. They are created
+  as each decision lands, not before. **Done** (2026-08-25):
+  [26 — Strip the resale surface](issues/26-strip-resale.md),
+  [15 — Build: the Convex schema and the live board](issues/15-build-schema.md),
+  [16 — Build: the checkout](issues/16-build-checkout.md),
+  [18 — Build: accounts and signing in](issues/18-build-accounts.md),
+  [19 — Build: the auction on real card holds](issues/19-build-auction.md) and
+  [20 — Build: artwork upload, storage and delivery](issues/20-build-artwork.md) and
+  [21 — Build: counting clicks for real](issues/21-build-clicks.md),
+  [22 — Build: the mail](issues/22-build-email.md),
+  [23 — Build: the invoice document](issues/23-build-invoice.md) and
+  [24 — Build: the admin page and removal](issues/24-build-removal.md).
+  **Done** (2026-08-26):
+  [32 — Build: a withdrawn banner day](issues/32-build-withdrawn-banner-day.md),
+  [33 — The largest block becomes 3 x 3](issues/33-block-max-3x3.md) and
+  [28 — Prove the mail and the invoice on staging](issues/28-prove-the-mail.md).
+  **Done** (2026-08-26, later):
+  [34 — A stripped picture stays at its /art URL](issues/34-stripped-art-stays-cached.md),
+  [35 — A refused bid says nothing](issues/35-a-refused-bid-says-nothing.md) and
+  [36 — Build: a released picture stops being served](issues/36-build-purge-on-release.md).
+  **Done** (2026-08-26, later still):
+  [41 — Build: the declined bidder hears it](issues/41-build-declined-bidder.md) is created
+  and open — ticket 38's build.
+  **Open** (2026-08-26, later still):
+  ~~[42 — The withdrawal function](issues/42-the-withdrawal-function.md) is a decision before it
+  is a build~~ — **resolved 2026-08-26**. It settled the square at **14 days from purchase with
+  no full-performance claim**, and its build is
+  [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md), which is
+  **open and on the frontier**. ⚠️ 43 is the only thing on this map that is **in force and
+  missing**, and it blocks 40 and through it the launch.
+  **Done** (2026-08-27):
+  [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md) and
+  [40 — Making the copy true again](issues/40-copy-true-again.md).
+  **Still open**:
+  [25 — The launch switches](issues/25-launch.md) holds the switches that only matter on
+  the day, and it is deliberately last. ⚠️ **It is the only open ticket left on this map**,
+  and unlike the last time that was true (2026-08-26), the fog ahead of it has been walked:
+  what remains below needs real traffic, a real complaint or a lawyer, not a decision. ⚠️ [39](issues/39-what-an-invocation-costs.md) is **resolved
+  2026-08-26** and put a seven-rule firewall list and a ninth step on it; it produced no
+  build ticket, because a dashboard rule is not a build.
+
+- **The road to launch, charted (2026-08-26).** Ticket 25 was briefly the only open ticket
+  on this map, which read as *finished* and was not: four patches of fog had gone sharp
+  while the build tickets were being worked. They are tickets now.
+  Both [37 — When a bid binds](issues/37-when-a-bid-binds.md) (research, **resolved
+  2026-08-26** — it added [42](issues/42-the-withdrawal-function.md)) and
+  [38 — Nobody tells a bidder their card was declined](issues/38-declined-bidder-hears-nothing.md)
+  (grilling, **resolved 2026-08-26** — it added
+  [41](issues/41-build-declined-bidder.md)) fed
+  [40 — Making the copy true again](issues/40-copy-true-again.md), which collects every copy
+  debt this map recorded and is the last thing before the switches. ⚠️ Ticket 37 put a fifth
+  ticket on the road that nobody charted: **the copy cannot be made true until the
+  withdrawal function exists**, so 42 sits between 37 and 40. ⚠️ And 42 (**resolved
+  2026-08-26**) put a sixth on it: the copy cannot be true until the function is **built**
+  either, so [43](issues/43-build-withdrawal-function.md) — not 42 — is what 40 now waits on.
+  The road to launch was **43 → 41 → 40 → 25**. All but 25 are walked (2026-08-27).
+  ~~[39 — What a flood of invocations costs, and what stops it](issues/39-what-an-invocation-costs.md)
+  is the one cost decision left~~ — **resolved 2026-08-26**. It was one answer after all, and
+  the answer was seven firewall rules and no code.
+
+- **Noticing a flood, and noticing the threshold.** Two patches that turned out to be one.
+  Ticket 06 wants something to say the €10,000 cross-border B2C threshold is coming *before*
+  it is crossed — the Unieregeling brings 27 destination rates, a ten-year retention and a
+  quarter-end ECB rate. [Ticket 39](issues/39-what-an-invocation-costs.md) (2026-08-26) adds
+  the other half: its firewall rules make an attack **free**, but nothing tells the dev one
+  happened. Vercel has firewall observability and Spend Management sends notice; ticket 39
+  deliberately did not decide whether that is enough, because it is a monitoring question and
+  not a cost one. Both need real traffic first.
+
+- **Cloudflare in front, doing the filtering.** The dev asked for it while working
+  [ticket 25](issues/25-launch.md) (2026-08-27) and chose Vercel *for now*, so ticket 02's
+  DNS-only answer stands — but the question is not closed, and three facts moved under it
+  that ticket 02 did not have. **For it**: Cloudflare terminates the connection, so its
+  limits see the real client IP, which Vercel's cannot behind a proxy; it caches `/art/`
+  itself, which does more for that path than any rate limit; and its filtering is not
+  metered, where Vercel charges **$0.50 per 1M allowed requests** on a rate-limit rule.
+  **Against it**: Cloudflare Free allows 5 custom rules and **one** rate-limiting rule and
+  this site needs five, so the real shape is Cloudflare **Pro** at $20 *on top of* Vercel
+  Pro — which stays compulsory for commercial use whatever fronts it — against a ceiling of
+  about $20. ⚠️ And the practical wall, **unverified**: Vercel issues and renews TLS over
+  HTTP, an orange cloud is the classic way that breaks, and Vercel's own page offers a
+  Cloudflare Origin CA certificate as the fix *for Enterprise only*. Whoever picks this up
+  measures that first, because it decides whether the rest is worth pricing. ⚠️ And
+  Cloudflare's **Bot Fight Mode** stays off for the same reason Vercel's Bot Protection
+  does: it challenges headless Chromium, and headless Chromium is the only way anybody
+  working on this site can see it.
+
+- **Who reads the flagged orders.** Ticket 06 accepts a country mismatch and flags the
+  order rather than refusing it. Nothing yet looks at those flags. Ticket 11 has now given
+  the site **an admin page** ([ticket 24](issues/24-build-removal.md)), so the surface
+  exists — what is left is whether the flags get a list on it, and what the dev does when
+  they read one.
+
+- **A banner removed for a broken rule, and the bid that is not returned.** `/terms` says a
+  banner that breaks the content rules is removed for the rest of its day and the bid is not
+  returned. [Research 37](research/37-when-a-bid-binds.md) §6 item 5 marked that
+  **flagged, not researched** against art. 6:237 sub i — the grey-list clause on forfeiting
+  what has been paid — and research 03 §5.9 flagged it before that.
+  [Ticket 40](issues/40-copy-true-again.md) left it standing on purpose: it is a
+  question about whether the clause holds, not about whether the page describes the site,
+  and it is the only sentence on `/terms` that was read and deliberately not changed. It
+  needs the same lawyer [ticket 25](issues/25-launch.md) already carries for the art. 6:230oa
+  scope, so it costs nothing to ask both at once.
+
+## Out of scope
+
+- ⚠️ **Reselling a square — moved to V1.1** (2026-08-25).
+  [12 — Reselling with real money](issues/12-resale-for-real.md) is **closed, not
+  resolved**: nothing was decided, it was ruled beyond the destination. The dev's reasons
+  are a smaller build and letting scarcity work before a second-hand market softens it, and
+  ticket 01 had already called resale the heaviest thing on the map. Nothing is lost —
+  [ticket 01](issues/01-resale-platform-cost.md) stays resolved and is the research V1.1
+  starts from. V1.0 gains **one pricing rule instead of two**, no credit ledger, no
+  `listings` in the board query, and no second VAT treatment on the invoice. What replaces
+  it is a **promise** in the top bar, which is [ticket 27](issues/27-label-and-sellout.md)
+  and carries its own risk. ⚠️ **One rule left with it, quietly**: the click count resetting
+  when a block changes hands, and landing whole on the largest remaining piece of a part
+  sale. [Ticket 21](issues/21-build-clicks.md) found that nothing in V1.0 can fire it —
+  `blocks` is inserted by the webhook and never deleted, re-owned or cut, and removal freezes
+  a block with its owner — so it was not built. The rule and its tiebreak stand as ticket 10
+  wrote them and V1.1 starts from them.
+- **A price that moves with scarcity.** Fixed at $250. It is a product
+  decision, not a build decision, and it may wait until scarcity is real.
+- **Marketing, launch and traffic.** The map ends at a site that can be launched.
+- **Other currencies, other boards, an API, a mobile app.**

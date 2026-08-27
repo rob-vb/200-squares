@@ -159,3 +159,16 @@ Footer: `200 SQUARES · 199 squares + 1 banner`.
 - **10** builds this, and also removes the `Available` field from `TitleBlock`.
 - The strip needs no data-model change: `BannerDay` already carries the winning
   bid, and negative `dayOffset` values are the past winners.
+
+## Partly reversed by the dev (2026-08-24)
+
+This ticket chose to face the risk head-on, in the FAQ and in *What you get*:
+one person, no guarantee, and if the site stops the squares stop with it. The
+dev struck both while ticket 13 was open — the doubt was not earning the sale,
+it was raising one.
+
+The position itself was not abandoned. It moved to `/terms`, where saying what
+is not promised is the page's job, and `/about` keeps the fact ("One person, not
+a company") without the warning attached to it.
+
+See [ticket 13](13-resale-copy.md), *Amended by the dev*.

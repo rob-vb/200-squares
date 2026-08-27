@@ -7,15 +7,8 @@
 // east or west of it. So the first snapshot is null and the real date arrives
 // with the client — the same rule the countdown follows.
 
-import { useSyncExternalStore } from "react";
-
-const subscribe = () => () => {};
+import { useOnClient } from "./use-on-client";
 
 export function useClientDate(): Date | null {
-  const onClient = useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false,
-  );
-  return onClient ? new Date() : null;
+  return useOnClient() ? new Date() : null;
 }
