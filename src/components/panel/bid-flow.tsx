@@ -41,6 +41,7 @@ import { BID_FLOOR, useBoard } from "@/lib/board/board";
 import { BANNER } from "@/lib/board/geometry";
 import { useViewer } from "@/lib/board/viewer";
 import { agoLabel } from "@/lib/board/time";
+import { Emphasis } from "@/components/emphasis";
 import {
   BANNER_WITHDRAWAL_INFO,
   BANNER_WITHDRAWAL_TEXT,
@@ -383,22 +384,27 @@ export function BidFlow() {
             ))}
           </ul>
 
-          {buyerType === "consumer" ? (
-            <div className="border-hairline border-t pt-3">
-              <label className="flex cursor-pointer items-start gap-2 text-[13px] leading-snug">
-                <input
-                  type="checkbox"
-                  checked={waived}
-                  onChange={(e) => setWaived(e.target.checked)}
-                  className="mt-[3px] shrink-0"
-                />
-                <span>{BANNER_WITHDRAWAL_TEXT}</span>
-              </label>
-              <p className="text-faint pt-2 text-[12px] leading-snug">{BANNER_WITHDRAWAL_INFO}</p>
-            </div>
-          ) : null}
+          {/* One block, not two — see the same comment in `buy-flow.tsx`. */}
+          <div className="border-hairline flex flex-col gap-2 border-t pt-3">
+            {buyerType === "consumer" ? (
+              <>
+                <label className="-mx-2 flex cursor-pointer items-start gap-2 rounded-[2px] px-2 py-1 text-[13px] leading-snug transition-colors duration-150 hover:bg-[#F7F8F4]">
+                  <input
+                    type="checkbox"
+                    checked={waived}
+                    onChange={(e) => setWaived(e.target.checked)}
+                    className="mt-[3px] shrink-0"
+                  />
+                  <span>{BANNER_WITHDRAWAL_TEXT}</span>
+                </label>
+                <p className="text-faint text-[12px] leading-snug">
+                  <Emphasis text={BANNER_WITHDRAWAL_INFO} />
+                </p>
+              </>
+            ) : null}
 
-          <p className="text-faint text-[12px] leading-snug">{INVOICE_TEXT}</p>
+            <p className="text-faint text-[12px] leading-snug">{INVOICE_TEXT}</p>
+          </div>
 
           {/* ⚠️ Turnstile, and it may not be hidden. An `empty:hidden` here made
               the container `display:none` before the widget was rendered into it,

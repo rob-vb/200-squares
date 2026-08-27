@@ -25,6 +25,7 @@ import type { Id } from "@convex/dataModel";
 import { Field, FieldBox, Money, PanelHeader, PrimaryButton, SecondaryButton, inputClass } from "./controls";
 import { useScreen } from "./flow";
 import { Countdown } from "../countdown";
+import { Emphasis } from "@/components/emphasis";
 import { INVOICE_TEXT, ORDER_BUTTON, WITHDRAWAL_INFO, WITHDRAWAL_TEXT } from "@/lib/checkout/consent";
 import { countryOptions } from "@/lib/checkout/countries";
 import { clearHold, convexSite, useHold, writeHold } from "@/lib/checkout/hold";
@@ -307,22 +308,31 @@ export function BuyFlow({ rect }: { rect: Rect }) {
         </p>
         ) : null}
 
-        {buyerType === "consumer" ? (
-          <div className="border-hairline border-t pt-3">
-            <label className="flex cursor-pointer items-start gap-2 text-[13px] leading-snug">
-              <input
-                type="checkbox"
-                checked={waived}
-                onChange={(e) => setWaived(e.target.checked)}
-                className="mt-[3px] shrink-0"
-              />
-              <span>{WITHDRAWAL_TEXT}</span>
-            </label>
-            <p className="text-faint pt-2 text-[12px] leading-snug">{WITHDRAWAL_INFO}</p>
-          </div>
-        ) : null}
+        {/* One block, not two. The tick, its information and the invoice line
+            are the same kind of thing to a buyer — small print at the moment of
+            paying — and three floating grey paragraphs read as three subjects.
+            ⚠️ All of it stays *above* the button: art. 6:230m wants the
+            information before the buyer is bound, not beside the receipt. */}
+        <div className="border-hairline flex flex-col gap-2 border-t pt-3">
+          {buyerType === "consumer" ? (
+            <>
+              <label className="-mx-2 flex cursor-pointer items-start gap-2 rounded-[2px] px-2 py-1 text-[13px] leading-snug transition-colors duration-150 hover:bg-[#F7F8F4]">
+                <input
+                  type="checkbox"
+                  checked={waived}
+                  onChange={(e) => setWaived(e.target.checked)}
+                  className="mt-[3px] shrink-0"
+                />
+                <span>{WITHDRAWAL_TEXT}</span>
+              </label>
+              <p className="text-faint text-[12px] leading-snug">
+                <Emphasis text={WITHDRAWAL_INFO} />
+              </p>
+            </>
+          ) : null}
 
-        <p className="text-faint text-[12px] leading-snug">{INVOICE_TEXT}</p>
+          <p className="text-faint text-[12px] leading-snug">{INVOICE_TEXT}</p>
+        </div>
 
         {/* ⚠️ Turnstile, and it may not be hidden. An `empty:hidden` here made
             the container `display:none` before the widget was rendered into it,

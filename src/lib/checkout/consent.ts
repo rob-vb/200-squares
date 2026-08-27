@@ -32,13 +32,31 @@
 //   last part is art. 6:230m lid 1 sub h, and it is the clause the twelve-month
 //   tail of art. 6:230o lid 2 hangs on.
 //
+// ⚠️ **The same sentences were made friendlier on 2026-08-27, and nothing they
+// have to say changed.** The block read like a contract stapled to a
+// checkout: three grey paragraphs of equal weight, in a voice no other line on
+// the site uses. Every duty below is still discharged — the express request
+// (art. 6:230s lid 4), the period and its start, the function and its placement
+// (art. 6:230m lid 1 sub h), the digital invoice — in fewer words and in the
+// site's own voice. What moved is register, not content, and the two `*…*`
+// spans are now rendered as emphasis by `<Emphasis>` instead of reaching the
+// buyer as literal asterisks.
+//
+// ⚠️ **`WITHDRAWAL_INFO` no longer offers the inbox, and that is the one cut
+// that touches a duty rather than a tone.** Ticket 42 put the address there to
+// stop the inbox being the *only* way out; sub h asks for the function, and the
+// function is now named with its two places. The address stays on `/terms`, in
+// every confirmation mail, and in the site footer, so nothing is taken away —
+// it is one line the buyer no longer has to read at the moment of paying.
+// `BANNER_WITHDRAWAL_INFO` never carried it.
+//
 // `/terms`, `/how-it-works`, `/privacy` and the FAQ are
 // [ticket 40](../../../.scratch/200squares-v1/issues/40-copy-true-again.md)'s,
 // which writes them once.
 
 /** The tick itself. Unticked by default, and a consumer cannot order without it. */
 export const WITHDRAWAL_TEXT =
-  "I ask 200 Squares to put my square on the board straight away, before the 14 days are up.";
+  "Yes — put my square on the board now, without waiting out my 14 days to cancel.";
 
 /**
  * The art. 6:230m lid 1 sub h information, under the box. Not a tick — a
@@ -50,10 +68,9 @@ export const WITHDRAWAL_TEXT =
  * thank-you page and in My squares (ticket 43), and this says both.
  */
 export const WITHDRAWAL_INFO =
-  "You have 14 days to cancel this purchase, counted from the day you buy it. " +
-  "To cancel, press *withdraw from contract here* — it is on your thank-you page after payment, " +
-  "and under your order in My squares. An email to hello@200squares.com works too. " +
-  "You pay for what has already been delivered.";
+  "Changed your mind? You have 14 days, counted from the day you buy. " +
+  "Press *withdraw from contract here* on your thank-you page, or under your order in My squares. " +
+  "You pay only for what was already delivered.";
 
 /**
  * The digital-invoice line. Ticket 03 asked for one line, not a second tick:
@@ -61,8 +78,7 @@ export const WITHDRAWAL_INFO =
  * a form nobody reads.
  */
 export const INVOICE_TEXT =
-  "Your invoice is a digital document. We email it to you and keep it at a private link for you. " +
-  "There is no paper copy.";
+  "Your invoice is digital — we email it to you, and keep it for you at a private link.";
 
 /** What the order button says. ⚠️ Under *Fuhrmann-2* only these words count. */
 export const ORDER_BUTTON = "ORDER NOW — OBLIGES YOU TO PAY";
@@ -93,8 +109,8 @@ export const ORDER_BUTTON = "ORDER NOW — OBLIGES YOU TO PAY";
  * is true. A square is permanent and the site asserts nothing (ADR 0005).
  */
 export const BANNER_WITHDRAWAL_TEXT =
-  "I ask 200 Squares to start my banner day at 00:00 UTC, before the 14 days are up. " +
-  "I understand that I lose my right to cancel once the day has been fully delivered.";
+  "Yes — start my banner day at 00:00 UTC, without waiting out my 14 days to cancel. " +
+  "I understand the right ends once the day has run in full.";
 
 /**
  * The art. 6:230m lid 1 sub h information, under the box. Not a tick — a
@@ -114,10 +130,10 @@ export const BANNER_WITHDRAWAL_TEXT =
  * back without the other.
  */
 export const BANNER_WITHDRAWAL_INFO =
-  "You have 14 days to cancel, counted from the close — but a banner day is over at " +
-  "00:00 UTC, and the right ends with it. " +
-  "To cancel, press *withdraw from contract here* under your order in My squares. " +
-  "Your banner comes off the board at once, and you pay for the hours that had run.";
+  "Changed your mind? You have 14 days, counted from the close — but a banner day is over " +
+  "at 00:00 UTC, and the right ends with it. " +
+  "Press *withdraw from contract here* under your order in My squares. " +
+  "The banner comes off the board at once, and you pay for the hours that had run.";
 
 /**
  * ⚠️ What the bid button says. Under *Fuhrmann-2* only these words count, and a
