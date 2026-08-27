@@ -1,7 +1,7 @@
 # 43 — Build: the withdrawal function
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 42
 Parent: ../map.md
 Assignee: rob-vb (claimed 2026-08-27)
@@ -98,3 +98,111 @@ the consumer only confirms. If lid 2 asks for more, lid 2 wins.
 - The expired state on both, and a 404 on a business order.
 - ⚠️ Use `node scripts/shot.mjs` and leave time between runs. **Never poll staging with
   `curl`** — it trips the bot challenge and blocks Playwright too.
+
+## Answer
+
+Built and proved on staging on 2026-08-27. Commits `e53acba`, `65c93e9`, `ea77226`.
+
+### ⚠️ Art. 11a lid 2, read first, as this ticket demanded
+
+EUR-Lex would not render, so it was taken from the directive that inserts the article —
+**Directive (EU) 2023/2673 art. 1(3)**, via the Publications Office cellar document, read
+2026-08-27:
+
+> 2. The withdrawal function shall enable the consumer to send an online withdrawal
+> statement informing the trader of his or her decision to withdraw from the contract. That
+> online withdrawal statement shall enable the consumer to easily **provide or confirm** the
+> following information:
+> (a) his or her name;
+> (b) details identifying the contract from which he or she wishes to withdraw;
+> (c) details of the electronic means by which the confirmation of the withdrawal will be
+> sent to the consumer.
+
+**Lid 2 does not overturn the design; it adds two fields.** The words *or confirm* are what
+save the token: the token names the order, so all three are shown filled in and the consumer
+confirms them. But *provide or confirm* is not *read*, so **the name and the address are
+editable** — sub c is explicitly about the address the confirmation goes to, which need not
+be the address that paid. Sub b is the contract line, `Square 193, bought on 2026-08-27 for
+$250.00`, which is what a person needs to be sure it is the right purchase.
+
+Two consequences that were not in this ticket:
+
+- The `withdrawals` row keeps `name`, `what` and `email` beside the words, because those
+  three **are** the declaration under lid 2 and lid 4 asks the confirmation to state its
+  content.
+- Where the confirmed address differs from the one that paid, **the dev's copy says so**.
+  Nothing else on the site could notice that the refund goes to a card and the confirmation
+  went somewhere else.
+
+### What was built
+
+| | |
+| --- | --- |
+| `convex/lib/token.ts` | `mintToken`, now shared. ⚠️ The invoice token still mints separately — one string may not do both jobs. |
+| `convex/lib/withdrawal.ts` | The leaf: the address, the periods, the contract line, the words, and `liveWithdrawUrl`. It exists so `owners → withdrawal → admin → owners` is never a circle. |
+| `convex/withdrawal.ts` | `byToken`, `declare`, `forMail`, and the admin's `owed` and `settle`. |
+| `convex/schema.ts` | `orders.withdrawalToken` + `by_withdrawal_token`; the `withdrawals` table. |
+| `src/app/withdraw/[token]/page.tsx` | The route. ⚠️ A **server** read, and only because of the 404 — a client component cannot answer with a status. |
+| `src/components/withdraw.tsx` | The three states, and the button that may only say *confirm withdrawal*. |
+| `src/lib/checkout/consent.ts` | Ticket 42 §5, shipped here rather than with ticket 40. |
+| `scripts/declare.mjs`, `scripts/settle.mjs` | The two presses. Neither button can be reached any other way from the VPS. |
+| `seed:ageOrder` | Back-dates one order so the **expired** page can be looked at without waiting fourteen days. |
+
+### Four decisions this build had to make
+
+1. **A fourth state: `done`.** The ticket named three. A second visit to a token that has
+   already been used must not show the button again — art. 11a has no third step, and
+   inviting a consumer to declare twice leaves them wondering which one counted. It shows
+   the acknowledgement on screen; the **durable medium** is still the mail.
+2. **The My squares row no longer waits for an invoice.** The entry point hangs under the
+   order row, and the order row was only rendered once its invoice **file** existed. A
+   deployment that cannot render invoices would have had no withdrawal button at all — a
+   statutory function hanging off a bookkeeping document. The row now appears when there is
+   either a document to link to or a function to offer, and says *Invoice on its way*
+   otherwise.
+3. **The entry point disappears; the page does not.** `liveWithdrawUrl` returns empty for a
+   business order, a refunded one, a period that has run and one already withdrawn from. Lid
+   5 asks for the function *during* the period and no longer, and a link that leads to *this
+   has run out* is worse than no link. The address itself keeps answering, because the
+   person was told to keep it.
+4. **`BID_TRUTHS`'s fourth line split by buyer type**, which ticket 42 §5 asked for and
+   §11 of this ticket put here. *A bid cannot be withdrawn* is true of a business and false
+   of a consumer, who may take an offer back before the close under art. 6:230q lid 1 — by
+   email, because ticket 42 refused the second button on purpose.
+
+### Proved on staging
+
+- **A square.** `node scripts/flow.mjs` as a consumer → *withdraw from contract here* under
+  the order on `/thanks` (`t43-sq-*`). `declare.mjs` → the row, and both mails delivered:
+  the lid 4 confirmation naming the words, the consumer's own line and
+  `2026-08-27 07:54 UTC`, and the dev's copy with the 14-day clock. The link then vanished
+  from `/thanks`. `settle.mjs` → `refundedAt` stamped, the block **deleted**, square 193
+  back on the market.
+- **A banner.** `bid.mjs` as a consumer → `seed:ageAuction` → `auction:closeDue`. The won
+  mail carried the sub h information with the token. `declare.mjs` → `bannerDays.removedAt`
+  set at the instant of the declaration, a `removals` row with **no rule** and
+  `froze: false`, and `owners.strikeAt` still `[]`. ⚠️ The winner had attached no artwork,
+  so the house ad was already standing: the take-down is proved by the row and not by a
+  picture disappearing.
+- **My squares** carries the second entry point under its order row (`t43-mine.png`).
+- **`/admin`** listed the declaration oldest-first with *14 days left*, the words, and the
+  address, and its press did the settle above.
+- **Expired**: `seed:ageOrder` → *This has run out*, naming the day and `hello@`. ⚠️ The
+  page's intro line had to become state-aware — *You can withdraw from this purchase* over
+  *This has run out* was the site contradicting itself in two sentences.
+- **404**: an unknown token is a real 404 (`t43-404.png`), and a business order carries **no
+  `withdrawalToken` column at all** — proved by buying one with `BUYER=business`, which also
+  showed the panel gives a business no withdrawal tick box.
+
+### What this does not do
+
+- ⚠️ **`/terms`, `/how-it-works`, `/privacy` and the FAQ are untouched.** They are
+  [ticket 40](40-copy-true-again.md)'s, which is now unblocked and writes them once — and
+  `/terms` still says *"as soon as we have read your message"* and *"There is no refund and
+  no exit"* until it does. `consent.ts` was done here only because those words are frozen
+  onto an order at the moment of sale.
+- **No refund is ever taken by the site.** ADR 0003 stands: the dev judges the amount and
+  pays it at Stripe. `settle` records that they did.
+- ⚠️ **Not legal cover.** Ticket 42's own warning is unchanged: research 37 §6 item 1 calls
+  the scope of this obligation the one item worth paying for on its own, and
+  [ticket 25](25-launch.md) carries having it confirmed before launch.

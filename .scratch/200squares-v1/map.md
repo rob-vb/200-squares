@@ -872,6 +872,26 @@ Answers given by the dev while charting. Not tickets — they are the frame.
   `CONTEXT.md` and `PRODUCT.md` still say six; that is
   [ticket 40](issues/40-copy-true-again.md)'s, along with the `/terms` line ticket 38 left it.
 
+- [43 — Build: the withdrawal function](issues/43-build-withdrawal-function.md) — **built and
+  proved on staging.** `/withdraw/<token>` exists, the token is minted for consumers only and
+  is never the invoice token, and the button says *confirm withdrawal* and nothing else.
+  ⚠️ **Art. 11a lid 2 was read first, and it held the design up rather than knocking it down:**
+  the statement must let the consumer *provide **or confirm*** their name, details identifying
+  the contract, and the address the confirmation goes to — so all three are shown filled in
+  from the order, and the name and the address stay **editable**. Two entry points on the
+  interface (`/thanks` and the order row in My squares), and the mails carry the art. 6:230m
+  lid 1 sub h information instead, which is the clause the twelve-month tail hangs on. One
+  press writes the row, takes a banner down at that instant through ticket 32's effect with no
+  strike, and books both mails; `/admin` lists what is still owed, oldest first, counting down
+  through zero, and its press deletes a withdrawn square's block so ticket 27's sold-out count
+  reads true. ⚠️ **Two things this build had to decide beyond the ticket:** a fourth page state
+  (`done`), so a used token never shows the button again; and the My squares order row no
+  longer waiting on an invoice **file**, because a statutory function may not hang off a
+  bookkeeping document. ⚠️ `src/lib/checkout/consent.ts` shipped here and not with ticket 40 —
+  those words are frozen onto every order at the moment of sale. **The rest of the copy is
+  still false**: `/terms` still promises the banner comes down *"as soon as we have read your
+  message"*.
+
 ## Not yet specified
 
 - **What punishes a bidder who kills their own hold.** [Ticket 31](issues/31-a-bid-that-does-not-stand.md)
