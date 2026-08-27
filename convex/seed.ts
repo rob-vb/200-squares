@@ -296,6 +296,43 @@ export const ageAuction = mutation({
 });
 
 /**
+ * ⚠️ PROTOTYPE — ticket 43. Throwaway. Ages one order past its withdrawal
+ * period, which is the one state `/withdraw/<token>` has that cannot be reached
+ * by doing anything.
+ *
+ *   npx convex run seed:ageOrder '{"token":"<withdrawalToken>"}'
+ *
+ * The **expired** page is not a 404 on purpose — it explains, and it names a
+ * person's address (ticket 42) — so it has to be looked at, and waiting fourteen
+ * days to look at it is not a test. Same argument as `ageAuction`: the site
+ * cannot be checked by waiting for a clock.
+ *
+ * It moves `createdAt` back fifteen days, which expires a **square**. A banner's
+ * period is fixed by its `bannerDate` and this does not touch that: age the day
+ * instead, or wait for the 00:00 UTC that ends it.
+ *
+ * `SEED_ENABLED` guards it like everything else here. On production it would
+ * back-date the ten-year money record.
+ */
+export const ageOrder = mutation({
+  args: { token: v.string() },
+  returns: v.string(),
+  handler: async (ctx, { token }) => {
+    guard();
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_withdrawal_token", (q) => q.eq("withdrawalToken", token))
+      .unique();
+    if (!order) throw new Error("No order carries that withdrawal token.");
+    const createdAt = Date.now() - 15 * 24 * 60 * 60 * 1000;
+    await ctx.db.patch(order._id, { createdAt });
+    return `Order ${order._id} now reads as bought on ${new Date(createdAt)
+      .toISOString()
+      .slice(0, 10)}.`;
+  },
+});
+
+/**
  * ⚠️ PROTOTYPE — ticket 27. Throwaway. Fills every free cell so the board is
  * **sold out**, which is the one board state no seed makes and the one
  * [ticket 27](../.scratch/200squares-v1/issues/27-label-and-sellout.md) has to

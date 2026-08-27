@@ -239,8 +239,8 @@ export const orderConfirmedMail = (input: {
       ? [
           "",
           "You have 14 days to withdraw from this purchase, counted from today. The",
-          "button is on this page, under your order, and on the same page as your",
-          "picture above — it is called *withdraw from contract here*:",
+          "button is called *withdraw from contract here*. It is on the page above,",
+          "under your order, and it is in My squares once you have signed in:",
           input.withdrawUrl,
         ]
       : []),

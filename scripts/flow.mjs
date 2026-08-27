@@ -1,6 +1,7 @@
 // Drive the whole checkout on the staging URL, because there is no browser here.
 //
 //   node scripts/flow.mjs [out-prefix]        EMAIL=you@example.com to reach a real inbox
+//                                             BUYER=business to buy as one
 //
 // It selects a free square, fills the panel, presses the order button, pays with
 // a Stripe test card, waits for the thank-you page to show the block, and then
@@ -20,6 +21,10 @@ const out = process.argv[2] ?? "flow";
 const CARD = process.env.CARD ?? "4242424242424242";
 // ⚠️ Ticket 28 needs a real inbox, so the address is an argument now.
 const EMAIL = process.env.EMAIL ?? "agent+16@example.invalid";
+// ⚠️ Ticket 43 needs both: a consumer order carries a withdrawal token and a
+// business order carries none, and the second is what makes `/withdraw/<token>`
+// a 404 for a business rather than a page that explains itself.
+const BUYER = process.env.BUYER === "business" ? "A business" : "A private person";
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -65,10 +70,14 @@ if (!opened) {
 
 await page.screenshot({ path: `${out}-1-panel.png` });
 
-await page.getByRole("button", { name: "A private person" }).first().click();
+await page.getByRole("button", { name: BUYER, exact: true }).first().click();
 await page.locator("select").first().selectOption("NL");
 await page.getByPlaceholder("As it goes on the invoice").first().fill("Test Koper");
-await page.locator('input[type="checkbox"]').first().check();
+// ⚠️ A business sees no withdrawal tick box, and that is the point: the right is
+// a consumer's. So the box is checked where there is one and skipped where there
+// is not, rather than being waited for.
+const box = page.locator('input[type="checkbox"]').first();
+if (await box.isVisible().catch(() => false)) await box.check();
 await page.waitForTimeout(300);
 await page.screenshot({ path: `${out}-2-filled.png` });
 

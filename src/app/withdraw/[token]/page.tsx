@@ -39,11 +39,22 @@ export default async function Page({
     <Site>
       {/* ⚠️ The heading is the statute's own label, and only the statute's:
           art. 11a lid 1 asks the function to be labelled *withdraw from contract
-          here* or an unambiguous equivalent, so nothing here is written to
-          sound better than that. */}
+          here* or an unambiguous equivalent, so nothing here is written to sound
+          better than that. It stays the same in all three states, because it is
+          the address the person was given and they have to recognise it.
+
+          ⚠️ The line under it does **not** stay. *You can withdraw from this
+          purchase* over a page that says the time has run out is the site
+          contradicting itself in two consecutive sentences, so the states that
+          cannot be withdrawn from carry no intro and let their own heading
+          speak. */}
       <ContentPage
         title="WITHDRAW FROM CONTRACT HERE"
-        intro="You can withdraw from this purchase. You do not have to give a reason."
+        intro={
+          found.state === "live"
+            ? "You can withdraw from this purchase. You do not have to give a reason."
+            : undefined
+        }
       >
         <Withdraw token={token} initial={found} />
       </ContentPage>
