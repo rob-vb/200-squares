@@ -241,6 +241,32 @@ yet.
    npx convex env set --prod PURGE_SECRET ...
    ```
 
+   ⚠️ **And five more this list did not have until 2026-08-27**, found by reading what the
+   code actually asks `process.env` for and diffing it against the dev deployment. They are
+   the same on every deployment, so copy them across rather than retyping:
+
+   ```sh
+   for v in ADMIN_EMAILS BUSINESS_NAME BUSINESS_ADDRESS BUSINESS_KVK BUSINESS_VAT_ID; do
+     npx convex env set --prod "$v" "$(npx convex env get "$v")"
+   done
+   ```
+
+   - **`ADMIN_EMAILS`** is the whole of who the admin is (ticket 08). Unset, `requireAdmin`
+     admits nobody, so prod would have **no admin page at all** — no removal, no strip, no
+     *the bidder withdrew*. It is also where the dev's own copy of every mail goes
+     (`convex/mail.ts`), falling back to `hello@200squares.com`.
+   - **`BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_KVK`, `BUSINESS_VAT_ID`** are the
+     seller block on the invoice. `businessFromEnv()` **throws** rather than printing a
+     placeholder on a legal document (ticket 29), so a prod deployment without them takes
+     the money and cannot issue the invoice.
+
+   ⚠️ **`SEED_ENABLED` is not on this list and must never be.** It is what makes
+   `seed:*`, `auth:devSignInLink` and `auction:closeDue`'s helpers refuse.
+
+   ⚠️ `RESERVATION_IP_SALT` is **deliberately** absent: `convex/http.ts` falls back to
+   `BETTER_AUTH_SECRET`, and a deployment with neither refuses to hash rather than hashing
+   against a constant from the repository.
+
    ⚠️ `BETTER_AUTH_SECRET` must differ from dev.
 
    ⚠️ `PURGE_SECRET` must be **the same string** as the one on Vercel Production in step 4,
