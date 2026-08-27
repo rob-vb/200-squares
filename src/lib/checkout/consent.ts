@@ -32,6 +32,12 @@
 //   last part is art. 6:230m lid 1 sub h, and it is the clause the twelve-month
 //   tail of art. 6:230o lid 2 hangs on.
 //
+// ⚠️ **2026-08-27, second pass: plain words.** The tick now says what happens
+// (the square goes up at once) and what stays true (14 days to cancel). The
+// buttons say what pressing them does — *BUY NOW*, *PLACE BID — PAY ONLY IF
+// YOU WIN* — which is the Fuhrmann-2 test in the words a buyer uses, not the
+// statute's. Nothing a duty needs was dropped.
+//
 // ⚠️ **The same sentences were made friendlier on 2026-08-27, and nothing they
 // have to say changed.** The block read like a contract stapled to a
 // checkout: three grey paragraphs of equal weight, in a voice no other line on
@@ -56,7 +62,7 @@
 
 /** The tick itself. Unticked by default, and a consumer cannot order without it. */
 export const WITHDRAWAL_TEXT =
-  "Yes — put my square on the board now, without waiting out my 14 days to cancel.";
+  "Put my square on the board right away. I know I can still cancel within 14 days.";
 
 /**
  * The art. 6:230m lid 1 sub h information, under the box. Not a tick — a
@@ -68,9 +74,9 @@ export const WITHDRAWAL_TEXT =
  * thank-you page and in My squares (ticket 43), and this says both.
  */
 export const WITHDRAWAL_INFO =
-  "Changed your mind? You have 14 days, counted from the day you buy. " +
+  "Changed your mind? You can cancel within 14 days of buying. " +
   "Press *withdraw from contract here* on your thank-you page, or under your order in My squares. " +
-  "You pay only for what was already delivered.";
+  "You then pay only for the days your square was on the board.";
 
 /**
  * The digital-invoice line. Ticket 03 asked for one line, not a second tick:
@@ -78,10 +84,10 @@ export const WITHDRAWAL_INFO =
  * a form nobody reads.
  */
 export const INVOICE_TEXT =
-  "Your invoice is digital — we email it to you, and keep it for you at a private link.";
+  "We email your invoice. It also stays available at a private link.";
 
 /** What the order button says. ⚠️ Under *Fuhrmann-2* only these words count. */
-export const ORDER_BUTTON = "ORDER NOW — OBLIGES YOU TO PAY";
+export const ORDER_BUTTON = "BUY NOW";
 
 // ---------------------------------------------------------------------------
 // The banner. ⚠️ A different box, and this one actually works.
@@ -109,8 +115,8 @@ export const ORDER_BUTTON = "ORDER NOW — OBLIGES YOU TO PAY";
  * is true. A square is permanent and the site asserts nothing (ADR 0005).
  */
 export const BANNER_WITHDRAWAL_TEXT =
-  "Yes — start my banner day at 00:00 UTC, without waiting out my 14 days to cancel. " +
-  "I understand the right ends once the day has run in full.";
+  "Start my banner day at 00:00 UTC right away. I can still cancel within 14 days, " +
+  "but not after the day has run in full.";
 
 /**
  * The art. 6:230m lid 1 sub h information, under the box. Not a tick — a
@@ -130,17 +136,16 @@ export const BANNER_WITHDRAWAL_TEXT =
  * back without the other.
  */
 export const BANNER_WITHDRAWAL_INFO =
-  "Changed your mind? You have 14 days, counted from the close — but a banner day is over " +
-  "at 00:00 UTC, and the right ends with it. " +
+  "Changed your mind? You can cancel within 14 days of the close, as long as your banner day is not over yet. " +
   "Press *withdraw from contract here* under your order in My squares. " +
-  "The banner comes off the board at once, and you pay for the hours that had run.";
+  "The banner comes off the board at once, and you pay only for the hours it was up.";
 
 /**
  * ⚠️ What the bid button says. Under *Fuhrmann-2* only these words count, and a
  * bid is an obligation with a condition on it — so the condition is on the
  * button, mirroring ticket 06's *Order now — obliges you to pay*.
  */
-export const BID_BUTTON = "PLACE BID — OBLIGES YOU TO PAY IF YOU WIN";
+export const BID_BUTTON = "PLACE BID — PAY ONLY IF YOU WIN";
 
 /**
  * The four sentences beside the box, and every one of them is literally true.
