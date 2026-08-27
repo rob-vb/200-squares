@@ -13,6 +13,7 @@ import { currentOwner } from "./auth";
 import { artwork, rect } from "./schema";
 import { squareRange } from "./lib/board";
 import { invoiceUrl } from "./invoices";
+import { liveWithdrawUrl } from "./lib/withdrawal";
 import { nextDate, todayUtc, STRIKE_MS } from "./lib/time";
 
 /**
@@ -61,6 +62,12 @@ export const mine = query({
           url: v.string(),
           what: v.string(),
           totalCents: v.number(),
+          /**
+           * The second entry point of art. 6:230oa lid 1 (ticket 43), under the
+           * order row it belongs to. Empty where there is nothing to offer: a
+           * business order, a period that has run, one already withdrawn from.
+           */
+          withdrawUrl: v.string(),
         }),
       ),
       bids: v.array(
@@ -158,12 +165,19 @@ export const mine = query({
         .query("invoices")
         .withIndex("by_order", (q) => q.eq("orderId", order._id))
         .unique();
-      // An invoice whose file is still being written has nothing to link to yet.
-      if (!invoice?.storageId) continue;
+      // ⚠️ **An invoice that is still being written no longer hides the row.**
+      // The withdrawal function of art. 6:230oa lid 1 hangs under this row
+      // (ticket 43), and it may not depend on a bookkeeping document: a
+      // deployment that cannot render invoices would otherwise have no
+      // withdrawal button in My squares at all. So the row appears when there is
+      // either a document to link to or a function to offer, and the number is
+      // empty in the second case.
+      const withdraw = await liveWithdrawUrl(ctx, order);
+      if (!invoice?.storageId && !withdraw) continue;
       invoices.push({
-        number: invoice.number,
-        issuedAt: invoice.issuedAt,
-        url: invoiceUrl(invoice.token),
+        number: invoice?.storageId ? invoice.number : "",
+        issuedAt: invoice?.issuedAt ?? order.createdAt,
+        url: invoice?.storageId ? invoiceUrl(invoice.token) : "",
         what:
           order.kind === "banner"
             ? `Banner ${order.bannerDate ?? ""}`
@@ -171,6 +185,7 @@ export const mine = query({
               ? `Square ${squareRange(order.rect)}`
               : "",
         totalCents: order.totalCents,
+        withdrawUrl: withdraw,
       });
     }
 

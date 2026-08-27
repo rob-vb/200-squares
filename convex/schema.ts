@@ -221,6 +221,22 @@ export default defineSchema({
      * without the code of the day it was shown.
      */
     withdrawalText: v.string(),
+    /**
+     * The address of this order's withdrawal function, `/withdraw/<token>`.
+     *
+     * ⚠️ **Only a consumer order has one**, and its absence is what makes a
+     * business order 404 rather than explain itself: art. 6:230oa lid 1 reaches
+     * a consumer contract and nothing else (ticket 42).
+     *
+     * ⚠️ **Not the invoice token.** That string exists so an owner can hand the
+     * document to their own bookkeeper, and it must never also be able to cancel
+     * the purchase. Both are minted by `lib/token.ts`, separately.
+     *
+     * Optional because an order written before ticket 43 has none. Such an order
+     * is outside its 14 days by the time this ships, so nothing has to be
+     * backfilled — but a `/thanks` page reopened from an old mail must not throw.
+     */
+    withdrawalToken: v.optional(v.string()),
     invoiceText: v.string(),
     /** The client IP when the order was placed. Evidence, and nothing else. */
     ip: v.string(),
@@ -270,7 +286,58 @@ export default defineSchema({
      * bidder's last order is the same answer for free — and it is honest about
      * what it is, because ticket 07 called these a form filler, not the record.
      */
-    .index("by_owner", ["ownerId"]),
+    .index("by_owner", ["ownerId"])
+    /** The one lookup `/withdraw/<token>` makes. */
+    .index("by_withdrawal_token", ["withdrawalToken"]),
+
+  /**
+   * A consumer's declaration that they withdraw from a contract, and the state
+   * of the refund that owes them.
+   *
+   * ⚠️ **Its own table, and ticket 42 named both tables it is not.** Not fields
+   * on `orders`, which is the ten-year record of a different act and is written
+   * once; and not a `removals` row, which `convex/admin.ts` prints as a list of
+   * rule breaks. Nobody broke anything here.
+   *
+   * ⚠️ **The words are kept as words**, the same rule ticket 06 set for the tick
+   * boxes: art. 11a lid 4 asks the confirmation to state *the content of the
+   * declaration*, and in 2036 that content has to be readable without the code
+   * of the day it was shown.
+   */
+  withdrawals: defineTable({
+    orderId: v.id("orders"),
+    /** What was withdrawn from. The refund is judged differently for each. */
+    kind: v.union(v.literal("squares"), v.literal("banner")),
+    /**
+     * ⚠️ The moment the declaration was **sent**, which is the only moment that
+     * counts: art. 6:230s lid 4 prices the refund from it, and art. 6:230r lid 1
+     * starts the 14-day refund clock on it. Not the moment the dev reads this.
+     */
+    declaredAt: v.number(),
+    /**
+     * The three things art. 11a lid 2 asks the online withdrawal statement to
+     * let the consumer *provide or confirm*: (a) their name, (b) details
+     * identifying the contract, (c) the electronic means the confirmation goes
+     * to. The page shows all three and this is what they confirmed.
+     */
+    name: v.string(),
+    what: v.string(),
+    email: v.string(),
+    /** The exact words on the page above the button, as text. */
+    shownText: v.string(),
+    /** The consumer's own line, if they wrote one. Echoed in the lid 4 mail. */
+    note: v.optional(v.string()),
+    /**
+     * When the dev paid the refund.
+     *
+     * ⚠️ **Absent means somebody is still owed money**, and `/admin` lists every
+     * such row oldest first with the days left on it. Same shape as ticket 36's
+     * un-purged alarm, for the same reason: a mail can be lost and a list cannot.
+     */
+    refundedAt: v.optional(v.number()),
+  })
+    .index("by_order", ["orderId"])
+    .index("by_refunded", ["refundedAt"]),
 
   /**
    * The invoice as a document. One per order, one series per calendar year.

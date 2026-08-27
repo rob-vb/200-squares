@@ -106,6 +106,8 @@ export const wonMail = (input: {
   date: string;
   hasArtwork: boolean;
   promoted: boolean;
+  /** Set for a consumer only. ⚠️ Art. 6:230m lid 1 sub h, as above. */
+  withdrawUrl?: string;
 }) => ({
   subject: `You have the 200 squares banner on ${input.date}`,
   text: [
@@ -126,6 +128,19 @@ export const wonMail = (input: {
     input.hasArtwork
       ? "Your image is on the board now."
       : "You attached no image, so the house advertisement is standing in your place. Sign in on 200squares.com and upload one; it goes up the moment you do.",
+    // ⚠️ The banner's period is one day, so this is the only mail that can carry
+    // the sub h information in time. It says **when** it runs out, because a
+    // right that dies at 00:00 UTC and a mail read at 22:00 are close enough
+    // together that "14 days" would be the wrong sentence here.
+    ...(input.withdrawUrl
+      ? [
+          "",
+          "You can withdraw from this day until it ends at 00:00 UTC. The button is",
+          "in My squares under your order on 200squares.com, and it is called",
+          "*withdraw from contract here*:",
+          input.withdrawUrl,
+        ]
+      : []),
     "",
     "Your invoice follows.",
     "",
@@ -199,6 +214,8 @@ export const orderConfirmedMail = (input: {
   totalCents: number;
   invoiceUrl: string;
   artworkUrl: string;
+  /** Set for a consumer only. ⚠️ Art. 6:230m lid 1 sub h — see below. */
+  withdrawUrl?: string;
 }) => ({
   subject: "Your squares on 200 squares",
   text: [
@@ -212,6 +229,21 @@ export const orderConfirmedMail = (input: {
     "",
     "That address needs no account and it keeps working. Until you use it the",
     "square stays empty, and there is no deadline on it.",
+    // ⚠️ **The information duty, not the function.** Art. 6:230oa lid 1 asks for
+    // a function on the *interface* and a link in a mail is not one — that is why
+    // the button also sits on /thanks and in My squares. What this satisfies is
+    // art. 6:230m lid 1 sub h: the existence and the **placement** of the
+    // function. Leave the placement out and art. 6:230o lid 2 opens a
+    // twelve-month withdrawal tail, which is the number ticket 42 was about.
+    ...(input.withdrawUrl
+      ? [
+          "",
+          "You have 14 days to withdraw from this purchase, counted from today. The",
+          "button is on this page, under your order, and on the same page as your",
+          "picture above — it is called *withdraw from contract here*:",
+          input.withdrawUrl,
+        ]
+      : []),
     "",
     "If something is wrong, reply to this message. A person reads it.",
   ].join("\n"),
@@ -311,6 +343,104 @@ export const removedMail = (input: {
     "If something is wrong, reply to this message. A person reads it.",
   ].join("\n"),
 });
+
+/**
+ * The art. 11a lid 4 acknowledgement — the one mail on this site the law itself
+ * writes the specification for.
+ *
+ * > Once the consumer activates the confirmation function, the trader shall send
+ * > to the consumer an acknowledgement of receipt of the withdrawal on a durable
+ * > medium, **including its content and the date and time of its submission**,
+ * > without undue delay.
+ *
+ * ⚠️ **The eighth message**, and like ticket 38's it grows
+ * [ticket 13](../../.scratch/200squares-v1/issues/13-email.md)'s closed list of
+ * six — but this one is not a choice. Ticket 32 decided *no mail* on a
+ * withdrawal because *"the dev is already in the thread"*; a button has no
+ * thread, and lid 4 owes this whether or not anybody is minded to send it.
+ *
+ * ⚠️ **Three things are load-bearing and none of them may be prettified.** The
+ * content of the declaration, in the words the consumer was shown; their own
+ * line, given back to them because it is part of that content; and the date and
+ * time, in UTC to the minute, because "yesterday evening" is not a submission
+ * time.
+ *
+ * ⚠️ **It does not promise a date for the money.** Art. 6:230r lid 1 gives the
+ * dev 14 days and ADR 0003 keeps the amount a judgement made by hand, so the
+ * mail says the clock and not a day. A refund promised for Tuesday is a second
+ * thing that can be broken.
+ */
+export const withdrawalConfirmedMail = (input: {
+  what: string;
+  shownText: string;
+  note: string;
+  declaredAt: number;
+  kind: "squares" | "banner";
+}) => ({
+  subject: "We have your withdrawal",
+  text: [
+    "You withdrew from a contract with 200 squares. This message is the",
+    "confirmation the law asks us to send you, and it is worth keeping.",
+    "",
+    `What you withdrew from: ${input.what}`,
+    `What you declared: ${input.shownText}`,
+    ...(input.note ? [`What you wrote: ${input.note}`] : []),
+    `When you sent it: ${stamp(input.declaredAt)}`,
+    "",
+    input.kind === "banner"
+      ? [
+          "Your banner is already off the board. You pay for the hours that had run",
+          "when you sent this, and nothing more.",
+        ].join("\n")
+      : [
+          "Your square is still on the board while we settle up. A person works out",
+          "what you are owed and pays it to the card you paid with.",
+        ].join("\n"),
+    "",
+    "We have 14 days from the moment above to refund you. Your bank may take some",
+    "days after that to show it.",
+    "",
+    "If something is wrong, reply to this message. A person reads it.",
+  ].join("\n"),
+});
+
+/**
+ * The dev's copy. ⚠️ Not a courtesy — a clock started.
+ *
+ * Art. 6:230r lid 1 gives 14 days from the declaration to refund, and the amount
+ * is worked out by hand (ADR 0003). So this says what is owed, to whom, and by
+ * when, and it points at the list on `/admin` that outlives it: a mail can be
+ * lost and a list cannot.
+ */
+export const withdrawalForDevMail = (input: {
+  what: string;
+  name: string;
+  email: string;
+  note: string;
+  declaredAt: number;
+  totalCents: number;
+  kind: "squares" | "banner";
+  adminUrl: string;
+}) => ({
+  subject: `Withdrawal: ${input.what}`,
+  text: [
+    `${input.name} <${input.email}> withdrew from ${input.what}.`,
+    `Sent: ${stamp(input.declaredAt)}. Paid: ${usdExact(input.totalCents)}.`,
+    ...(input.note ? ["", `They wrote: ${input.note}`] : []),
+    "",
+    input.kind === "banner"
+      ? "The banner is already off. Work out the hours that had run when they sent it, and refund the rest at Stripe."
+      : "The square is still on the board. Judge the refund, pay it at Stripe, then press Refunded on /admin — that is what takes the block off and puts the rectangle back on the market.",
+    "",
+    "Refund inside 14 days of the time above (art. 6:230r lid 1).",
+    "",
+    input.adminUrl,
+  ].join("\n"),
+});
+
+/** `2026-08-27 14:05 UTC`. ⚠️ To the minute, in UTC, and never a phrase. */
+const stamp = (ms: number) =>
+  `${new Date(ms).toISOString().slice(0, 16).replace("T", " ")} UTC`;
 
 /**
  * The artwork reminders, at 1, 7 and 30 days.

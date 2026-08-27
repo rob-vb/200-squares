@@ -23,7 +23,9 @@ import type * as lib_board from "../lib/board.js";
 import type * as lib_invoice from "../lib/invoice.js";
 import type * as lib_mail from "../lib/mail.js";
 import type * as lib_time from "../lib/time.js";
+import type * as lib_token from "../lib/token.js";
 import type * as lib_vat from "../lib/vat.js";
+import type * as lib_withdrawal from "../lib/withdrawal.js";
 import type * as mail from "../mail.js";
 import type * as owners from "../owners.js";
 import type * as purge from "../purge.js";
@@ -31,6 +33,7 @@ import type * as reservations from "../reservations.js";
 import type * as seed from "../seed.js";
 import type * as seedData from "../seedData.js";
 import type * as snapshots from "../snapshots.js";
+import type * as withdrawal from "../withdrawal.js";
 
 import type {
   ApiFromModules,
@@ -54,7 +57,9 @@ declare const fullApi: ApiFromModules<{
   "lib/invoice": typeof lib_invoice;
   "lib/mail": typeof lib_mail;
   "lib/time": typeof lib_time;
+  "lib/token": typeof lib_token;
   "lib/vat": typeof lib_vat;
+  "lib/withdrawal": typeof lib_withdrawal;
   mail: typeof mail;
   owners: typeof owners;
   purge: typeof purge;
@@ -62,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   seedData: typeof seedData;
   snapshots: typeof snapshots;
+  withdrawal: typeof withdrawal;
 }>;
 
 /**

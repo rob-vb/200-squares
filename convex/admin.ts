@@ -37,7 +37,7 @@
 
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireAdmin } from "./auth";
 import { release } from "./art";
 import { liveStrikes } from "./owners";
@@ -355,40 +355,65 @@ export const withdrawBanner = mutation({
   returns: v.null(),
   handler: async (ctx, { date, note: rawNote }) => {
     await requireAdmin(ctx);
-    const note = noteOf(rawNote);
-
-    const day = await ctx.db
-      .query("bannerDays")
-      .withIndex("by_date", (q) => q.eq("date", date))
-      .unique();
-    if (!day || !day.ownerId)
-      throw new ConvexError("Nobody holds the banner that day.");
-    const owner = await ctx.db.get(day.ownerId);
-    if (!owner) throw new ConvexError("That banner day has no owner.");
-
-    const now = Date.now();
-    const old = day.artwork;
-    // The same three fields `removeBanner` patches, for the same reason: the
-    // board and the click counter already read `removedAt`, so the banner is off
-    // the moment this commits and the house ad takes the rest of the day.
-    await ctx.db.patch(day._id, { removedAt: now, artwork: null, url: "" });
-    // ⚠️ `owner.strikeAt` is **not** touched. Nothing was broken.
-    const removalId = await ctx.db.insert("removals", {
-      bannerDate: date,
-      ownerId: owner._id,
-      // ⚠️ No `rule`, and its absence is the record: see `convex/schema.ts`.
-      reason: note,
-      froze: false,
-      removedAt: now,
-    });
-    // ⚠️ Purged like any other release, and it is not about the picture being
-    // objectionable — nobody broke anything here. The day is off, so what it
-    // showed must stop answering at its own URL like anything else taken off.
-    await release(ctx, old, removalId);
-
+    await withdrawBannerDay(ctx, date, noteOf(rawNote));
     return null;
   },
 });
+
+/**
+ * The effect itself, without the guard.
+ *
+ * ⚠️ **It is exported because it now has two callers, and only one of them is
+ * the admin.** [Ticket 43](../.scratch/200squares-v1/issues/43-build-withdrawal-function.md)
+ * gives the consumer their own door — `/withdraw/<token>`, where the token is
+ * the grant and there is no sign-in at all — and pressing it has to take the
+ * banner down at that instant. So the shared work moved here and each caller
+ * keeps its own authorisation: `withdrawBanner` above still calls
+ * `requireAdmin`, and the token path checks the token.
+ *
+ * ⚠️ **A plain function and not an internal mutation.** The consumer's press
+ * writes the `withdrawals` row and takes the day off in **one** transaction, and
+ * a mutation cannot call another one — `ctx.runMutation` is an action's. Sharing
+ * the code this way is what keeps the two writes one act.
+ *
+ * ⚠️ It does not send. Both callers send their own message, and they are
+ * different messages: the admin path sends nothing at all (ticket 32 — the dev
+ * is already in the thread), and the token path owes art. 11a lid 4.
+ */
+export async function withdrawBannerDay(
+  ctx: MutationCtx,
+  date: string,
+  note: string,
+) {
+  const day = await ctx.db
+    .query("bannerDays")
+    .withIndex("by_date", (q) => q.eq("date", date))
+    .unique();
+  if (!day || !day.ownerId)
+    throw new ConvexError("Nobody holds the banner that day.");
+  const owner = await ctx.db.get(day.ownerId);
+  if (!owner) throw new ConvexError("That banner day has no owner.");
+
+  const now = Date.now();
+  const old = day.artwork;
+  // The same three fields `removeBanner` patches, for the same reason: the
+  // board and the click counter already read `removedAt`, so the banner is off
+  // the moment this commits and the house ad takes the rest of the day.
+  await ctx.db.patch(day._id, { removedAt: now, artwork: null, url: "" });
+  // ⚠️ `owner.strikeAt` is **not** touched. Nothing was broken.
+  const removalId = await ctx.db.insert("removals", {
+    bannerDate: date,
+    ownerId: owner._id,
+    // ⚠️ No `rule`, and its absence is the record: see `convex/schema.ts`.
+    reason: note,
+    froze: false,
+    removedAt: now,
+  });
+  // ⚠️ Purged like any other release, and it is not about the picture being
+  // objectionable — nobody broke anything here. The day is off, so what it
+  // showed must stop answering at its own URL like anything else taken off.
+  await release(ctx, old, removalId);
+}
 
 /**
  * Unfreeze a block.

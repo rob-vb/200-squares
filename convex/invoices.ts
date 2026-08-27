@@ -36,25 +36,18 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { squareRange } from "./lib/board";
 import { businessFromEnv, invoiceHtml, type InvoiceInput } from "./lib/invoice";
-
-/** Where an invoice is read. ⚠️ The token, never the number (ticket 17). */
-export const invoiceUrl = (token: string) =>
-  `${process.env.SITE_URL ?? "https://200squares.com"}/invoice/${token}`;
+import { mintToken } from "./lib/token";
 
 /**
- * 16 random bytes as hex.
+ * Where an invoice is read. ⚠️ The token, never the number (ticket 17).
  *
- * ⚠️ This is the whole guard on the document. It carries a name and an address,
- * and there is no sign-in in front of it — the same shape as ticket 06's
- * Stripe-session-id grant: permanent, unguessable, and nothing to lose if the
- * owner forwards it to their own accountant.
+ * ⚠️ **It is not the withdrawal token.** `mintToken` is shared with
+ * [ticket 43](../.scratch/200squares-v1/issues/43-build-withdrawal-function.md)
+ * and the two strings are minted separately on purpose: this one carries a name
+ * and an address to a bookkeeper, and it must never also cancel the purchase.
  */
-function mintToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+export const invoiceUrl = (token: string) =>
+  `${process.env.SITE_URL ?? "https://200squares.com"}/invoice/${token}`;
 
 /**
  * The next number in this year's series.

@@ -45,6 +45,8 @@ import { artwork } from "./schema";
 import { currentOwner, normalise } from "./auth";
 import { midnightOf, nextDate, nextMidnightUtc, todayUtc, RESERVATION_MS } from "./lib/time";
 import { vatInsideCents } from "./lib/vat";
+import { mintToken } from "./lib/token";
+import { withdrawUrl } from "./lib/withdrawal";
 import { declinedMail, outbidMail, sendMail, wonMail } from "./lib/mail";
 
 /** The floor bid, and the step over the top bid. Both in cents. */
@@ -738,7 +740,19 @@ export const recordWin = internalMutation({
     stripeCountry: v.string(),
     declared: declaredBanner,
   },
-  returns: v.object({ email: v.string(), hasArtwork: v.boolean(), orderId: v.id("orders") }),
+  returns: v.object({
+    email: v.string(),
+    hasArtwork: v.boolean(),
+    orderId: v.id("orders"),
+    /**
+     * The consumer's withdrawal address, or empty for a business.
+     *
+     * ⚠️ It is handed back rather than looked up again because `wonMail` is sent
+     * from the close, which is an action: the token is minted inside this
+     * mutation and this is the only moment it is in hand (ticket 43).
+     */
+    withdrawUrl: v.string(),
+  }),
   handler: async (ctx, args) => {
     const bid = await ctx.db.get(args.bidId);
     if (!bid || !bid.ownerId) throw new Error("The winning bid has no owner.");
@@ -746,6 +760,7 @@ export const recordWin = internalMutation({
     const now = Date.now();
     const d = args.declared;
 
+    const withdrawalToken = d.buyerType === "consumer" ? mintToken() : undefined;
     const orderId = await ctx.db.insert("orders", {
       stripeSessionId: args.stripeSessionId,
       paymentIntentId: args.paymentIntentId,
@@ -762,6 +777,10 @@ export const recordWin = internalMutation({
       viesRequestIdentifier: d.viesRequestIdentifier,
       withdrawalWaived: d.withdrawalWaived,
       withdrawalText: d.withdrawalText,
+      // ⚠️ Ticket 43, and the banner's period is the short one: the right is
+      // born at this close and dies at 00:00 UTC the next day (art. 6:230p sub
+      // d). Consumers only, for the reason `convex/checkout.ts` gives.
+      withdrawalToken,
       invoiceText: d.invoiceText,
       ip: d.ip,
       totalCents: args.amountCents,
@@ -793,7 +812,12 @@ export const recordWin = internalMutation({
     if (existing) await ctx.db.patch(existing._id, fields);
     else await ctx.db.insert("bannerDays", fields);
 
-    return { email: owner?.email ?? "", hasArtwork: Boolean(bid.artwork), orderId };
+    return {
+      email: owner?.email ?? "",
+      hasArtwork: Boolean(bid.artwork),
+      orderId,
+      withdrawUrl: withdrawalToken ? withdrawUrl(withdrawalToken) : "",
+    };
   },
 });
 
@@ -969,6 +993,10 @@ async function closeOne(ctx: ActionCtx, date: string) {
         // Anything but the top rung means the ladder was walked to reach him,
         // and ticket 38 owes him a sentence saying so.
         promoted: index > 0,
+        // ⚠️ Art. 6:230m lid 1 sub h, and this is the only mail that can carry
+        // it: the banner's withdrawal period is one day and the invoice mail
+        // that follows would reach him with the day half gone (ticket 43).
+        withdrawUrl: winner.withdrawUrl || undefined,
       });
       // The one mail that may not take the close down with it. The money is
       // collected and the banner is up; a Resend outage is not a reason to leave

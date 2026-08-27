@@ -4,6 +4,7 @@ Type: task
 Status: open
 Blocked by: 42
 Parent: ../map.md
+Assignee: rob-vb (claimed 2026-08-27)
 
 ## Question
 

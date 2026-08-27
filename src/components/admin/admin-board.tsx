@@ -53,6 +53,7 @@ export function AdminBoard() {
   const [search, setSearch] = useState("");
   const board = useQuery(api.admin.board, allowed ? { search } : "skip");
   const removals = useQuery(api.admin.removals, allowed ? {} : "skip");
+  const owed = useQuery(api.withdrawal.owed, allowed ? {} : "skip");
   const now = useClientDate();
   const unpurged = removals?.filter((row) => !row.purged).length ?? 0;
 
@@ -93,6 +94,25 @@ export function AdminBoard() {
           <p className="text-faint py-4 text-[14px]">Nothing matches that.</p>
         ) : null}
       </div>
+
+      {/*
+        ⚠️ The second alarm on this page, and it is money rather than a picture.
+        Art. 6:230r lid 1 starts a 14-day refund clock on every declaration and
+        [ADR 0003](../../../docs/adr/0003-a-bid-is-an-irrevocable-offer.md) keeps
+        the amount a judgement made by hand, so nothing pays these but the dev
+        remembering to. A mail can be lost; this list cannot (ticket 43).
+
+        It is above the removals for the same reason removals are above nothing:
+        it is the only thing on the screen with a deadline attached.
+      */}
+      {owed && owed.length > 0 ? (
+        <div className="pt-8">
+          <h2 className="font-display text-[20px]">Withdrawals waiting for a refund</h2>
+          {owed.map((row) => (
+            <OwedRow key={row.id} row={row} now={now} />
+          ))}
+        </div>
+      ) : null}
 
       <div className="pt-8">
         <h2 className="font-display text-[20px]">What has been taken off</h2>
@@ -395,6 +415,90 @@ function BlockRow({
           <SecondaryButton onClick={() => setOpen(true)}>Strip</SecondaryButton>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * One consumer who is owed money, and the press that says they have had it.
+ *
+ * ⚠️ **Oldest first and the clock can go negative.** A counter that stops at
+ * nought hides the one case that matters — the refund that is already late — so
+ * this counts down through zero and says *overdue* on the other side of it.
+ *
+ * ⚠️ **The press does not pay anybody.** The dev works the amount out and pays
+ * it at Stripe (ADR 0003); this records that they did, and on a square it also
+ * deletes the block so the rectangle goes back on the market and ticket 27's
+ * sold-out count reads true. That is why the label says *Refunded* and not
+ * *Refund*.
+ */
+function OwedRow({
+  row,
+  now,
+}: {
+  row: {
+    id: Id<"withdrawals">;
+    kind: "squares" | "banner";
+    what: string;
+    name: string;
+    email: string;
+    note: string;
+    declaredAt: number;
+    totalCents: number;
+    daysLeft: number;
+    hasBlock: boolean;
+  };
+  now: Date | null;
+}) {
+  const settle = useMutation(api.withdrawal.settle);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const late = row.daysLeft <= 0;
+
+  return (
+    <div className="border-hairline border-b py-3 text-[13px]">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="font-display text-[15px]">{row.what}</span>
+        <span>{row.name || row.email}</span>
+        <span className={late ? "text-accent font-semibold" : "text-faint"}>
+          {late
+            ? `${-row.daysLeft} ${-row.daysLeft === 1 ? "day" : "days"} overdue`
+            : `${row.daysLeft} ${row.daysLeft === 1 ? "day" : "days"} left`}
+        </span>
+      </div>
+      <div className="text-faint pt-1">
+        {/* ⚠️ The declaration's own time, to the minute and in UTC. Art. 6:230s
+            lid 4 prices a banner refund from it and art. 6:230r lid 1 counts
+            the 14 days from it, so a date alone is not enough. */}
+        Sent{" "}
+        {now ? `${new Date(row.declaredAt).toISOString().slice(0, 16).replace("T", " ")} UTC` : " "}
+        {" · "}
+        {row.email}
+      </div>
+      {row.note ? <div className="pt-1">They wrote: {row.note}</div> : null}
+      <div className="pt-1">
+        {row.kind === "banner"
+          ? "The banner is already off. Refund all but the hours that had run when they sent it."
+          : row.hasBlock
+            ? "The square is still on the board. Pay the refund at Stripe, then press below."
+            : "The block is already gone."}
+      </div>
+      <div className="pt-2">
+        <SecondaryButton
+          onClick={() => {
+            setBusy(true);
+            setError(null);
+            void settle({ withdrawalId: row.id })
+              .catch((caught) => setError(sayWhy(caught)))
+              .finally(() => setBusy(false));
+          }}
+          disabled={busy}
+        >
+          {busy ? "…" : "Refunded — take it off the board"}
+        </SecondaryButton>
+      </div>
+      {error ? <div className="text-accent pt-1 text-[12px]">{error}</div> : null}
     </div>
   );
 }

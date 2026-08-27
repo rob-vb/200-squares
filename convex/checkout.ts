@@ -16,6 +16,8 @@ import { normalise } from "./auth";
 import { rect as rectValidator } from "./schema";
 import { cellCount, overlaps } from "./lib/board";
 import { vatInsideCents } from "./lib/vat";
+import { mintToken } from "./lib/token";
+import { liveWithdrawUrl } from "./lib/withdrawal";
 
 const buyerType = v.union(v.literal("business"), v.literal("consumer"));
 const vatCase = v.union(v.literal("nl21"), v.literal("reverse"), v.literal("none"));
@@ -151,6 +153,16 @@ export const fulfil = internalMutation({
       viesRequestIdentifier: d.viesRequestIdentifier,
       withdrawalWaived: d.withdrawalWaived,
       withdrawalText: d.withdrawalText,
+      // ⚠️ The withdrawal function's address, minted here because art. 6:230oa
+      // lid 5 asks for it to be available for the whole period and the period
+      // starts now (ticket 43). **Consumers only** — lid 1 reaches a consumer
+      // contract and nothing else, so a business order has no token and its
+      // `/withdraw/` page is a 404 rather than a page that explains itself.
+      //
+      // ⚠️ And not on a clash: that order is refunded in full a moment from now
+      // by the caller, so there is nothing left to withdraw from.
+      withdrawalToken:
+        d.buyerType === "consumer" && !clash ? mintToken() : undefined,
       invoiceText: d.invoiceText,
       ip: d.ip,
       totalCents: args.amountTotalCents,
@@ -242,6 +254,13 @@ export const orderBySession = query({
        * itself is drawn on the board.
        */
       hasArtwork: v.boolean(),
+      /**
+       * The first of the two entry points art. 6:230oa lid 1 asks for, and the
+       * only surface a buyer with no account holds (ticket 43). Empty for a
+       * business, and empty once the period has run — the page itself still
+       * explains, but the site stops offering a door that leads nowhere.
+       */
+      withdrawUrl: v.string(),
     }),
   ),
   handler: async (ctx, { stripeSessionId }) => {
@@ -270,6 +289,7 @@ export const orderBySession = query({
       companyName: owner?.name ?? "",
       url: block?.url ?? "",
       hasArtwork: Boolean(block?.artwork),
+      withdrawUrl: await liveWithdrawUrl(ctx, order),
     };
   },
 });

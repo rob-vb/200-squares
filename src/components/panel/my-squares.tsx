@@ -131,23 +131,49 @@ export function MySquares() {
           <div className="border-hairline border-t px-4 py-3">
             <div className="text-faint pb-2 text-[13px]">Your invoices</div>
             {invoices.map((invoice) => (
-              <div
-                key={invoice.number}
-                className="flex items-baseline justify-between gap-3 py-1 text-[13px]"
-              >
-                <a
-                  href={invoice.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-accent font-mono text-[12px] underline"
-                  data-numeric
-                >
-                  {invoice.number}
-                </a>
-                <span className="text-faint min-w-0 truncate">{invoice.what}</span>
-                <span className="font-display text-[15px]" data-numeric>
-                  {usd(invoice.totalCents)}
-                </span>
+              <div key={invoice.what + invoice.issuedAt} className="py-1">
+                <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                  {/* ⚠️ An order whose invoice is still being written shows the
+                      row without a number rather than not at all: the
+                      withdrawal link below hangs on this row and may not wait
+                      for a bookkeeping document (ticket 43). */}
+                  {invoice.url ? (
+                    <a
+                      href={invoice.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent font-mono text-[12px] underline"
+                      data-numeric
+                    >
+                      {invoice.number}
+                    </a>
+                  ) : (
+                    <span className="text-faint font-mono text-[12px]">Invoice on its way</span>
+                  )}
+                  <span className="text-faint min-w-0 truncate">{invoice.what}</span>
+                  <span className="font-display text-[15px]" data-numeric>
+                    {usd(invoice.totalCents)}
+                  </span>
+                </div>
+                {/*
+                  ⚠️ The second of the two entry points art. 6:230oa lid 1 asks
+                  for, under the order row it belongs to (ticket 43). The words
+                  are the statute's and may not be softened, and the link is
+                  absent — never present and refusing — for a business order or
+                  once the period has run.
+
+                  ⚠️ **This panel is in the DOM twice**, side panel and bottom
+                  sheet, one hidden by CSS. A script reaching for the last match
+                  reaches into the copy nobody can see.
+                */}
+                {invoice.withdrawUrl ? (
+                  <a
+                    href={invoice.withdrawUrl}
+                    className="text-faint block pt-1 text-[12px] underline"
+                  >
+                    withdraw from contract here
+                  </a>
+                ) : null}
               </div>
             ))}
           </div>

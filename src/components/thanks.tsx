@@ -154,6 +154,24 @@ function Complete({ sessionId, order }: { sessionId: string; order: Order }) {
           Until you put a picture on it, the square is marked as waiting for artwork. There is no
           deadline: a paid square is permanent whether or not anything is on it yet.
         </p>
+        {/*
+          ⚠️ The withdrawal function of art. 6:230oa lid 1, and this is one of
+          the two places it has to be (ticket 43). It is here rather than only in
+          My squares because this page is the **only** surface a buyer with no
+          account holds — ACM says an account may be offered and not required.
+
+          ⚠️ The words are the statute's and may not be softened. A plain text
+          link under the order, not a button and not a warning: `withdrawUrl` is
+          empty for a business buyer and once the 14 days have run, so the link
+          is simply not there rather than there and refusing.
+        */}
+        {order.withdrawUrl ? (
+          <p className="max-w-[62ch] pt-3 text-[15px] leading-snug">
+            <a href={order.withdrawUrl} className="underline">
+              withdraw from contract here
+            </a>
+          </p>
+        ) : null}
       </Section>
 
       <Section title={done ? "Your block" : "Name it, and point it somewhere"}>

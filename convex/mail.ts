@@ -34,11 +34,29 @@ import {
   refundedMail,
   removedMail,
   sendMail,
+  withdrawalConfirmedMail,
+  withdrawalForDevMail,
 } from "./lib/mail";
+import { withdrawUrl } from "./lib/withdrawal";
 
 /** Where the buyer's own grant lives: ticket 06's return page (no account). */
 const artworkUrl = (stripeSessionId: string) =>
   `${process.env.SITE_URL ?? "https://200squares.com"}/thanks?session_id=${stripeSessionId}`;
+
+/** Where the dev reads what is still owed. Ticket 43's list. */
+const adminUrl = () => `${process.env.SITE_URL ?? "https://200squares.com"}/admin`;
+
+/**
+ * Where the dev's own copy goes.
+ *
+ * ⚠️ **The first of `ADMIN_EMAILS`, falling back to `hello@`.** That variable is
+ * already the one thing that says who the admin is (ticket 08), so a second one
+ * naming the same person is a second thing to get wrong. `hello@` is a real
+ * inbox a person reads — ticket 13 refused a `no-reply@` — so the fallback loses
+ * nothing on a deployment with no admin set.
+ */
+const devAddress = () =>
+  (process.env.ADMIN_EMAILS ?? "").split(",")[0].trim() || "hello@200squares.com";
 
 /** What a mail about an order has to say, gathered in one read. */
 export const forOrder = internalQuery({
@@ -54,6 +72,13 @@ export const forOrder = internalQuery({
       stripeSessionId: v.string(),
       bannerDate: v.string(),
       refunded: v.boolean(),
+      /**
+       * The consumer's withdrawal address, or empty.
+       *
+       * ⚠️ Empty is the business case and it must stay empty: naming a function
+       * that does not exist for this buyer is worse than naming none.
+       */
+      withdrawUrl: v.string(),
       /** Whether the block this order bought is still waiting for a picture. */
       pending: v.boolean(),
     }),
@@ -80,6 +105,7 @@ export const forOrder = internalQuery({
       stripeSessionId: order.stripeSessionId,
       bannerDate: order.bannerDate ?? "",
       refunded: Boolean(order.refundedAt),
+      withdrawUrl: order.withdrawalToken ? withdrawUrl(order.withdrawalToken) : "",
       pending: Boolean(block) && !block?.artwork && !block?.frozen,
     };
   },
@@ -118,6 +144,9 @@ export const orderConfirmed = internalAction({
             totalCents: order.totalCents,
             invoiceUrl: url,
             artworkUrl: artworkUrl(order.stripeSessionId),
+            // ⚠️ Art. 6:230m lid 1 sub h. The banner's half is on `wonMail`
+            // instead — that day is over before this invoice mail matters.
+            withdrawUrl: order.withdrawUrl || undefined,
           });
     await sendMail({ to: order.email, subject: mail.subject, text: mail.text });
     return null;
@@ -196,6 +225,53 @@ export const removed = internalAction({
       frozen: args.frozen,
     });
     await sendMail({ to: args.to, subject: mail.subject, text: mail.text });
+    return null;
+  },
+});
+
+/**
+ * The two messages one press owes: art. 11a lid 4 to the consumer, and the
+ * clock to the dev.
+ *
+ * ⚠️ **Without undue delay**, which is why it is scheduled at zero from inside
+ * the declaring transaction rather than swept for later. If the write rolls
+ * back, no message was ever booked; if it commits, both are on the list whatever
+ * Resend is doing.
+ *
+ * ⚠️ **The consumer's copy goes to the address they confirmed**, which is
+ * art. 11a lid 2 sub c: *the electronic means by which the confirmation of the
+ * withdrawal will be sent*. Where that differs from the address on the order,
+ * the dev's copy names both — they are the person who has to notice.
+ */
+export const withdrawalDeclared = internalAction({
+  args: { withdrawalId: v.id("withdrawals") },
+  returns: v.null(),
+  handler: async (ctx, { withdrawalId }) => {
+    const row = await ctx.runQuery(internal.withdrawal.forMail, { withdrawalId });
+    if (!row) return null;
+
+    if (row.email) {
+      const mail = withdrawalConfirmedMail({
+        what: row.what,
+        shownText: row.shownText,
+        note: row.note,
+        declaredAt: row.declaredAt,
+        kind: row.kind,
+      });
+      await sendMail({ to: row.email, subject: mail.subject, text: mail.text });
+    }
+
+    const dev = withdrawalForDevMail({
+      what: row.what,
+      name: row.name,
+      email: row.email,
+      note: row.note,
+      declaredAt: row.declaredAt,
+      totalCents: row.totalCents,
+      kind: row.kind,
+      adminUrl: adminUrl(),
+    });
+    await sendMail({ to: devAddress(), subject: dev.subject, text: dev.text });
     return null;
   },
 });
